@@ -1,10 +1,38 @@
-# 🚀 Script Cài Đặt N8N Tự Động 2025 - Multi-Domain + PostgreSQL
+# 🚀 Script Cài Đặt N8N Multi-Domain Tự Động 2025 - Enhanced Version 3.0
 
-![N8N](https://img.shields.io/badge/N8N-Automation-blue) ![Docker](https://img.shields.io/badge/Docker-Containerized-blue) ![SSL](https://img.shields.io/badge/SSL-Auto-green) ![Multi-Domain](https://img.shields.io/badge/Multi--Domain-Support-orange) ![PostgreSQL](https://img.shields.io/badge/PostgreSQL-Database-blue) ![API](https://img.shields.io/badge/News%20API-FastAPI-red)
+![N8N](https://img.shields.io/badge/N8N-Automation-blue) ![Docker](https://img.shields.io/badge/Docker-Containerized-blue) ![SSL](https://img.shields.io/badge/SSL-Auto-green) ![Multi-Domain](https://img.shields.io/badge/Multi--Domain-Support-orange) ![PostgreSQL](https://img.shields.io/badge/PostgreSQL-Database-blue) ![API](https://img.shields.io/badge/News%20API-FastAPI-red) ![Telegram](https://img.shields.io/badge/Telegram-Bot-blue) ![Google Drive](https://img.shields.io/badge/Google%20Drive-Backup-green)
 
-Script tự động cài đặt N8N với đầy đủ tính năng mở rộng và hỗ trợ multi-domain, bao gồm:
+Script tự động cài đặt N8N với đầy đủ tính năng mở rộng và quản lý từ xa, bao gồm:
 
-## ✨ Tính Năng Mới 2025
+## ✨ Tính Năng Mới Version 3.0
+
+### 🤖 Telegram Bot Management
+- **Quản lý từ xa hoàn toàn** qua Telegram
+- **Real-time monitoring** và alerts
+- **Quick actions**: restart, backup, logs, health check
+- **Performance metrics** realtime
+- **Security**: Chỉ Chat ID được ủy quyền
+
+### ☁️ Google Drive Auto Backup
+- **Tự động upload** backup lên Google Drive
+- **Folder structure** theo năm/tháng/domain
+- **Easy restore** từ Google Drive
+- **OAuth2 authentication** bảo mật
+- **Cross-platform** access
+
+### 📊 Web Dashboard
+- **Browser-based** management interface
+- **Real-time charts** và metrics
+- **Mobile responsive** design
+- **Quick actions** và troubleshooting
+- **Multi-user** support ready
+
+### 🔒 Enhanced Security
+- **Basic Authentication** cho N8N instances
+- **IP filtering** và whitelist
+- **Fail2ban** protection
+- **SSL security headers**
+- **Rate limiting** advanced
 
 ### 🌐 Multi-Domain Support
 - **Nhiều N8N instances** trên cùng một server
@@ -14,32 +42,10 @@ Script tự động cài đặt N8N với đầy đủ tính năng mở rộng v
 
 ### 🐘 PostgreSQL Database Support
 - **Hiệu suất cao** hơn SQLite
-- **Concurrent connections** tốt hơn
+- **Concurrent connections** tốt hơp
 - **Backup và restore** dễ dàng
 - **Chia sẻ database** giữa các instances
 - **Hoàn toàn miễn phí**
-
-### 📊 Management Dashboard
-- **Quản lý tập trung** tất cả N8N instances
-- **Real-time monitoring** resource usage
-- **Báo cáo chi tiết** từng instance
-- **Quick actions** restart, backup, update
-- **SSL status** cho tất cả domains
-
-### 💾 Advanced Backup System
-- **ZIP compression** tối ưu dung lượng
-- **Multi-domain backup** tất cả instances cùng lúc
-- **Telegram integration** với detailed reports
-- **Auto-retry** nếu gửi Telegram thất bại
-- **Migration tools** chuyển đổi server dễ dàng
-
-### 🔧 Core Features
-- **N8N Workflow Automation** với FFmpeg, yt-dlp, Puppeteer
-- **News Content API** (FastAPI + Newspaper4k)
-- **Telegram Backup** tự động cho tất cả instances
-- **SSL Certificate** tự động với Caddy
-- **Auto-Update** thông minh
-- **Smart Backup System** với multi-domain support
 
 ## 👨‍💻 Thông Tin Tác Giả
 
@@ -49,7 +55,7 @@ Script tự động cài đặt N8N với đầy đủ tính năng mở rộng v
 - 📱 **Zalo/Phone**: 08.8888.4749
 - 🎬 **N8N Playlist**: [N8N Tutorials](https://www.youtube.com/@kalvinthiensocial/playlists)
 - 🚀 **Ngày cập nhật**: 28/06/2025
-- 🆕 **Phiên bản**: 3.0 - Multi-Domain + Advanced Management
+- 🆕 **Phiên bản**: 3.0 Enhanced - Telegram Bot + Google Drive + Web Dashboard
 
 ## 🖥️ Hỗ Trợ Môi Trường
 
@@ -67,133 +73,176 @@ Script tự động cài đặt N8N với đầy đủ tính năng mở rộng v
 - **Network**: Domains đã trỏ về server
 - **Permission**: Root access
 
-### Multi-Domain
+### Enhanced Features
 - **RAM**: Khuyến nghị 4GB+ (mỗi N8N instance ~512MB)
 - **CPU**: 2+ cores cho hiệu suất tốt
-- **Disk**: 30GB+ cho nhiều instances
+- **Disk**: 30GB+ cho nhiều instances + backups
+- **Google Account**: Cho Google Drive backup (optional)
+- **Telegram Bot**: Cho remote management (optional)
 
 ## 🚀 Cài Đặt Nhanh
 
 ### 1️⃣ Cài Đặt Cơ Bản (Single Domain)
 
 ```bash
-cd /tmp && curl -sSL https://raw.githubusercontent.com/KalvinThien/install-n8n-ffmpeg/main/auto_cai_dat_n8n.sh | tr -d '\r' > install_n8n.sh && chmod +x install_n8n.sh && sudo bash install_n8n.sh
+cd /tmp && curl -sSL https://raw.githubusercontent.com/KalvinThien/install-n8n-ffmpeg/main/auto_install_multi_n8n.sh | tr -d '\r' > install_n8n.sh && chmod +x install_n8n.sh && sudo bash install_n8n.sh
 ```
 
 ### 2️⃣ Cài Đặt Multi-Domain + PostgreSQL
 
 ```bash
-cd /tmp && curl -sSL https://raw.githubusercontent.com/KalvinThien/install-n8n-ffmpeg/main/auto_cai_dat_n8n.sh | tr -d '\r' > install_n8n.sh && chmod +x install_n8n.sh && sudo bash install_n8n.sh --multi-domain --postgresql
+cd /tmp && curl -sSL https://raw.githubusercontent.com/KalvinThien/install-n8n-ffmpeg/main/auto_install_multi_n8n.sh | tr -d '\r' > install_n8n.sh && chmod +x install_n8n.sh && sudo bash install_n8n.sh --multi-domain --postgresql
 ```
 
-### 3️⃣ Options Nâng Cao
+### 3️⃣ Cài Đặt Full Features
+
+```bash
+cd /tmp && curl -sSL https://raw.githubusercontent.com/KalvinThien/install-n8n-ffmpeg/main/auto_install_multi_n8n.sh | tr -d '\r' > install_n8n.sh && chmod +x install_n8n.sh && sudo bash install_n8n.sh --multi-domain --postgresql --google-drive --telegram-bot
+```
+
+### 4️⃣ Options Nâng Cao
 
 ```bash
 # Multi-domain với PostgreSQL
-sudo ./auto_cai_dat_n8n.sh -m -p
+sudo ./auto_install_multi_n8n.sh -m -p
 
-# Chỉ định thư mục cài đặt
-sudo ./auto_cai_dat_n8n.sh -d /custom/path -m -p
+# Full features với Google Drive và Telegram Bot
+sudo ./auto_install_multi_n8n.sh -m -p -g -t
 
-# Clean install với multi-domain
-sudo ./auto_cai_dat_n8n.sh --clean --multi-domain --postgresql
+# Clean install với full features
+sudo ./auto_install_multi_n8n.sh --clean --multi-domain --postgresql --google-drive --telegram-bot
 
 # Xem trợ giúp
-./auto_cai_dat_n8n.sh -h
+./auto_install_multi_n8n.sh -h
 ```
 
 ## 🔧 Quá Trình Cài Đặt
 
 Script sẽ hướng dẫn bạn qua các bước:
 
-### Single Domain Mode
-1. **Setup Swap** tự động
-2. **Nhập domain** của bạn
-3. **Cấu hình database** (SQLite hoặc PostgreSQL)
+### Installation Modes
+1. **Single Domain** (Cơ bản)
+2. **Multi-Domain** (Nâng cao)
+3. **Multi-Domain + PostgreSQL** (Khuyến nghị)
+4. **Full Features** (Multi-Domain + PostgreSQL + Google Drive + Telegram Bot)
+
+### Setup Process
+1. **Setup Swap** tự động (tăng cường cho multi-domain)
+2. **Nhập domains** (single hoặc multiple)
+3. **Cấu hình PostgreSQL** (nếu được chọn)
 4. **Cấu hình News API** (tùy chọn)
 5. **Cấu hình Telegram** (tùy chọn)
-6. **Kiểm tra DNS** pointing
-7. **Cài đặt Docker** & dependencies
-8. **Build & start** containers
-9. **Setup SSL** certificate
+6. **Cấu hình Google Drive** (nếu được chọn)
+7. **Cấu hình Telegram Bot** (nếu được chọn)
+8. **Kiểm tra DNS** cho tất cả domains
+9. **Cài đặt Docker** & dependencies
+10. **Build & start** tất cả containers
+11. **Setup SSL** cho tất cả domains
+12. **Thiết lập services** (Dashboard, Telegram Bot)
 
-### Multi-Domain Mode
-1. **Setup Swap** tự động (tăng cường cho multi-domain)
-2. **Nhập nhiều domains** (không giới hạn số lượng)
-3. **Cấu hình PostgreSQL** (khuyến nghị cho multi-domain)
-4. **Cấu hình News API** (chia sẻ cho tất cả instances)
-5. **Cấu hình Telegram** (backup tất cả instances)
-6. **Kiểm tra DNS** cho tất cả domains
-7. **Cài đặt Docker** & dependencies
-8. **Build & start** tất cả containers
-9. **Setup SSL** cho tất cả domains
-10. **Thiết lập databases** riêng cho mỗi instance
+## 🤖 Telegram Bot Management
 
-## 🌐 Multi-Domain Architecture
-
-### Cấu Trúc Hệ Thống
+### 🔧 Lệnh Bot Cơ Bản
 ```
-┌─────────────────────────────────────────────────────────────┐
-│                    Caddy Reverse Proxy                     │
-│                     (SSL Termination)                      │
-└─────────────────────────────────────────────────────────────┘
-                              │
-                ┌─────────────┼─────────────┐
-                │             │             │
-        ┌───────▼──────┐ ┌────▼────┐ ┌─────▼──────┐
-        │ N8N Instance │ │ N8N ... │ │ News API   │
-        │      #1      │ │         │ │ (Shared)   │
-        │ domain1.com  │ │         │ │api.domain1 │
-        └──────────────┘ └─────────┘ └────────────┘
-                │             │             │
-                └─────────────┼─────────────┘
-                              │
-                    ┌─────────▼─────────┐
-                    │   PostgreSQL      │
-                    │   (Shared DB)     │
-                    │ - instance_1_db   │
-                    │ - instance_2_db   │
-                    │ - instance_n_db   │
-                    └───────────────────┘
+/start          - Khởi động bot
+/status         - Trạng thái tất cả instances
+/health         - Health check chi tiết
+/performance    - Performance metrics
+/help           - Danh sách lệnh
 ```
 
-### Lợi Ích Multi-Domain
-- **Tách biệt workflows** theo dự án/khách hàng
-- **Chia sẻ tài nguyên** hiệu quả
-- **Quản lý tập trung** backup và monitoring
-- **Tiết kiệm chi phí** server
-- **Dễ dàng scale** thêm domains
+### 🛠️ Quản Lý Services
+```
+/restart all              - Restart tất cả services
+/restart n8n              - Restart N8N container
+/restart caddy            - Restart Caddy proxy
+/restart postgres         - Restart PostgreSQL
+```
 
-## 📊 Management Dashboard
+### 📋 Logs & Monitoring
+```
+/logs all                 - Logs tất cả services
+/logs n8n 50              - 50 dòng logs cuối của N8N
+/backup                   - Chạy backup manual
+/troubleshoot             - Chạy diagnostic
+```
 
-### 🎛️ Truy Cập Dashboard
-```bash
-# Real-time dashboard
-/home/n8n/management/dashboard.sh
+### 📊 Ví Dụ Output
+```
+🚀 N8N System Status
 
-# Management menu
-/home/n8n/management/menu.sh
+📊 System Info:
+• Uptime: up 2 days, 14 hours, 32 minutes
+• Memory: 2.1G/4.0G
+• Disk Usage: 45%
 
-# Auto-refresh dashboard
-/home/n8n/management/dashboard.sh --watch
+🌐 Domains (3):
+• Instance 1: n8n1.example.com
+• Instance 2: n8n2.example.com  
+• Instance 3: n8n3.example.com
+
+🐳 Containers (5):
+✅ n8n-container-1: running
+✅ n8n-container-2: running
+✅ caddy-proxy: running
+✅ postgres-n8n: running
+```
+
+## ☁️ Google Drive Backup System
+
+### 🔧 Thiết Lập Google Drive API
+1. Truy cập [Google Cloud Console](https://console.developers.google.com/)
+2. Tạo project mới hoặc chọn project có sẵn
+3. Enable Google Drive API
+4. Tạo Service Account credentials
+5. Download JSON credentials file
+6. Share Google Drive folder với service account
+
+### 📁 Cấu Trúc Backup
+```
+N8N-Backups/
+├── 2025/
+│   ├── 06-June/
+│   │   ├── domain1.com/
+│   │   │   ├── n8n_backup_20250628_140000.zip
+│   │   │   └── n8n_backup_20250627_020000.zip
+│   │   ├── domain2.com/
+│   │   └── All-Domains/
+│   └── 07-July/
+└── 2024/
+```
+
+### 🔄 Auto Backup Features
+- **Daily upload** lên Google Drive
+- **Organized by** year/month/domain
+- **Automatic cleanup** old backups
+- **Telegram notifications** với status
+- **Fallback local** nếu upload thất bại
+
+## 📊 Web Dashboard
+
+### 🌐 Truy Cập Dashboard
+```
+http://YOUR_SERVER_IP:8080
 ```
 
 ### 📈 Tính Năng Dashboard
-- **System Information**: OS, Memory, Disk, Uptime
-- **Container Status**: Tất cả containers với health check
-- **N8N Instances**: Status từng instance với domain mapping
-- **Database Info**: PostgreSQL/SQLite status và connections
-- **SSL Certificates**: Status tất cả domains
-- **Backup Information**: Latest backups và storage usage
-- **Resource Usage**: CPU, Memory, Network cho từng container
-- **Quick Actions**: Restart, logs, backup, troubleshoot
+- **Real-time monitoring** tất cả instances
+- **System metrics** (CPU, Memory, Disk, Network)
+- **Container status** với health checks
+- **SSL certificate** monitoring
+- **Backup status** và history
+- **Quick actions** (restart, backup, logs)
+- **Mobile responsive** design
+- **Auto-refresh** every 30 seconds
 
-### 🛠️ Management Menu
-- **Monitoring**: Dashboard, logs, resource usage
-- **Management**: Restart services, update, rebuild
-- **Backup & Restore**: Manual backup, restore, migration
-- **Configuration**: Change API tokens, Telegram config
-- **Troubleshooting**: Diagnostics, fix issues, clean system
+### 🔧 Quick Actions
+- 🔄 **Refresh Data** - Cập nhật realtime
+- 🔄 **Restart All** - Restart tất cả services
+- 💾 **Manual Backup** - Chạy backup manual
+- 📋 **View Logs** - Xem logs trong tab mới
+- ⬆️ **Update System** - Update hệ thống
+- 🔧 **Troubleshoot** - Chạy diagnostic script
 
 ## 📰 News Content API
 
@@ -210,15 +259,8 @@ Sau khi cài đặt, truy cập:
 - **ReDoc**: `https://api.yourdomain.com/redoc`
 
 ### 💻 Ví Dụ cURL
-
-**1. Kiểm tra API:**
 ```bash
-curl -X GET "https://api.yourdomain.com/health" \
-     -H "Authorization: Bearer YOUR_TOKEN"
-```
-
-**2. Lấy nội dung bài viết:**
-```bash
+# Lấy nội dung bài viết
 curl -X POST "https://api.yourdomain.com/extract-article" \
      -H "Content-Type: application/json" \
      -H "Authorization: Bearer YOUR_TOKEN" \
@@ -230,118 +272,35 @@ curl -X POST "https://api.yourdomain.com/extract-article" \
      }'
 ```
 
-**3. Parse RSS Feed:**
-```bash
-curl -X POST "https://api.yourdomain.com/parse-feed" \
-     -H "Content-Type: application/json" \
-     -H "Authorization: Bearer YOUR_TOKEN" \
-     -d '{
-       "url": "https://dantri.com.vn/rss.xml",
-       "max_articles": 10
-     }'
-```
+## 💾 Enhanced Backup & Restore System
 
-### 🔧 Đổi Bearer Token
+### 🔄 Multi-Domain Backup Features
+- **ZIP compression** tối ưu dung lượng
+- **Multi-domain backup** tất cả instances cùng lúc
+- **PostgreSQL databases** backup riêng từng instance
+- **SSL certificates** backup và restore
+- **Configuration files** backup
+- **Metadata** chi tiết cho mỗi backup
 
-**One-liner command:**
-```bash
-cd /home/n8n && sed -i 's/NEWS_API_TOKEN=.*/NEWS_API_TOKEN="NEW_TOKEN"/' docker-compose.yml && docker-compose restart fastapi
-```
-
-## 🐘 PostgreSQL Database
-
-### Thông Tin Kết Nối
-- **Host**: localhost (127.0.0.1)
-- **Port**: 5432
-- **Database**: n8n_db
-- **Username**: n8n_user
-- **Password**: Tự động tạo trong quá trình cài đặt
-
-### Multi-Domain Database Structure
-```sql
--- Main database: n8n_db
--- Instance databases:
--- - n8n_db_instance_1 (for domain 1)
--- - n8n_db_instance_2 (for domain 2)
--- - n8n_db_instance_n (for domain n)
-
--- Each instance has its own schema:
--- - n8n_instance_1
--- - n8n_instance_2
--- - n8n_instance_n
-```
-
-### Backup PostgreSQL
-```bash
-# Backup tất cả databases
-docker exec postgres-n8n pg_dumpall -U n8n_user > full_backup.sql
-
-# Backup database cụ thể
-docker exec postgres-n8n pg_dump -U n8n_user -d n8n_db_instance_1 > instance_1_backup.sql
-
-# Restore database
-docker exec -i postgres-n8n psql -U n8n_user -d n8n_db < backup.sql
-```
-
-## 💾 Advanced Backup & Restore System
-
-### 🔄 Multi-Domain Backup System
-Script tự động backup mỗi ngày lúc 2:00 AM:
-- **Tất cả N8N instances** (workflows & credentials)
-- **PostgreSQL databases** (tất cả instance databases)
-- **Configuration files** (docker-compose.yml, Caddyfile)
-- **SSL certificates** (Caddy data)
-- **ZIP compression** với metadata chi tiết
-
-### 🧪 Test Backup
-```bash
-# Chạy backup thủ công và kiểm tra
-/home/n8n/backup-manual.sh
-
-# Chạy backup thông thường
-/home/n8n/backup-workflows.sh
-```
-
-### 📁 Cấu Trúc Backup
-```
-/home/n8n/files/backup_full/
-├── n8n_backup_20250628_140000.zip
-│   ├── instances/
-│   │   ├── instance_1/
-│   │   │   ├── workflows.json
-│   │   │   ├── credentials.json
-│   │   │   ├── database.sqlite (if SQLite)
-│   │   │   └── metadata.json
-│   │   ├── instance_2/
-│   │   └── instance_n/
-│   ├── postgres/
-│   │   ├── dump_instance_1.sql
-│   │   ├── dump_instance_2.sql
-│   │   └── dump_main.sql
-│   ├── config/
-│   │   ├── docker-compose.yml
-│   │   ├── Caddyfile
-│   │   └── telegram_config.txt
-│   ├── ssl/
-│   │   └── caddy_data.tar.gz
-│   └── backup_metadata.json
-├── latest_backup_report.txt
-└── backup.log
-```
-
-### 📱 Telegram Backup
-Nếu đã cấu hình, backup sẽ tự động gửi qua Telegram:
-- **File backup** (.zip) nếu <50MB
-- **Detailed report** về tất cả instances
-- **Database status** và kích thước
-- **Instance mapping** với domains
-- **Notifications** khi backup thành công/thất bại
+### 📱 Telegram Integration
+- **Detailed reports** về tất cả instances
+- **File upload** nếu <50MB
+- **Status notifications** success/failure
 - **Fallback**: Giữ backup local nếu Telegram thất bại
+
+### ☁️ Google Drive Integration
+- **Auto-upload** sau mỗi backup
+- **Organized folders** theo domain và ngày
+- **Easy restore** từ Google Drive
+- **Cross-platform** access
 
 ### 🔄 Restore System
 ```bash
 # Restore từ backup file
-/home/n8n/management/restore.sh /path/to/backup.zip
+/home/n8n/restore-from-backup.sh /path/to/backup.zip
+
+# Restore domain cụ thể
+/home/n8n/restore-from-backup.sh /path/to/backup.zip domain.com
 
 # Restore sẽ:
 # 1. Stop tất cả services
@@ -353,39 +312,32 @@ Nếu đã cấu hình, backup sẽ tự động gửi qua Telegram:
 # 7. Start tất cả services
 ```
 
-## 🚚 Migration Tools
+## 🔒 Enhanced Security Features
 
-### 📦 Export for Migration
-```bash
-# Tạo migration package
-/home/n8n/management/export-migration.sh
+### 🔐 Basic Authentication
+- **Auto-generated** username/password cho N8N
+- **Secure storage** credentials
+- **Easy rotation** passwords
 
-# Package bao gồm:
-# - Tất cả N8N instances data
-# - Configuration files
-# - Database schema
-# - Migration scripts
-# - Detailed documentation
-```
+### 🛡️ IP Filtering
+- **Whitelist** allowed IP addresses
+- **CIDR block** support
+- **Easy configuration** via file
 
-### 🔄 Migration Process
-1. **Export** từ server cũ
-2. **Transfer** migration package
-3. **Setup** server mới
-4. **Import** và restore data
-5. **Verify** tất cả domains
+### 🚫 Fail2ban Protection
+- **Auto-ban** malicious IPs
+- **Custom rules** cho N8N
+- **Configurable** ban times
 
-### 📚 Migration Guide
-- **Detailed documentation** trong migration package
-- **Step-by-step instructions** cho từng bước
-- **Troubleshooting guide** cho các lỗi thường gặp
-- **Server comparison** tool
-- **DNS migration** checklist
+### 🔒 SSL Security Headers
+- **HSTS** enforcement
+- **XSS protection**
+- **Content Security Policy**
+- **Frame protection**
 
 ## 🛠️ Quản Lý Hệ Thống
 
 ### 🔧 Lệnh Cơ Bản
-
 ```bash
 # Xem trạng thái tất cả containers
 cd /home/n8n && docker-compose ps
@@ -396,46 +348,26 @@ cd /home/n8n && docker-compose logs -f
 # Restart toàn bộ hệ thống
 cd /home/n8n && docker-compose restart
 
-# Restart N8N instance cụ thể
-cd /home/n8n && docker-compose restart n8n_1
+# Web Dashboard
+http://YOUR_SERVER_IP:8080
 
-# Rebuild tất cả containers
-cd /home/n8n && docker-compose down && docker-compose up -d --build
-```
-
-### 🔍 Troubleshooting
-
-```bash
-# Script chẩn đoán tự động (Multi-Domain support)
+# Troubleshoot script
 /home/n8n/troubleshoot.sh
-
-# Kiểm tra N8N instances
-docker ps --filter "name=n8n-container-"
-
-# Kiểm tra logs instance cụ thể
-cd /home/n8n && docker-compose logs n8n_1
-cd /home/n8n && docker-compose logs n8n_2
-
-# Kiểm tra PostgreSQL
-cd /home/n8n && docker-compose logs postgres
-
-# Kiểm tra Caddy
-cd /home/n8n && docker-compose logs caddy
 ```
 
-### 🔄 Updates
-
+### 📊 Management Tools
 ```bash
-# Update tự động (mỗi 12h) - tất cả instances
-/home/n8n/update-n8n.sh
+# Enhanced backup
+/home/n8n/backup-workflows-enhanced.sh
 
-# Update yt-dlp cho tất cả instances
-for container in $(docker ps --filter "name=n8n-container-" --format "{{.Names}}"); do
-    docker exec $container pip3 install --break-system-packages -U yt-dlp
-done
+# Restore system
+/home/n8n/restore-from-backup.sh
+
+# Manual backup test
+/home/n8n/backup-manual.sh
 ```
 
-## 📂 Cấu Trúc Thư Mục Multi-Domain
+## 📂 Cấu Trúc Thư Mục Enhanced
 
 ```
 /home/n8n/
@@ -443,20 +375,32 @@ done
 ├── Dockerfile                      # N8N custom image
 ├── Caddyfile                       # Reverse proxy cho tất cả domains
 ├── init-multi-db.sh                # PostgreSQL init script
-├── backup-workflows.sh             # Multi-domain backup script
-├── backup-manual.sh                # Manual backup test
-├── update-n8n.sh                  # Multi-domain update script
+├── backup-workflows-enhanced.sh    # Enhanced backup script
+├── restore-from-backup.sh          # Enhanced restore script
 ├── troubleshoot.sh                 # Multi-domain diagnostic script
 ├── telegram_config.txt             # Telegram settings
+├── dashboard/                      # Web Dashboard
+│   ├── index.html                 # Dashboard UI
+│   ├── server.py                  # Dashboard API server
+│   └── assets/                    # Static assets
+├── telegram_bot/                   # Telegram Bot Management
+│   ├── bot.py                     # Main bot script
+│   └── start_bot.sh               # Bot startup script
+├── google_drive/                   # Google Drive Integration
+│   ├── gdrive_backup.py           # Google Drive backup script
+│   ├── credentials.json           # Service account credentials
+│   └── cleanup_old_backups.py     # Cleanup script
+├── security/                       # Security configurations
+│   ├── setup_security.sh          # Security setup script
+│   ├── auth_credentials.txt        # Basic auth credentials
+│   ├── allowed_ips.txt            # IP whitelist
+│   └── ssl_headers.conf           # SSL security headers
 ├── management/                     # Management tools
-│   ├── dashboard.sh               # Real-time dashboard
+│   ├── dashboard.sh               # CLI dashboard
 │   ├── menu.sh                    # Management menu
-│   ├── restore.sh                 # Restore system
 │   └── export-migration.sh        # Migration tools
 ├── files/                          # N8N data
-│   ├── backup_full/               # Multi-domain backup storage
-│   ├── temp/                      # Temporary files
-│   ├── youtube_content_anylystic/ # Shared video downloads
+│   ├── backup_full/               # Enhanced backup storage
 │   ├── n8n_instance_1/           # Instance 1 data
 │   ├── n8n_instance_2/           # Instance 2 data
 │   └── n8n_instance_n/           # Instance N data
@@ -471,126 +415,81 @@ done
 ## ⚡ Performance Tips
 
 ### 🚀 Multi-Domain Optimization
-
 1. **Memory**: Script tự động tăng swap cho multi-domain
-2. **CPU**: Mỗi N8N instance sử dụng single worker
+2. **CPU**: Mỗi N8N instance sử dụng optimized workers
 3. **Database**: PostgreSQL shared connection pooling
-4. **Disk**: Auto cleanup old backups (30 days)
+4. **Disk**: Auto cleanup old backups và logs
 5. **Network**: Caddy auto-compression cho tất cả domains
 
 ### 📊 Monitoring Multi-Domain
-
 ```bash
 # Resource usage tất cả containers
 docker stats --no-stream
 
-# Disk usage
-df -h
-
-# Memory usage per instance
-docker stats --format "table {{.Container}}\t{{.CPUPerc}}\t{{.MemUsage}}" --no-stream
-
-# PostgreSQL connections
-docker exec postgres-n8n psql -U n8n_user -d n8n_db -c "SELECT count(*) FROM pg_stat_activity;"
-
 # Real-time dashboard
-/home/n8n/management/dashboard.sh --watch
+http://YOUR_SERVER_IP:8080
+
+# Telegram monitoring
+/status trong Telegram Bot
+
+# Performance metrics
+/performance trong Telegram Bot
 ```
 
 ## 🐛 Troubleshooting
 
-### ❌ Lỗi Thường Gặp Multi-Domain
+### ❌ Lỗi Thường Gặp Enhanced
 
-**1. Một instance không start**
+**1. Telegram Bot không phản hồi**
 ```bash
-# Kiểm tra logs instance cụ thể
-cd /home/n8n && docker-compose logs n8n_1
+# Kiểm tra service
+systemctl status n8n-telegram-bot
 
-# Restart instance cụ thể
-cd /home/n8n && docker-compose restart n8n_1
+# Xem logs
+journalctl -u n8n-telegram-bot -f
 
-# Sử dụng management menu
-/home/n8n/management/menu.sh
+# Restart bot
+systemctl restart n8n-telegram-bot
 ```
 
-**2. PostgreSQL connection issues**
+**2. Google Drive upload thất bại**
 ```bash
-# Kiểm tra PostgreSQL status
-docker exec postgres-n8n pg_isready -U n8n_user
+# Kiểm tra credentials
+cat /home/n8n/google_drive/credentials.json
 
-# Kiểm tra databases
-docker exec postgres-n8n psql -U n8n_user -l
-
-# Restart PostgreSQL
-cd /home/n8n && docker-compose restart postgres
+# Test connection
+python3 /home/n8n/google_drive/gdrive_backup.py list all
 ```
 
-**3. SSL issues cho một domain**
+**3. Web Dashboard không load**
 ```bash
-# Kiểm tra Caddy logs
+# Kiểm tra service
+systemctl status n8n-dashboard
+
+# Kiểm tra port
+netstat -tulpn | grep 8080
+
+# Restart dashboard
+systemctl restart n8n-dashboard
+```
+
+**4. Multi-domain SSL issues**
+```bash
+# Kiểm tra Caddy logs cho domain cụ thể
 cd /home/n8n && docker-compose logs caddy | grep domain.com
 
-# Test SSL cho domain cụ thể
-curl -I https://domain.com
-
-# Reset SSL certificates
-/home/n8n/management/menu.sh # Option 20 -> 5
-```
-
-**4. Memory issues với nhiều instances**
-```bash
-# Kiểm tra memory usage
-free -h
-docker stats --no-stream
-
-# Tăng swap nếu cần
-sudo fallocate -l 4G /swapfile2
-sudo chmod 600 /swapfile2
-sudo mkswap /swapfile2
-sudo swapon /swapfile2
-```
-
-**5. Backup issues**
-```bash
-# Test manual backup
-/home/n8n/backup-manual.sh
-
-# Kiểm tra Telegram config
-cat /home/n8n/telegram_config.txt
-
-# Kiểm tra backup logs
-tail -f /home/n8n/files/backup_full/backup.log
-```
-
-### 🔧 Recovery Commands
-
-```bash
-# Restart toàn bộ hệ thống
-cd /home/n8n && docker-compose down && docker-compose up -d
-
-# Rebuild specific instance
-cd /home/n8n && docker-compose up -d --build n8n_1
-
-# Reset PostgreSQL
-cd /home/n8n && docker-compose down postgres
-docker volume rm n8n_postgres_data
-cd /home/n8n && docker-compose up -d postgres
-
-# Clean reinstall
-sudo rm -rf /home/n8n
-sudo ./auto_cai_dat_n8n.sh --clean --multi-domain --postgresql
-
-# Restore từ backup
-/home/n8n/management/restore.sh /path/to/backup.zip
+# Reset SSL cho tất cả domains
+docker-compose restart caddy
 ```
 
 ## 🌟 Features Roadmap
 
 - [x] **Multi-domain** support ✅
 - [x] **PostgreSQL** external database ✅
-- [x] **Management Dashboard** ✅
-- [x] **Advanced Backup System** ✅
-- [x] **Migration Tools** ✅
+- [x] **Telegram Bot** management ✅
+- [x] **Google Drive** backup ✅
+- [x] **Web Dashboard** ✅
+- [x] **Enhanced Security** ✅
 - [ ] **Load balancing** between instances
 - [ ] **Kubernetes** deployment
 - [ ] **Monitoring** dashboard with metrics
@@ -626,4 +525,4 @@ Nếu script này hữu ích, hãy cho một ⭐ star để ủng hộ!
 ---
 
 **🚀 Made with ❤️ by Nguyễn Ngọc Thiện - 28/06/2025**  
-**🆕 Enhanced with Multi-Domain + PostgreSQL + Advanced Management**
+**🆕 Enhanced Version 3.0 - Telegram Bot + Google Drive + Web Dashboard + Advanced Security**
