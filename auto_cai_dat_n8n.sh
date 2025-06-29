@@ -1,13 +1,13 @@
 #!/bin/bash
 
 # =============================================================================
-# 🚀 SCRIPT CÀI ĐẶT N8N TỰ ĐỘNG 2025 - PHIÊN BẢN HOÀN CHỈNH
+# 🚀 SCRIPT CÀI ĐẶT N8N MULTI-DOMAIN TỰ ĐỘNG 2025 - ENHANCED VERSION 3.0
 # =============================================================================
 # Tác giả: Nguyễn Ngọc Thiện
 # YouTube: https://www.youtube.com/@kalvinthiensocial
 # Zalo: 08.8888.4749
 # Cập nhật: 28/06/2025
-# Version: 3.0 - Multi-Domain + PostgreSQL + Management Dashboard
+# Features: Multi-Domain + PostgreSQL + Telegram Bot + Google Drive + Web Dashboard
 # =============================================================================
 
 set -e
@@ -31,12 +31,12 @@ TELEGRAM_BOT_TOKEN=""
 TELEGRAM_CHAT_ID=""
 ENABLE_NEWS_API=false
 ENABLE_TELEGRAM=false
-ENABLE_AUTO_UPDATE=false
 ENABLE_MULTI_DOMAIN=false
 ENABLE_POSTGRESQL=false
+ENABLE_GOOGLE_DRIVE=false
+ENABLE_TELEGRAM_BOT=false
 CLEAN_INSTALL=false
 SKIP_DOCKER=false
-POSTGRES_PASSWORD=""
 
 # =============================================================================
 # UTILITY FUNCTIONS
@@ -45,21 +45,20 @@ POSTGRES_PASSWORD=""
 show_banner() {
     clear
     echo -e "${CYAN}╔══════════════════════════════════════════════════════════════════════════════╗${NC}"
-    echo -e "${CYAN}║${WHITE}                🚀 SCRIPT CÀI ĐẶT N8N TỰ ĐỘNG 2025 - V3.0 🚀                ${CYAN}║${NC}"
+    echo -e "${CYAN}║${WHITE}              🚀 N8N MULTI-DOMAIN INSTALLER 2025 - VERSION 3.0 🚀             ${CYAN}║${NC}"
     echo -e "${CYAN}╠══════════════════════════════════════════════════════════════════════════════╣${NC}"
-    echo -e "${CYAN}║${WHITE} ✨ Multi-Domain + PostgreSQL + Management Dashboard                       ${CYAN}║${NC}"
+    echo -e "${CYAN}║${WHITE} ✨ Multi-Domain N8N + PostgreSQL + Telegram Bot + Google Drive            ${CYAN}║${NC}"
     echo -e "${CYAN}║${WHITE} 🔒 SSL Certificate tự động với Caddy                                      ${CYAN}║${NC}"
     echo -e "${CYAN}║${WHITE} 📰 News Content API với FastAPI + Newspaper4k                            ${CYAN}║${NC}"
-    echo -e "${CYAN}║${WHITE} 📱 Telegram Backup tự động với ZIP compression                           ${CYAN}║${NC}"
-    echo -e "${CYAN}║${WHITE} 🔄 Auto-Update với tùy chọn                                              ${CYAN}║${NC}"
-    echo -e "${CYAN}║${WHITE} 📊 Management Dashboard cho tất cả instances                             ${CYAN}║${NC}"
-    echo -e "${CYAN}║${WHITE} 🔧 Migration tools cho chuyển đổi server                                 ${CYAN}║${NC}"
+    echo -e "${CYAN}║${WHITE} 📱 Telegram Bot Management + Backup                                      ${CYAN}║${NC}"
+    echo -e "${CYAN}║${WHITE} ☁️ Google Drive Auto Backup                                              ${CYAN}║${NC}"
+    echo -e "${CYAN}║${WHITE} 📊 Web Dashboard Management                                               ${CYAN}║${NC}"
     echo -e "${CYAN}╠══════════════════════════════════════════════════════════════════════════════╣${NC}"
     echo -e "${CYAN}║${YELLOW} 👨‍💻 Tác giả: Nguyễn Ngọc Thiện                                           ${CYAN}║${NC}"
     echo -e "${CYAN}║${YELLOW} 📺 YouTube: https://www.youtube.com/@kalvinthiensocial                  ${CYAN}║${NC}"
     echo -e "${CYAN}║${YELLOW} 📱 Zalo: 08.8888.4749                                                   ${CYAN}║${NC}"
     echo -e "${CYAN}║${YELLOW} 🎬 Đăng ký kênh để ủng hộ mình nhé! 🔔                                  ${CYAN}║${NC}"
-    echo -e "${CYAN}║${YELLOW} 📅 Cập nhật: 28/06/2025 - Version 3.0                                  ${CYAN}║${NC}"
+    echo -e "${CYAN}║${YELLOW} 📅 Cập nhật: 28/06/2025                                                 ${CYAN}║${NC}"
     echo -e "${CYAN}╚══════════════════════════════════════════════════════════════════════════════╝${NC}"
     echo ""
 }
@@ -92,18 +91,20 @@ show_help() {
     echo "Sử dụng: $0 [OPTIONS]"
     echo ""
     echo "OPTIONS:"
-    echo "  -h, --help          Hiển thị trợ giúp này"
-    echo "  -d, --dir DIR       Thư mục cài đặt (mặc định: /home/n8n)"
-    echo "  -c, --clean         Xóa cài đặt cũ trước khi cài mới"
-    echo "  -s, --skip-docker   Bỏ qua cài đặt Docker (nếu đã có)"
-    echo "  -m, --multi-domain  Bật chế độ multi-domain"
-    echo "  -p, --postgresql    Sử dụng PostgreSQL thay vì SQLite"
+    echo "  -h, --help              Hiển thị trợ giúp này"
+    echo "  -d, --dir DIR           Thư mục cài đặt (mặc định: /home/n8n)"
+    echo "  -c, --clean             Xóa cài đặt cũ trước khi cài mới"
+    echo "  -s, --skip-docker       Bỏ qua cài đặt Docker (nếu đã có)"
+    echo "  -m, --multi-domain      Bật chế độ multi-domain"
+    echo "  -p, --postgresql        Sử dụng PostgreSQL thay vì SQLite"
+    echo "  -g, --google-drive      Bật Google Drive backup"
+    echo "  -t, --telegram-bot      Bật Telegram Bot management"
     echo ""
     echo "Ví dụ:"
-    echo "  $0                          # Cài đặt bình thường"
-    echo "  $0 --clean                 # Xóa cài đặt cũ và cài mới"
-    echo "  $0 -m -p                   # Multi-domain với PostgreSQL"
-    echo "  $0 --multi-domain --postgresql --clean  # Full install"
+    echo "  $0                      # Cài đặt single domain cơ bản"
+    echo "  $0 -m -p               # Multi-domain với PostgreSQL"
+    echo "  $0 -m -p -g -t         # Full features"
+    echo "  $0 --clean -m -p       # Clean install multi-domain"
     echo ""
 }
 
@@ -132,6 +133,14 @@ parse_arguments() {
                 ;;
             -p|--postgresql)
                 ENABLE_POSTGRESQL=true
+                shift
+                ;;
+            -g|--google-drive)
+                ENABLE_GOOGLE_DRIVE=true
+                shift
+                ;;
+            -t|--telegram-bot)
+                ENABLE_TELEGRAM_BOT=true
                 shift
                 ;;
             *)
@@ -229,7 +238,7 @@ setup_swap() {
     fi
     
     # Create swap file
-    log "Tạo swap file ${swap_size} cho multi-domain..."
+    log "Tạo swap file ${swap_size}..."
     fallocate -l $swap_size /swapfile || dd if=/dev/zero of=/swapfile bs=1024 count=$((${swap_size%G} * 1024 * 1024))
     chmod 600 /swapfile
     mkswap /swapfile
@@ -247,33 +256,86 @@ setup_swap() {
 # USER INPUT FUNCTIONS
 # =============================================================================
 
+get_installation_mode() {
+    echo -e "${CYAN}╔══════════════════════════════════════════════════════════════════════════════╗${NC}"
+    echo -e "${CYAN}║${WHITE}                           🎯 CHỌN CHỂ ĐỘ CÀI ĐẶT                            ${CYAN}║${NC}"
+    echo -e "${CYAN}╚══════════════════════════════════════════════════════════════════════════════╝${NC}"
+    echo ""
+    echo -e "${WHITE}Chọn chế độ cài đặt:${NC}"
+    echo -e "  ${GREEN}1.${NC} Single Domain (Cơ bản) - 1 N8N instance"
+    echo -e "  ${GREEN}2.${NC} Multi-Domain (Nâng cao) - Nhiều N8N instances"
+    echo -e "  ${GREEN}3.${NC} Multi-Domain + PostgreSQL (Khuyến nghị)"
+    echo -e "  ${GREEN}4.${NC} Full Features (Multi-Domain + PostgreSQL + Google Drive + Telegram Bot)"
+    echo ""
+    
+    while true; do
+        read -p "🎯 Chọn chế độ (1-4): " mode
+        case $mode in
+            1)
+                ENABLE_MULTI_DOMAIN=false
+                ENABLE_POSTGRESQL=false
+                ENABLE_GOOGLE_DRIVE=false
+                ENABLE_TELEGRAM_BOT=false
+                break
+                ;;
+            2)
+                ENABLE_MULTI_DOMAIN=true
+                ENABLE_POSTGRESQL=false
+                ENABLE_GOOGLE_DRIVE=false
+                ENABLE_TELEGRAM_BOT=false
+                break
+                ;;
+            3)
+                ENABLE_MULTI_DOMAIN=true
+                ENABLE_POSTGRESQL=true
+                ENABLE_GOOGLE_DRIVE=false
+                ENABLE_TELEGRAM_BOT=false
+                break
+                ;;
+            4)
+                ENABLE_MULTI_DOMAIN=true
+                ENABLE_POSTGRESQL=true
+                ENABLE_GOOGLE_DRIVE=true
+                ENABLE_TELEGRAM_BOT=true
+                break
+                ;;
+            *)
+                error "Lựa chọn không hợp lệ. Vui lòng chọn 1-4."
+                ;;
+        esac
+    done
+    
+    info "Chế độ đã chọn: $([[ "$ENABLE_MULTI_DOMAIN" == "true" ]] && echo "Multi-Domain" || echo "Single Domain")"
+    [[ "$ENABLE_POSTGRESQL" == "true" ]] && info "Database: PostgreSQL"
+    [[ "$ENABLE_GOOGLE_DRIVE" == "true" ]] && info "Google Drive Backup: Enabled"
+    [[ "$ENABLE_TELEGRAM_BOT" == "true" ]] && info "Telegram Bot: Enabled"
+}
+
 get_domain_input() {
+    echo ""
     echo -e "${CYAN}╔══════════════════════════════════════════════════════════════════════════════╗${NC}"
     echo -e "${CYAN}║${WHITE}                           🌐 CẤU HÌNH DOMAIN                                ${CYAN}║${NC}"
     echo -e "${CYAN}╚══════════════════════════════════════════════════════════════════════════════╝${NC}"
     echo ""
     
     if [[ "$ENABLE_MULTI_DOMAIN" == "true" ]]; then
-        echo -e "${WHITE}🌐 MULTI-DOMAIN MODE${NC}"
-        echo -e "  • Bạn có thể thêm nhiều domains cho N8N"
+        echo -e "${WHITE}Multi-Domain Mode:${NC}"
+        echo -e "  • Nhập nhiều domains (không giới hạn số lượng)"
         echo -e "  • Mỗi domain sẽ có N8N instance riêng"
-        echo -e "  • Tất cả sẽ chia sẻ News API và PostgreSQL"
+        echo -e "  • Chia sẻ News API và PostgreSQL"
         echo ""
         
         while true; do
-            read -p "🌐 Nhập domain thứ $((${#DOMAINS[@]} + 1)) (Enter để kết thúc): " domain
-            if [[ -z "$domain" ]]; then
-                if [[ ${#DOMAINS[@]} -eq 0 ]]; then
-                    error "Cần ít nhất 1 domain!"
-                    continue
-                else
+            read -p "🌐 Nhập domain (ví dụ: n8n1.example.com): " domain
+            if [[ -n "$domain" && "$domain" =~ ^[a-zA-Z0-9][a-zA-Z0-9.-]*[a-zA-Z0-9]$ ]]; then
+                DOMAINS+=("$domain")
+                info "Đã thêm domain: $domain"
+                
+                read -p "➕ Thêm domain khác? (y/N): " -n 1 -r
+                echo
+                if [[ ! $REPLY =~ ^[Yy]$ ]]; then
                     break
                 fi
-            fi
-            
-            if [[ "$domain" =~ ^[a-zA-Z0-9][a-zA-Z0-9.-]*[a-zA-Z0-9]$ ]]; then
-                DOMAINS+=("$domain")
-                success "Đã thêm domain: $domain"
             else
                 error "Domain không hợp lệ. Vui lòng nhập lại."
             fi
@@ -282,14 +344,8 @@ get_domain_input() {
         # Set API domain to first domain
         API_DOMAIN="api.${DOMAINS[0]}"
         
-        echo ""
-        echo -e "${GREEN}📋 DANH SÁCH DOMAINS:${NC}"
-        for i in "${!DOMAINS[@]}"; do
-            echo -e "  $((i+1)). N8N Instance: ${DOMAINS[i]}"
-        done
-        echo -e "  📰 News API: ${API_DOMAIN}"
-        
     else
+        echo -e "${WHITE}Single Domain Mode:${NC}"
         while true; do
             read -p "🌐 Nhập domain chính cho N8N (ví dụ: n8n.example.com): " domain
             if [[ -n "$domain" && "$domain" =~ ^[a-zA-Z0-9][a-zA-Z0-9.-]*[a-zA-Z0-9]$ ]]; then
@@ -300,10 +356,14 @@ get_domain_input() {
                 error "Domain không hợp lệ. Vui lòng nhập lại."
             fi
         done
-        
-        info "Domain N8N: ${DOMAINS[0]}"
-        info "Domain API: ${API_DOMAIN}"
     fi
+    
+    echo ""
+    info "📋 Tổng kết domains:"
+    for i in "${!DOMAINS[@]}"; do
+        info "  Instance $((i+1)): ${DOMAINS[$i]}"
+    done
+    info "  API Domain: ${API_DOMAIN}"
 }
 
 get_cleanup_option() {
@@ -325,29 +385,6 @@ get_cleanup_option() {
             CLEAN_INSTALL=true
         fi
     fi
-}
-
-get_postgresql_config() {
-    if [[ "$ENABLE_POSTGRESQL" != "true" ]]; then
-        return 0
-    fi
-    
-    echo ""
-    echo -e "${CYAN}╔══════════════════════════════════════════════════════════════════════════════╗${NC}"
-    echo -e "${CYAN}║${WHITE}                        🐘 POSTGRESQL DATABASE                              ${CYAN}║${NC}"
-    echo -e "${CYAN}╚══════════════════════════════════════════════════════════════════════════════╝${NC}"
-    echo ""
-    echo -e "${WHITE}PostgreSQL sẽ thay thế SQLite với:${NC}"
-    echo -e "  🚀 Hiệu suất cao hơn cho multi-domain"
-    echo -e "  🔄 Concurrent connections tốt hơn"
-    echo -e "  💾 Backup và restore dễ dàng"
-    echo -e "  🔒 Database riêng cho mỗi N8N instance"
-    echo -e "  💰 Hoàn toàn miễn phí (PostgreSQL 15)"
-    echo ""
-    
-    # Generate random password
-    POSTGRES_PASSWORD=$(openssl rand -base64 32 | tr -d "=+/" | cut -c1-25)
-    success "Đã tạo PostgreSQL password tự động"
 }
 
 get_news_api_config() {
@@ -402,9 +439,9 @@ get_telegram_config() {
     echo ""
     echo -e "${WHITE}Telegram Backup cho phép:${NC}"
     echo -e "  🔄 Tự động backup workflows & credentials mỗi ngày"
-    echo -e "  📱 Gửi file backup ZIP qua Telegram Bot"
-    echo -e "  📊 Báo cáo chi tiết từng N8N instance"
-    echo -e "  🗂️ Giữ backup local nếu gửi Telegram thất bại"
+    echo -e "  📱 Gửi file backup qua Telegram Bot (nếu <50MB)"
+    echo -e "  📊 Thông báo realtime về trạng thái backup"
+    echo -e "  🗂️ Giữ 30 bản backup gần nhất tự động"
     if [[ "$ENABLE_MULTI_DOMAIN" == "true" ]]; then
         echo -e "  🌐 Backup tất cả N8N instances cùng lúc"
     fi
@@ -454,30 +491,104 @@ get_telegram_config() {
     success "Đã thiết lập Telegram Backup"
 }
 
-get_auto_update_config() {
+get_google_drive_config() {
+    if [[ "$ENABLE_GOOGLE_DRIVE" != "true" ]]; then
+        return 0
+    fi
+    
     echo ""
     echo -e "${CYAN}╔══════════════════════════════════════════════════════════════════════════════╗${NC}"
-    echo -e "${CYAN}║${WHITE}                        🔄 AUTO-UPDATE                                      ${CYAN}║${NC}"
+    echo -e "${CYAN}║${WHITE}                        ☁️  GOOGLE DRIVE BACKUP                             ${CYAN}║${NC}"
     echo -e "${CYAN}╚══════════════════════════════════════════════════════════════════════════════╝${NC}"
     echo ""
-    echo -e "${WHITE}Auto-Update sẽ:${NC}"
-    echo -e "  🔄 Tự động cập nhật N8N mỗi 12 giờ"
-    echo -e "  📦 Cập nhật yt-dlp, FFmpeg và các dependencies"
-    echo -e "  📋 Ghi log chi tiết quá trình update"
-    echo -e "  🔒 Backup trước khi update"
+    echo -e "${WHITE}Google Drive Backup cho phép:${NC}"
+    echo -e "  ☁️ Tự động upload backup lên Google Drive"
+    echo -e "  📁 Tổ chức theo năm/tháng/domain"
+    echo -e "  🔄 Easy restore từ bất kỳ đâu"
+    echo -e "  🔐 OAuth2 authentication bảo mật"
     if [[ "$ENABLE_MULTI_DOMAIN" == "true" ]]; then
-        echo -e "  🌐 Update tất cả N8N instances cùng lúc"
+        echo -e "  🌐 Backup riêng cho từng domain"
     fi
     echo ""
     
-    read -p "🔄 Bạn có muốn bật Auto-Update? (Y/n): " -n 1 -r
+    echo -e "${YELLOW}📋 Hướng dẫn thiết lập Google Drive API:${NC}"
+    echo -e "  1. Truy cập: https://console.cloud.google.com/"
+    echo -e "  2. Tạo project mới: 'N8N-Backup-System'"
+    echo -e "  3. Enable Google Drive API"
+    echo -e "  4. Tạo Service Account credentials"
+    echo -e "  5. Download JSON credentials file"
+    echo -e "  6. Share Google Drive folder với service account"
+    echo ""
+    
+    read -p "☁️ Bạn đã thiết lập Google Drive API? (y/N): " -n 1 -r
     echo
-    if [[ $REPLY =~ ^[Nn]$ ]]; then
-        ENABLE_AUTO_UPDATE=false
-    else
-        ENABLE_AUTO_UPDATE=true
-        success "Đã bật Auto-Update"
+    if [[ ! $REPLY =~ ^[Yy]$ ]]; then
+        warning "Bỏ qua Google Drive backup. Có thể thiết lập sau."
+        ENABLE_GOOGLE_DRIVE=false
+        return 0
     fi
+    
+    echo ""
+    echo -e "${YELLOW}📁 Upload credentials file:${NC}"
+    echo -e "  • Sử dụng SCP/SFTP để upload file JSON"
+    echo -e "  • Đặt tại: /home/n8n/google_drive/credentials.json"
+    echo -e "  • Script sẽ tự động detect và sử dụng"
+    echo ""
+    
+    success "Google Drive backup sẽ được thiết lập"
+}
+
+get_telegram_bot_config() {
+    if [[ "$ENABLE_TELEGRAM_BOT" != "true" ]]; then
+        return 0
+    fi
+    
+    echo ""
+    echo -e "${CYAN}╔══════════════════════════════════════════════════════════════════════════════╗${NC}"
+    echo -e "${CYAN}║${WHITE}                        🤖 TELEGRAM BOT MANAGEMENT                          ${CYAN}║${NC}"
+    echo -e "${CYAN}╚══════════════════════════════════════════════════════════════════════════════╝${NC}"
+    echo ""
+    echo -e "${WHITE}Telegram Bot Management cho phép:${NC}"
+    echo -e "  🎛️ Quản lý từ xa hoàn toàn qua Telegram"
+    echo -e "  📊 Real-time monitoring và alerts"
+    echo -e "  🔄 Quick actions: restart, backup, logs"
+    echo -e "  📈 Performance metrics realtime"
+    echo -e "  🔒 Security: Chỉ Chat ID được ủy quyền"
+    if [[ "$ENABLE_MULTI_DOMAIN" == "true" ]]; then
+        echo -e "  🌐 Quản lý tất cả N8N instances"
+    fi
+    echo ""
+    
+    # Reuse Telegram config if already set
+    if [[ -n "$TELEGRAM_BOT_TOKEN" && -n "$TELEGRAM_CHAT_ID" ]]; then
+        info "Sử dụng Telegram config đã thiết lập cho Bot Management"
+        return 0
+    fi
+    
+    echo -e "${YELLOW}🤖 Thiết lập Telegram Bot cho Management:${NC}"
+    echo -e "  • Có thể sử dụng bot khác với backup bot"
+    echo -e "  • Hoặc sử dụng chung một bot"
+    echo ""
+    
+    while true; do
+        read -p "🤖 Nhập Telegram Bot Token cho Management: " TELEGRAM_BOT_TOKEN
+        if [[ -n "$TELEGRAM_BOT_TOKEN" && "$TELEGRAM_BOT_TOKEN" =~ ^[0-9]+:[a-zA-Z0-9_-]+$ ]]; then
+            break
+        else
+            error "Bot Token không hợp lệ. Format: 123456789:ABCdefGHIjklMNOpqrsTUVwxyz"
+        fi
+    done
+    
+    while true; do
+        read -p "🆔 Nhập Telegram Chat ID cho Management: " TELEGRAM_CHAT_ID
+        if [[ -n "$TELEGRAM_CHAT_ID" && "$TELEGRAM_CHAT_ID" =~ ^-?[0-9]+$ ]]; then
+            break
+        else
+            error "Chat ID không hợp lệ. Phải là số (có thể có dấu trừ ở đầu)"
+        fi
+    done
+    
+    success "Đã thiết lập Telegram Bot Management"
 }
 
 # =============================================================================
@@ -499,16 +610,18 @@ verify_dns() {
         info "IP của ${domain}: ${domain_ip:-"không tìm thấy"}"
         
         if [[ "$domain_ip" != "$server_ip" ]]; then
+            warning "DNS chưa trỏ đúng cho domain: $domain"
             dns_issues=true
         fi
     done
     
-    # Check API domain if enabled
+    # Check API domain
     if [[ "$ENABLE_NEWS_API" == "true" ]]; then
         local api_domain_ip=$(dig +short "$API_DOMAIN" A | tail -n1)
         info "IP của ${API_DOMAIN}: ${api_domain_ip:-"không tìm thấy"}"
         
         if [[ "$api_domain_ip" != "$server_ip" ]]; then
+            warning "DNS chưa trỏ đúng cho API domain: $API_DOMAIN"
             dns_issues=true
         fi
     fi
@@ -558,14 +671,24 @@ cleanup_old_installation() {
     fi
     
     # Remove Docker images
-    docker rmi $(docker images --filter "reference=n8n-custom-*" -q) 2>/dev/null || true
-    docker rmi news-api:latest postgres:15-alpine 2>/dev/null || true
+    docker rmi n8n-custom-ffmpeg:latest news-api:latest 2>/dev/null || true
     
     # Remove installation directory
     rm -rf "$INSTALL_DIR"
     
     # Remove cron jobs
     crontab -l 2>/dev/null | grep -v "/home/n8n" | crontab - 2>/dev/null || true
+    
+    # Remove systemd services
+    systemctl stop n8n-telegram-bot 2>/dev/null || true
+    systemctl disable n8n-telegram-bot 2>/dev/null || true
+    rm -f /etc/systemd/system/n8n-telegram-bot.service
+    
+    systemctl stop n8n-dashboard 2>/dev/null || true
+    systemctl disable n8n-dashboard 2>/dev/null || true
+    rm -f /etc/systemd/system/n8n-dashboard.service
+    
+    systemctl daemon-reload
     
     success "Đã xóa cài đặt cũ"
 }
@@ -605,7 +728,7 @@ install_docker() {
     
     # Update system
     apt update
-    apt install -y apt-transport-https ca-certificates curl gnupg lsb-release
+    apt install -y apt-transport-https ca-certificates curl gnupg lsb-release python3 python3-pip
     
     # Add Docker GPG key
     curl -fsSL https://download.docker.com/linux/ubuntu/gpg | gpg --dearmor -o /usr/share/keyrings/docker-archive-keyring.gpg
@@ -643,7 +766,6 @@ create_project_structure() {
     mkdir -p files/temp
     mkdir -p files/youtube_content_anylystic
     mkdir -p logs
-    mkdir -p management
     
     # Create instance directories for multi-domain
     if [[ "$ENABLE_MULTI_DOMAIN" == "true" ]]; then
@@ -657,9 +779,29 @@ create_project_structure() {
         mkdir -p postgres_data
     fi
     
+    # Create News API directory
     if [[ "$ENABLE_NEWS_API" == "true" ]]; then
         mkdir -p news_api
     fi
+    
+    # Create Google Drive directory
+    if [[ "$ENABLE_GOOGLE_DRIVE" == "true" ]]; then
+        mkdir -p google_drive
+    fi
+    
+    # Create Telegram Bot directory
+    if [[ "$ENABLE_TELEGRAM_BOT" == "true" ]]; then
+        mkdir -p telegram_bot
+    fi
+    
+    # Create Dashboard directory
+    mkdir -p dashboard
+    
+    # Create Security directory
+    mkdir -p security
+    
+    # Create Management directory
+    mkdir -p management
     
     success "Đã tạo cấu trúc thư mục"
 }
@@ -714,6 +856,52 @@ WORKDIR /data
 EOF
     
     success "Đã tạo Dockerfile cho N8N"
+}
+
+create_postgresql_init() {
+    if [[ "$ENABLE_POSTGRESQL" != "true" ]]; then
+        return 0
+    fi
+    
+    log "🐘 Tạo PostgreSQL init script..."
+    
+    cat > "$INSTALL_DIR/init-multi-db.sh" << 'EOF'
+#!/bin/bash
+set -e
+
+# Create databases for each N8N instance
+psql -v ON_ERROR_STOP=1 --username "$POSTGRES_USER" --dbname "$POSTGRES_DB" <<-EOSQL
+    -- Create main database if not exists
+    SELECT 'CREATE DATABASE n8n_db' WHERE NOT EXISTS (SELECT FROM pg_database WHERE datname = 'n8n_db')\gexec
+    
+    -- Create user if not exists
+    DO \$\$
+    BEGIN
+        IF NOT EXISTS (SELECT FROM pg_catalog.pg_user WHERE usename = 'n8n_user') THEN
+            CREATE USER n8n_user WITH PASSWORD 'n8n_password_2025';
+        END IF;
+    END
+    \$\$;
+    
+    -- Grant privileges
+    GRANT ALL PRIVILEGES ON DATABASE n8n_db TO n8n_user;
+    ALTER USER n8n_user CREATEDB;
+EOSQL
+
+# Create instance-specific databases
+for i in {1..10}; do
+    DB_NAME="n8n_db_instance_$i"
+    psql -v ON_ERROR_STOP=1 --username "$POSTGRES_USER" --dbname "postgres" <<-EOSQL
+        SELECT 'CREATE DATABASE $DB_NAME OWNER n8n_user' WHERE NOT EXISTS (SELECT FROM pg_database WHERE datname = '$DB_NAME')\gexec
+EOSQL
+done
+
+echo "PostgreSQL databases initialized successfully"
+EOF
+    
+    chmod +x "$INSTALL_DIR/init-multi-db.sh"
+    
+    success "Đã tạo PostgreSQL init script"
 }
 
 create_news_api() {
@@ -772,8 +960,8 @@ logger = logging.getLogger(__name__)
 
 # FastAPI app
 app = FastAPI(
-    title="News Content API",
-    description="Advanced News Content Extraction API with Newspaper4k - Multi-Domain Support",
+    title="News Content API - Multi-Domain",
+    description="Advanced News Content Extraction API with Multi-Domain Support",
     version="3.0.0",
     docs_url="/docs",
     redoc_url="/redoc"
@@ -937,35 +1125,42 @@ async def root():
         <meta charset="utf-8">
         <meta name="viewport" content="width=device-width, initial-scale=1">
         <style>
-            body {{ font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; margin: 0; padding: 20px; background: #f5f5f5; }}
-            .container {{ max-width: 800px; margin: 0 auto; background: white; padding: 30px; border-radius: 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }}
-            h1 {{ color: #2c3e50; border-bottom: 3px solid #3498db; padding-bottom: 10px; }}
-            h2 {{ color: #34495e; margin-top: 30px; }}
-            .endpoint {{ background: #ecf0f1; padding: 15px; border-radius: 5px; margin: 10px 0; }}
-            .method {{ background: #3498db; color: white; padding: 3px 8px; border-radius: 3px; font-size: 12px; }}
-            .auth-info {{ background: #e74c3c; color: white; padding: 15px; border-radius: 5px; margin: 20px 0; }}
-            .token-change {{ background: #f39c12; color: white; padding: 15px; border-radius: 5px; margin: 20px 0; }}
-            code {{ background: #2c3e50; color: #ecf0f1; padding: 2px 5px; border-radius: 3px; }}
-            pre {{ background: #2c3e50; color: #ecf0f1; padding: 15px; border-radius: 5px; overflow-x: auto; }}
-            .feature {{ background: #27ae60; color: white; padding: 10px; border-radius: 5px; margin: 5px 0; }}
-            .multi-domain {{ background: #9b59b6; color: white; padding: 15px; border-radius: 5px; margin: 20px 0; }}
+            body {{ font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; margin: 0; padding: 20px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); min-height: 100vh; }}
+            .container {{ max-width: 900px; margin: 0 auto; background: white; padding: 40px; border-radius: 15px; box-shadow: 0 10px 30px rgba(0,0,0,0.2); }}
+            h1 {{ color: #2c3e50; border-bottom: 3px solid #3498db; padding-bottom: 15px; margin-bottom: 30px; }}
+            h2 {{ color: #34495e; margin-top: 40px; }}
+            .endpoint {{ background: #f8f9fa; padding: 20px; border-radius: 8px; margin: 15px 0; border-left: 4px solid #3498db; }}
+            .method {{ background: #3498db; color: white; padding: 4px 12px; border-radius: 4px; font-size: 12px; font-weight: bold; }}
+            .auth-info {{ background: linear-gradient(135deg, #e74c3c, #c0392b); color: white; padding: 20px; border-radius: 8px; margin: 25px 0; }}
+            .token-change {{ background: linear-gradient(135deg, #f39c12, #e67e22); color: white; padding: 20px; border-radius: 8px; margin: 25px 0; }}
+            code {{ background: #2c3e50; color: #ecf0f1; padding: 3px 8px; border-radius: 4px; font-family: 'Courier New', monospace; }}
+            pre {{ background: #2c3e50; color: #ecf0f1; padding: 20px; border-radius: 8px; overflow-x: auto; font-family: 'Courier New', monospace; }}
+            .feature {{ background: linear-gradient(135deg, #27ae60, #2ecc71); color: white; padding: 15px; border-radius: 8px; margin: 8px 0; }}
+            .multi-domain {{ background: linear-gradient(135deg, #9b59b6, #8e44ad); color: white; padding: 20px; border-radius: 8px; margin: 25px 0; }}
+            .stats {{ display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px; margin: 20px 0; }}
+            .stat-card {{ background: linear-gradient(135deg, #34495e, #2c3e50); color: white; padding: 20px; border-radius: 8px; text-align: center; }}
         </style>
     </head>
     <body>
         <div class="container">
             <h1>🚀 News Content API v3.0 - Multi-Domain</h1>
-            <p>Advanced News Content Extraction API với <strong>Newspaper4k</strong> và <strong>Multi-Domain Support</strong></p>
+            <p>Advanced News Content Extraction API với <strong>Multi-Domain Support</strong>, <strong>Newspaper4k</strong> và <strong>Random User Agents</strong></p>
             
             <div class="multi-domain">
-                <h3>🌐 Multi-Domain Support</h3>
-                <p>API này được chia sẻ cho tất cả N8N instances trong hệ thống multi-domain.</p>
-                <p><strong>Tối ưu hóa:</strong> Một API phục vụ nhiều N8N instances, tiết kiệm tài nguyên server.</p>
+                <h3>🌐 Multi-Domain Features</h3>
+                <p>API này được chia sẻ cho tất cả N8N instances trong hệ thống multi-domain:</p>
+                <ul>
+                    <li>✅ Shared API endpoint cho tất cả domains</li>
+                    <li>✅ Optimized performance với connection pooling</li>
+                    <li>✅ Centralized authentication và rate limiting</li>
+                    <li>✅ Cross-domain CORS support</li>
+                </ul>
             </div>
             
             <div class="auth-info">
                 <h3>🔐 Authentication Required</h3>
                 <p>Tất cả API calls yêu cầu Bearer Token trong header:</p>
-                <code>Authorization: Bearer YOUR_TOKEN</code>
+                <code>Authorization: Bearer YOUR_TOKEN_HERE</code>
                 <p><strong>Lưu ý:</strong> Token đã được đặt trong quá trình cài đặt và không hiển thị ở đây vì lý do bảo mật.</p>
             </div>
 
@@ -975,20 +1170,39 @@ async def root():
                 <pre>cd /home/n8n && sed -i 's/NEWS_API_TOKEN=.*/NEWS_API_TOKEN="NEW_TOKEN"/' docker-compose.yml && docker-compose restart fastapi</pre>
             </div>
             
+            <div class="stats">
+                <div class="stat-card">
+                    <h4>📊 API Version</h4>
+                    <p>3.0.0</p>
+                </div>
+                <div class="stat-card">
+                    <h4>🌍 Languages</h4>
+                    <p>80+ Supported</p>
+                </div>
+                <div class="stat-card">
+                    <h4>🎭 User Agents</h4>
+                    <p>8 Random</p>
+                </div>
+                <div class="stat-card">
+                    <h4>⚡ Performance</h4>
+                    <p>Optimized</p>
+                </div>
+            </div>
+            
             <h2>✨ Tính Năng</h2>
             <div class="feature">📰 Cào nội dung bài viết từ bất kỳ website nào</div>
             <div class="feature">📡 Parse RSS feeds để lấy tin tức mới nhất</div>
             <div class="feature">🔍 Tìm kiếm và phân tích nội dung tự động</div>
             <div class="feature">🌍 Hỗ trợ 80+ ngôn ngữ (Việt, Anh, Trung, Nhật...)</div>
             <div class="feature">🎭 Random User Agents để tránh bị block</div>
-            <div class="feature">🌐 Multi-Domain: Chia sẻ cho tất cả N8N instances</div>
-            <div class="feature">🤖 Tích hợp trực tiếp vào N8N workflows</div>
+            <div class="feature">🤖 Tích hợp trực tiếp vào tất cả N8N instances</div>
+            <div class="feature">🌐 Multi-domain support với shared resources</div>
             
             <h2>📖 API Endpoints</h2>
             
             <div class="endpoint">
                 <span class="method">GET</span> <strong>/health</strong>
-                <p>Kiểm tra trạng thái API</p>
+                <p>Kiểm tra trạng thái API và system info</p>
             </div>
             
             <div class="endpoint">
@@ -1011,8 +1225,8 @@ async def root():
             
             <h2>🔗 Documentation</h2>
             <p>
-                <a href="/docs" target="_blank">📚 Swagger UI</a> | 
-                <a href="/redoc" target="_blank">📖 ReDoc</a>
+                <a href="/docs" target="_blank" style="color: #3498db; text-decoration: none; font-weight: bold;">📚 Swagger UI</a> | 
+                <a href="/redoc" target="_blank" style="color: #3498db; text-decoration: none; font-weight: bold;">📖 ReDoc</a>
             </p>
             
             <h2>💻 Ví Dụ cURL</h2>
@@ -1021,12 +1235,12 @@ async def root():
      -H "Authorization: Bearer YOUR_TOKEN" \\
      -d '{{"url": "https://dantri.com.vn/the-gioi.htm", "language": "vi"}}'</pre>
             
-            <hr style="margin: 30px 0;">
-            <p style="text-align: center; color: #7f8c8d;">
+            <hr style="margin: 40px 0; border: none; height: 1px; background: linear-gradient(to right, transparent, #bdc3c7, transparent);">
+            <p style="text-align: center; color: #7f8c8d; font-size: 14px;">
                 🚀 Powered by <strong>Newspaper4k</strong> | 
-                🌐 <strong>Multi-Domain Support</strong> |
                 👨‍💻 Created by <strong>Nguyễn Ngọc Thiện</strong> | 
-                📺 <a href="https://www.youtube.com/@kalvinthiensocial">YouTube Channel</a>
+                📺 <a href="https://www.youtube.com/@kalvinthiensocial" style="color: #e74c3c;">YouTube Channel</a> |
+                🌐 <strong>Multi-Domain Support</strong>
             </p>
         </div>
     </body>
@@ -1036,12 +1250,12 @@ async def root():
 
 @app.get("/health")
 async def health_check():
-    """Health check endpoint"""
+    """Health check endpoint with system info"""
     return {
         "status": "healthy",
         "timestamp": datetime.now(),
         "version": "3.0.0",
-        "multi_domain_support": True,
+        "mode": "multi-domain",
         "features": [
             "Article extraction",
             "Source crawling", 
@@ -1051,7 +1265,8 @@ async def health_check():
             "Image extraction",
             "Keyword extraction",
             "Content summarization",
-            "Multi-domain sharing"
+            "Multi-domain support",
+            "Shared API resources"
         ]
     }
 
@@ -1192,7 +1407,7 @@ EXPOSE 8000
 CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000", "--workers", "1"]
 EOF
     
-    success "Đã tạo News Content API với Multi-Domain support"
+    success "Đã tạo News Content API"
 }
 
 create_docker_compose() {
@@ -1204,56 +1419,13 @@ version: '3.8'
 services:
 EOF
 
-    # Add PostgreSQL if enabled
-    if [[ "$ENABLE_POSTGRESQL" == "true" ]]; then
-        cat >> "$INSTALL_DIR/docker-compose.yml" << EOF
-  postgres:
-    image: postgres:15-alpine
-    container_name: postgres-n8n
-    restart: unless-stopped
-    environment:
-      - POSTGRES_DB=n8n_db
-      - POSTGRES_USER=n8n_user
-      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
-      - POSTGRES_MULTIPLE_DATABASES=n8n_db
-    volumes:
-      - ./postgres_data:/var/lib/postgresql/data
-      - ./init-multi-db.sh:/docker-entrypoint-initdb.d/init-multi-db.sh:ro
-    ports:
-      - "127.0.0.1:5432:5432"
-    networks:
-      - n8n_network
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U n8n_user -d n8n_db"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
-
-EOF
-    fi
-
-    # Add N8N instances
+    # Add N8N services
     if [[ "$ENABLE_MULTI_DOMAIN" == "true" ]]; then
         for i in "${!DOMAINS[@]}"; do
             local instance_num=$((i+1))
-            local port=$((5678+i))
-            local db_config=""
+            local domain="${DOMAINS[$i]}"
+            local port=$((5678 + i))
             
-            if [[ "$ENABLE_POSTGRESQL" == "true" ]]; then
-                db_config="
-      - DB_TYPE=postgresdb
-      - DB_POSTGRESDB_HOST=postgres
-      - DB_POSTGRESDB_PORT=5432
-      - DB_POSTGRESDB_DATABASE=n8n_db_instance_${instance_num}
-      - DB_POSTGRESDB_USER=n8n_user
-      - DB_POSTGRESDB_PASSWORD=${POSTGRES_PASSWORD}
-      - DB_POSTGRESDB_SCHEMA=n8n_instance_${instance_num}"
-            else
-                db_config="
-      - DB_TYPE=sqlite
-      - DB_SQLITE_DATABASE=/home/node/.n8n/database.sqlite"
-            fi
-
             cat >> "$INSTALL_DIR/docker-compose.yml" << EOF
   n8n_${instance_num}:
     build: .
@@ -1266,13 +1438,33 @@ EOF
       - N8N_PORT=5678
       - N8N_PROTOCOL=http
       - NODE_ENV=production
-      - WEBHOOK_URL=https://${DOMAINS[i]}/
+      - WEBHOOK_URL=https://${domain}/
       - GENERIC_TIMEZONE=Asia/Ho_Chi_Minh
       - N8N_METRICS=true
       - N8N_LOG_LEVEL=info
       - N8N_LOG_OUTPUT=console
       - N8N_USER_FOLDER=/home/node
-      - N8N_ENCRYPTION_KEY=\${N8N_ENCRYPTION_KEY_${instance_num}:-$(openssl rand -hex 32)}${db_config}
+      - N8N_ENCRYPTION_KEY=\${N8N_ENCRYPTION_KEY_${instance_num}:-$(openssl rand -hex 32)}
+EOF
+
+            if [[ "$ENABLE_POSTGRESQL" == "true" ]]; then
+                cat >> "$INSTALL_DIR/docker-compose.yml" << EOF
+      - DB_TYPE=postgresdb
+      - DB_POSTGRESDB_HOST=postgres
+      - DB_POSTGRESDB_PORT=5432
+      - DB_POSTGRESDB_DATABASE=n8n_db_instance_${instance_num}
+      - DB_POSTGRESDB_USER=n8n_user
+      - DB_POSTGRESDB_PASSWORD=n8n_password_2025
+      - DB_POSTGRESDB_SCHEMA=n8n_instance_${instance_num}
+EOF
+            else
+                cat >> "$INSTALL_DIR/docker-compose.yml" << EOF
+      - DB_TYPE=sqlite
+      - DB_SQLITE_DATABASE=/home/node/.n8n/database.sqlite
+EOF
+            fi
+
+            cat >> "$INSTALL_DIR/docker-compose.yml" << EOF
       - N8N_BASIC_AUTH_ACTIVE=false
       - N8N_DISABLE_PRODUCTION_MAIN_PROCESS=false
       - EXECUTIONS_TIMEOUT=3600
@@ -1287,32 +1479,18 @@ EOF
     networks:
       - n8n_network
 EOF
+
             if [[ "$ENABLE_POSTGRESQL" == "true" ]]; then
                 cat >> "$INSTALL_DIR/docker-compose.yml" << EOF
     depends_on:
-      postgres:
-        condition: service_healthy
+      - postgres
 EOF
             fi
+
             echo "" >> "$INSTALL_DIR/docker-compose.yml"
         done
     else
         # Single domain setup
-        local db_config=""
-        if [[ "$ENABLE_POSTGRESQL" == "true" ]]; then
-            db_config="
-      - DB_TYPE=postgresdb
-      - DB_POSTGRESDB_HOST=postgres
-      - DB_POSTGRESDB_PORT=5432
-      - DB_POSTGRESDB_DATABASE=n8n_db
-      - DB_POSTGRESDB_USER=n8n_user
-      - DB_POSTGRESDB_PASSWORD=${POSTGRES_PASSWORD}"
-        else
-            db_config="
-      - DB_TYPE=sqlite
-      - DB_SQLITE_DATABASE=/home/node/.n8n/database.sqlite"
-        fi
-
         cat >> "$INSTALL_DIR/docker-compose.yml" << EOF
   n8n:
     build: .
@@ -1331,7 +1509,26 @@ EOF
       - N8N_LOG_LEVEL=info
       - N8N_LOG_OUTPUT=console
       - N8N_USER_FOLDER=/home/node
-      - N8N_ENCRYPTION_KEY=\${N8N_ENCRYPTION_KEY:-$(openssl rand -hex 32)}${db_config}
+      - N8N_ENCRYPTION_KEY=\${N8N_ENCRYPTION_KEY:-$(openssl rand -hex 32)}
+EOF
+
+        if [[ "$ENABLE_POSTGRESQL" == "true" ]]; then
+            cat >> "$INSTALL_DIR/docker-compose.yml" << EOF
+      - DB_TYPE=postgresdb
+      - DB_POSTGRESDB_HOST=postgres
+      - DB_POSTGRESDB_PORT=5432
+      - DB_POSTGRESDB_DATABASE=n8n_db
+      - DB_POSTGRESDB_USER=n8n_user
+      - DB_POSTGRESDB_PASSWORD=n8n_password_2025
+EOF
+        else
+            cat >> "$INSTALL_DIR/docker-compose.yml" << EOF
+      - DB_TYPE=sqlite
+      - DB_SQLITE_DATABASE=/home/node/.n8n/database.sqlite
+EOF
+        fi
+
+        cat >> "$INSTALL_DIR/docker-compose.yml" << EOF
       - N8N_BASIC_AUTH_ACTIVE=false
       - N8N_DISABLE_PRODUCTION_MAIN_PROCESS=false
       - EXECUTIONS_TIMEOUT=3600
@@ -1346,17 +1543,40 @@ EOF
     networks:
       - n8n_network
 EOF
+
         if [[ "$ENABLE_POSTGRESQL" == "true" ]]; then
             cat >> "$INSTALL_DIR/docker-compose.yml" << EOF
     depends_on:
-      postgres:
-        condition: service_healthy
+      - postgres
 EOF
         fi
+
         echo "" >> "$INSTALL_DIR/docker-compose.yml"
     fi
 
-    # Add Caddy
+    # Add PostgreSQL service
+    if [[ "$ENABLE_POSTGRESQL" == "true" ]]; then
+        cat >> "$INSTALL_DIR/docker-compose.yml" << EOF
+  postgres:
+    image: postgres:15-alpine
+    container_name: postgres-n8n
+    restart: unless-stopped
+    environment:
+      - POSTGRES_DB=postgres
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres_password_2025
+    volumes:
+      - ./postgres_data:/var/lib/postgresql/data
+      - ./init-multi-db.sh:/docker-entrypoint-initdb.d/init-multi-db.sh
+    networks:
+      - n8n_network
+    ports:
+      - "127.0.0.1:5432:5432"
+
+EOF
+    fi
+
+    # Add Caddy service
     cat >> "$INSTALL_DIR/docker-compose.yml" << EOF
   caddy:
     image: caddy:latest
@@ -1374,17 +1594,19 @@ EOF
     depends_on:
 EOF
 
-    # Add dependencies for Caddy
     if [[ "$ENABLE_MULTI_DOMAIN" == "true" ]]; then
         for i in "${!DOMAINS[@]}"; do
             local instance_num=$((i+1))
-            echo "      - n8n_${instance_num}" >> "$INSTALL_DIR/docker-compose.yml"
+            cat >> "$INSTALL_DIR/docker-compose.yml" << EOF
+      - n8n_${instance_num}
+EOF
         done
     else
-        echo "      - n8n" >> "$INSTALL_DIR/docker-compose.yml"
+        cat >> "$INSTALL_DIR/docker-compose.yml" << EOF
+      - n8n
+EOF
     fi
 
-    # Add News API if enabled
     if [[ "$ENABLE_NEWS_API" == "true" ]]; then
         cat >> "$INSTALL_DIR/docker-compose.yml" << EOF
       - fastapi
@@ -1403,7 +1625,6 @@ EOF
 EOF
     fi
 
-    # Add volumes and networks
     cat >> "$INSTALL_DIR/docker-compose.yml" << 'EOF'
 
 volumes:
@@ -1415,46 +1636,7 @@ networks:
     driver: bridge
 EOF
     
-    success "Đã tạo docker-compose.yml với Multi-Domain support"
-}
-
-create_postgresql_init_script() {
-    if [[ "$ENABLE_POSTGRESQL" != "true" ]]; then
-        return 0
-    fi
-    
-    log "🐘 Tạo PostgreSQL initialization script..."
-    
-    cat > "$INSTALL_DIR/init-multi-db.sh" << 'EOF'
-#!/bin/bash
-set -e
-
-# Create databases for each N8N instance
-if [ "$ENABLE_MULTI_DOMAIN" = "true" ]; then
-    for i in {1..10}; do
-        DB_NAME="n8n_db_instance_$i"
-        SCHEMA_NAME="n8n_instance_$i"
-        
-        echo "Creating database: $DB_NAME"
-        psql -v ON_ERROR_STOP=1 --username "$POSTGRES_USER" --dbname "$POSTGRES_DB" <<-EOSQL
-            CREATE DATABASE $DB_NAME;
-            GRANT ALL PRIVILEGES ON DATABASE $DB_NAME TO $POSTGRES_USER;
-EOSQL
-        
-        echo "Creating schema: $SCHEMA_NAME in database: $DB_NAME"
-        psql -v ON_ERROR_STOP=1 --username "$POSTGRES_USER" --dbname "$DB_NAME" <<-EOSQL
-            CREATE SCHEMA IF NOT EXISTS $SCHEMA_NAME;
-            GRANT ALL ON SCHEMA $SCHEMA_NAME TO $POSTGRES_USER;
-EOSQL
-    done
-fi
-
-echo "PostgreSQL multi-database initialization completed"
-EOF
-    
-    chmod +x "$INSTALL_DIR/init-multi-db.sh"
-    
-    success "Đã tạo PostgreSQL initialization script"
+    success "Đã tạo docker-compose.yml"
 }
 
 create_caddyfile() {
@@ -1472,10 +1654,11 @@ EOF
     if [[ "$ENABLE_MULTI_DOMAIN" == "true" ]]; then
         for i in "${!DOMAINS[@]}"; do
             local instance_num=$((i+1))
-            local port=$((5678+i))
+            local domain="${DOMAINS[$i]}"
+            local port=$((5678 + i))
             
             cat >> "$INSTALL_DIR/Caddyfile" << EOF
-${DOMAINS[i]} {
+${domain} {
     reverse_proxy n8n_${instance_num}:5678
     
     header {
@@ -1483,12 +1666,13 @@ ${DOMAINS[i]} {
         X-Content-Type-Options "nosniff"
         X-Frame-Options "DENY"
         X-XSS-Protection "1; mode=block"
+        Referrer-Policy "strict-origin-when-cross-origin"
     }
     
     encode gzip
     
     log {
-        output file /var/log/caddy/n8n_instance_${instance_num}.log
+        output file /var/log/caddy/n8n_${instance_num}.log
         format json
     }
 }
@@ -1505,6 +1689,7 @@ ${DOMAINS[0]} {
         X-Content-Type-Options "nosniff"
         X-Frame-Options "DENY"
         X-XSS-Protection "1; mode=block"
+        Referrer-Policy "strict-origin-when-cross-origin"
     }
     
     encode gzip
@@ -1518,7 +1703,7 @@ ${DOMAINS[0]} {
 EOF
     fi
 
-    # Add News API domain if enabled
+    # Add API domain
     if [[ "$ENABLE_NEWS_API" == "true" ]]; then
         cat >> "$INSTALL_DIR/Caddyfile" << EOF
 ${API_DOMAIN} {
@@ -1532,6 +1717,7 @@ ${API_DOMAIN} {
         Access-Control-Allow-Origin "*"
         Access-Control-Allow-Methods "GET, POST, PUT, DELETE, OPTIONS"
         Access-Control-Allow-Headers "Content-Type, Authorization"
+        Referrer-Policy "strict-origin-when-cross-origin"
     }
     
     encode gzip
@@ -1544,728 +1730,22 @@ ${API_DOMAIN} {
 EOF
     fi
     
-    success "Đã tạo Caddyfile với Multi-Domain support"
+    success "Đã tạo Caddyfile"
 }
 
 # =============================================================================
-# MANAGEMENT DASHBOARD
+# BACKUP SYSTEM
 # =============================================================================
 
-create_management_dashboard() {
-    log "📊 Tạo Management Dashboard..."
+create_backup_scripts() {
+    log "💾 Tạo hệ thống backup enhanced..."
     
-    cat > "$INSTALL_DIR/management/dashboard.sh" << 'EOF'
+    # Enhanced backup script
+    cat > "$INSTALL_DIR/backup-workflows-enhanced.sh" << 'EOF'
 #!/bin/bash
 
 # =============================================================================
-# N8N MANAGEMENT DASHBOARD - Multi-Domain Support
-# =============================================================================
-
-# Colors
-RED='\033[0;31m'
-GREEN='\033[0;32m'
-YELLOW='\033[1;33m'
-BLUE='\033[0;34m'
-CYAN='\033[0;36m'
-WHITE='\033[1;37m'
-NC='\033[0m'
-
-# Check Docker Compose command
-if command -v docker-compose &> /dev/null; then
-    DOCKER_COMPOSE="docker-compose"
-elif docker compose version &> /dev/null; then
-    DOCKER_COMPOSE="docker compose"
-else
-    echo -e "${RED}❌ Docker Compose không tìm thấy!${NC}"
-    exit 1
-fi
-
-show_header() {
-    clear
-    echo -e "${CYAN}╔══════════════════════════════════════════════════════════════════════════════╗${NC}"
-    echo -e "${CYAN}║${WHITE}                    📊 N8N MANAGEMENT DASHBOARD                              ${CYAN}║${NC}"
-    echo -e "${CYAN}║${WHITE}                      Multi-Domain Support                                  ${CYAN}║${NC}"
-    echo -e "${CYAN}╚══════════════════════════════════════════════════════════════════════════════╝${NC}"
-    echo ""
-}
-
-show_system_info() {
-    echo -e "${BLUE}🖥️  SYSTEM INFORMATION${NC}"
-    echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-    echo "• OS: $(lsb_release -d | cut -f2)"
-    echo "• Kernel: $(uname -r)"
-    echo "• Uptime: $(uptime -p)"
-    echo "• Load Average: $(uptime | awk -F'load average:' '{print $2}')"
-    echo ""
-    
-    echo -e "${BLUE}💾 MEMORY & DISK${NC}"
-    echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-    free -h | grep -E "(Mem|Swap)" | while read line; do
-        echo "• $line"
-    done
-    echo "• Disk Usage: $(df -h /home/n8n | tail -1 | awk '{print $3"/"$2" ("$5")"}')"
-    echo ""
-}
-
-show_docker_status() {
-    echo -e "${BLUE}🐳 DOCKER CONTAINERS${NC}"
-    echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-    
-    cd /home/n8n
-    
-    # Get container status with custom format
-    docker ps --format "table {{.Names}}\t{{.Status}}\t{{.Ports}}" --filter "name=n8n" --filter "name=caddy" --filter "name=postgres" --filter "name=news-api"
-    echo ""
-    
-    # Show resource usage
-    echo -e "${BLUE}📊 RESOURCE USAGE${NC}"
-    echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-    docker stats --no-stream --format "table {{.Name}}\t{{.CPUPerc}}\t{{.MemUsage}}\t{{.NetIO}}" --filter "name=n8n" --filter "name=caddy" --filter "name=postgres" --filter "name=news-api"
-    echo ""
-}
-
-show_n8n_instances() {
-    echo -e "${BLUE}🚀 N8N INSTANCES${NC}"
-    echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-    
-    # Get N8N containers
-    local n8n_containers=$(docker ps --filter "name=n8n-container" --format "{{.Names}}")
-    
-    if [[ -z "$n8n_containers" ]]; then
-        echo -e "${RED}❌ Không tìm thấy N8N containers${NC}"
-        return
-    fi
-    
-    local instance_count=0
-    for container in $n8n_containers; do
-        instance_count=$((instance_count + 1))
-        
-        # Get container info
-        local status=$(docker inspect $container --format '{{.State.Status}}')
-        local started=$(docker inspect $container --format '{{.State.StartedAt}}' | cut -d'T' -f1)
-        local domain=$(docker inspect $container --format '{{range .Config.Env}}{{if contains "WEBHOOK_URL" .}}{{.}}{{end}}{{end}}' | cut -d'=' -f2 | sed 's|https://||' | sed 's|/||')
-        
-        # Get health status
-        local health="Unknown"
-        if [[ "$status" == "running" ]]; then
-            if curl -s -o /dev/null -w "%{http_code}" "http://localhost:$((5677 + instance_count))" | grep -q "200\|302"; then
-                health="${GREEN}✅ Healthy${NC}"
-            else
-                health="${YELLOW}⚠️  Starting${NC}"
-            fi
-        else
-            health="${RED}❌ Down${NC}"
-        fi
-        
-        echo -e "Instance $instance_count:"
-        echo -e "  • Container: $container"
-        echo -e "  • Domain: ${WHITE}$domain${NC}"
-        echo -e "  • Status: $health"
-        echo -e "  • Started: $started"
-        echo ""
-    done
-    
-    echo -e "${GREEN}📈 Total N8N Instances: $instance_count${NC}"
-    echo ""
-}
-
-show_database_info() {
-    echo -e "${BLUE}🐘 DATABASE INFORMATION${NC}"
-    echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-    
-    if docker ps --filter "name=postgres-n8n" --format "{{.Names}}" | grep -q "postgres-n8n"; then
-        echo -e "${GREEN}✅ PostgreSQL is running${NC}"
-        
-        # Get database info
-        local db_version=$(docker exec postgres-n8n psql -U n8n_user -d n8n_db -t -c "SELECT version();" 2>/dev/null | head -1 | xargs)
-        echo "• Version: ${db_version}"
-        
-        # Get database list
-        echo "• Databases:"
-        docker exec postgres-n8n psql -U n8n_user -l 2>/dev/null | grep "n8n_db" | while read line; do
-            local db_name=$(echo $line | awk '{print $1}')
-            local db_size=$(echo $line | awk '{print $7}')
-            echo "  - $db_name ($db_size)"
-        done
-        
-        # Get connection count
-        local connections=$(docker exec postgres-n8n psql -U n8n_user -d n8n_db -t -c "SELECT count(*) FROM pg_stat_activity;" 2>/dev/null | xargs)
-        echo "• Active connections: $connections"
-        
-    else
-        echo -e "${YELLOW}⚠️  Using SQLite databases${NC}"
-        
-        # Show SQLite files
-        find /home/n8n/files -name "database.sqlite" -exec ls -lh {} \; | while read line; do
-            echo "• $line"
-        done
-    fi
-    echo ""
-}
-
-show_backup_info() {
-    echo -e "${BLUE}💾 BACKUP INFORMATION${NC}"
-    echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-    
-    local backup_dir="/home/n8n/files/backup_full"
-    
-    if [[ -d "$backup_dir" ]]; then
-        local backup_count=$(ls -1 "$backup_dir"/n8n_backup_*.tar.gz 2>/dev/null | wc -l)
-        echo "• Total backups: $backup_count"
-        
-        if [[ $backup_count -gt 0 ]]; then
-            local latest_backup=$(ls -t "$backup_dir"/n8n_backup_*.tar.gz | head -1)
-            local backup_size=$(ls -lh "$latest_backup" | awk '{print $5}')
-            local backup_date=$(stat -c %y "$latest_backup" | cut -d' ' -f1)
-            
-            echo "• Latest backup: $(basename "$latest_backup")"
-            echo "• Size: $backup_size"
-            echo "• Date: $backup_date"
-            
-            # Show disk usage of backup directory
-            local backup_total_size=$(du -sh "$backup_dir" | awk '{print $1}')
-            echo "• Total backup size: $backup_total_size"
-        fi
-    else
-        echo -e "${RED}❌ Backup directory not found${NC}"
-    fi
-    
-    # Check cron jobs
-    echo ""
-    echo "• Scheduled backups:"
-    crontab -l 2>/dev/null | grep -E "(backup|n8n)" | while read line; do
-        echo "  - $line"
-    done
-    echo ""
-}
-
-show_ssl_info() {
-    echo -e "${BLUE}🔒 SSL CERTIFICATES${NC}"
-    echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-    
-    # Get domains from Caddyfile
-    local domains=$(grep -E "^[a-zA-Z0-9.-]+\s*{" /home/n8n/Caddyfile | awk '{print $1}')
-    
-    for domain in $domains; do
-        echo -n "• $domain: "
-        
-        # Test SSL
-        if timeout 5 curl -s -I "https://$domain" >/dev/null 2>&1; then
-            echo -e "${GREEN}✅ SSL Active${NC}"
-            
-            # Get certificate info
-            local cert_info=$(timeout 5 openssl s_client -connect "$domain:443" -servername "$domain" </dev/null 2>/dev/null | openssl x509 -noout -dates 2>/dev/null)
-            if [[ -n "$cert_info" ]]; then
-                local expiry=$(echo "$cert_info" | grep "notAfter" | cut -d'=' -f2)
-                echo "  Expires: $expiry"
-            fi
-        else
-            echo -e "${RED}❌ SSL Error${NC}"
-        fi
-    done
-    echo ""
-}
-
-show_logs_summary() {
-    echo -e "${BLUE}📋 RECENT LOGS SUMMARY${NC}"
-    echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-    
-    cd /home/n8n
-    
-    # Show recent errors from all containers
-    echo "• Recent errors (last 24 hours):"
-    $DOCKER_COMPOSE logs --since 24h 2>/dev/null | grep -i "error\|fail\|exception" | tail -5 | while read line; do
-        echo "  - $line"
-    done
-    
-    echo ""
-    echo "• Container restart count (last 24 hours):"
-    docker ps --filter "name=n8n" --filter "name=caddy" --filter "name=postgres" --filter "name=news-api" --format "{{.Names}}" | while read container; do
-        local restarts=$(docker inspect $container --format '{{.RestartCount}}')
-        echo "  - $container: $restarts restarts"
-    done
-    echo ""
-}
-
-show_quick_actions() {
-    echo -e "${BLUE}⚡ QUICK ACTIONS${NC}"
-    echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-    echo -e "${YELLOW}1.${NC} Restart all services: ${WHITE}cd /home/n8n && docker-compose restart${NC}"
-    echo -e "${YELLOW}2.${NC} View live logs: ${WHITE}cd /home/n8n && docker-compose logs -f${NC}"
-    echo -e "${YELLOW}3.${NC} Manual backup: ${WHITE}/home/n8n/backup-manual.sh${NC}"
-    echo -e "${YELLOW}4.${NC} Update N8N: ${WHITE}/home/n8n/update-n8n.sh${NC}"
-    echo -e "${YELLOW}5.${NC} Troubleshoot: ${WHITE}/home/n8n/troubleshoot.sh${NC}"
-    echo -e "${YELLOW}6.${NC} Management menu: ${WHITE}/home/n8n/management/menu.sh${NC}"
-    echo ""
-}
-
-# Main execution
-cd /home/n8n 2>/dev/null || {
-    echo -e "${RED}❌ N8N installation not found at /home/n8n${NC}"
-    exit 1
-}
-
-show_header
-show_system_info
-show_docker_status
-show_n8n_instances
-show_database_info
-show_backup_info
-show_ssl_info
-show_logs_summary
-show_quick_actions
-
-echo -e "${GREEN}✅ Dashboard updated: $(date)${NC}"
-echo -e "${CYAN}🔄 Auto-refresh every 30 seconds. Press Ctrl+C to exit.${NC}"
-echo ""
-
-# Auto-refresh option
-if [[ "$1" == "--watch" ]]; then
-    while true; do
-        sleep 30
-        exec "$0"
-    done
-fi
-EOF
-
-    chmod +x "$INSTALL_DIR/management/dashboard.sh"
-    
-    success "Đã tạo Management Dashboard"
-}
-
-create_management_menu() {
-    log "📋 Tạo Management Menu..."
-    
-    cat > "$INSTALL_DIR/management/menu.sh" << 'EOF'
-#!/bin/bash
-
-# =============================================================================
-# N8N MANAGEMENT MENU - Multi-Domain Support
-# =============================================================================
-
-# Colors
-RED='\033[0;31m'
-GREEN='\033[0;32m'
-YELLOW='\033[1;33m'
-BLUE='\033[0;34m'
-CYAN='\033[0;36m'
-WHITE='\033[1;37m'
-NC='\033[0m'
-
-# Check Docker Compose command
-if command -v docker-compose &> /dev/null; then
-    DOCKER_COMPOSE="docker-compose"
-elif docker compose version &> /dev/null; then
-    DOCKER_COMPOSE="docker compose"
-else
-    echo -e "${RED}❌ Docker Compose không tìm thấy!${NC}"
-    exit 1
-fi
-
-show_menu() {
-    clear
-    echo -e "${CYAN}╔══════════════════════════════════════════════════════════════════════════════╗${NC}"
-    echo -e "${CYAN}║${WHITE}                      🎛️  N8N MANAGEMENT MENU                               ${CYAN}║${NC}"
-    echo -e "${CYAN}║${WHITE}                       Multi-Domain Support                                 ${CYAN}║${NC}"
-    echo -e "${CYAN}╚══════════════════════════════════════════════════════════════════════════════╝${NC}"
-    echo ""
-    
-    echo -e "${BLUE}📊 MONITORING & STATUS${NC}"
-    echo -e "${YELLOW}1.${NC} Dashboard (Real-time)"
-    echo -e "${YELLOW}2.${NC} Container Status"
-    echo -e "${YELLOW}3.${NC} View Logs (Live)"
-    echo -e "${YELLOW}4.${NC} Resource Usage"
-    echo -e "${YELLOW}5.${NC} SSL Certificate Status"
-    echo ""
-    
-    echo -e "${BLUE}🔧 MANAGEMENT${NC}"
-    echo -e "${YELLOW}6.${NC} Restart All Services"
-    echo -e "${YELLOW}7.${NC} Restart Specific Instance"
-    echo -e "${YELLOW}8.${NC} Update N8N"
-    echo -e "${YELLOW}9.${NC} Rebuild Containers"
-    echo ""
-    
-    echo -e "${BLUE}💾 BACKUP & RESTORE${NC}"
-    echo -e "${YELLOW}10.${NC} Manual Backup"
-    echo -e "${YELLOW}11.${NC} List Backups"
-    echo -e "${YELLOW}12.${NC} Restore from Backup"
-    echo -e "${YELLOW}13.${NC} Export for Migration"
-    echo ""
-    
-    echo -e "${BLUE}🔧 CONFIGURATION${NC}"
-    echo -e "${YELLOW}14.${NC} Change News API Token"
-    echo -e "${YELLOW}15.${NC} Update Telegram Config"
-    echo -e "${YELLOW}16.${NC} Add New Domain"
-    echo -e "${YELLOW}17.${NC} Remove Domain"
-    echo ""
-    
-    echo -e "${BLUE}🚨 TROUBLESHOOTING${NC}"
-    echo -e "${YELLOW}18.${NC} Run Diagnostics"
-    echo -e "${YELLOW}19.${NC} Fix Common Issues"
-    echo -e "${YELLOW}20.${NC} Clean Docker System"
-    echo ""
-    
-    echo -e "${YELLOW}0.${NC} Exit"
-    echo ""
-    echo -n "Chọn tùy chọn (0-20): "
-}
-
-dashboard() {
-    /home/n8n/management/dashboard.sh --watch
-}
-
-container_status() {
-    echo -e "${BLUE}🐳 Container Status${NC}"
-    echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-    cd /home/n8n
-    $DOCKER_COMPOSE ps
-    echo ""
-    read -p "Press Enter to continue..."
-}
-
-view_logs() {
-    echo -e "${BLUE}📋 Select logs to view:${NC}"
-    echo "1. All containers"
-    echo "2. N8N instances only"
-    echo "3. Caddy proxy"
-    echo "4. PostgreSQL"
-    echo "5. News API"
-    echo ""
-    read -p "Choose option (1-5): " log_choice
-    
-    cd /home/n8n
-    case $log_choice in
-        1) $DOCKER_COMPOSE logs -f ;;
-        2) $DOCKER_COMPOSE logs -f $(docker ps --filter "name=n8n-container" --format "{{.Names}}" | tr '\n' ' ') ;;
-        3) $DOCKER_COMPOSE logs -f caddy ;;
-        4) $DOCKER_COMPOSE logs -f postgres ;;
-        5) $DOCKER_COMPOSE logs -f fastapi ;;
-        *) echo "Invalid option" ;;
-    esac
-}
-
-resource_usage() {
-    echo -e "${BLUE}📊 Resource Usage${NC}"
-    echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-    docker stats --no-stream
-    echo ""
-    echo -e "${BLUE}💾 Disk Usage${NC}"
-    echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-    df -h /home/n8n
-    echo ""
-    read -p "Press Enter to continue..."
-}
-
-ssl_status() {
-    echo -e "${BLUE}🔒 SSL Certificate Status${NC}"
-    echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-    
-    local domains=$(grep -E "^[a-zA-Z0-9.-]+\s*{" /home/n8n/Caddyfile | awk '{print $1}')
-    
-    for domain in $domains; do
-        echo -n "Testing $domain: "
-        if timeout 5 curl -s -I "https://$domain" >/dev/null 2>&1; then
-            echo -e "${GREEN}✅ SSL Active${NC}"
-        else
-            echo -e "${RED}❌ SSL Error${NC}"
-        fi
-    done
-    echo ""
-    read -p "Press Enter to continue..."
-}
-
-restart_all() {
-    echo -e "${YELLOW}🔄 Restarting all services...${NC}"
-    cd /home/n8n
-    $DOCKER_COMPOSE restart
-    echo -e "${GREEN}✅ All services restarted${NC}"
-    sleep 2
-}
-
-restart_instance() {
-    echo -e "${BLUE}🔄 Available N8N instances:${NC}"
-    local instances=$(docker ps --filter "name=n8n-container" --format "{{.Names}}")
-    local i=1
-    
-    for instance in $instances; do
-        echo "$i. $instance"
-        i=$((i+1))
-    done
-    
-    echo ""
-    read -p "Select instance to restart (number): " instance_num
-    
-    local selected_instance=$(echo "$instances" | sed -n "${instance_num}p")
-    if [[ -n "$selected_instance" ]]; then
-        echo -e "${YELLOW}🔄 Restarting $selected_instance...${NC}"
-        cd /home/n8n
-        $DOCKER_COMPOSE restart "$selected_instance"
-        echo -e "${GREEN}✅ $selected_instance restarted${NC}"
-    else
-        echo -e "${RED}❌ Invalid selection${NC}"
-    fi
-    sleep 2
-}
-
-update_n8n() {
-    echo -e "${YELLOW}🔄 Updating N8N...${NC}"
-    /home/n8n/update-n8n.sh
-    echo ""
-    read -p "Press Enter to continue..."
-}
-
-rebuild_containers() {
-    echo -e "${YELLOW}⚠️  This will rebuild all containers. Continue? (y/N): ${NC}"
-    read -n 1 -r
-    echo
-    if [[ $REPLY =~ ^[Yy]$ ]]; then
-        echo -e "${YELLOW}🏗️  Rebuilding containers...${NC}"
-        cd /home/n8n
-        $DOCKER_COMPOSE down
-        $DOCKER_COMPOSE up -d --build
-        echo -e "${GREEN}✅ Containers rebuilt${NC}"
-    fi
-    sleep 2
-}
-
-manual_backup() {
-    echo -e "${YELLOW}💾 Running manual backup...${NC}"
-    /home/n8n/backup-manual.sh
-    echo ""
-    read -p "Press Enter to continue..."
-}
-
-list_backups() {
-    echo -e "${BLUE}💾 Available Backups${NC}"
-    echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-    
-    local backup_dir="/home/n8n/files/backup_full"
-    if [[ -d "$backup_dir" ]]; then
-        ls -lah "$backup_dir"/n8n_backup_*.tar.gz 2>/dev/null | while read line; do
-            echo "$line"
-        done
-    else
-        echo -e "${RED}❌ No backup directory found${NC}"
-    fi
-    echo ""
-    read -p "Press Enter to continue..."
-}
-
-restore_backup() {
-    echo -e "${BLUE}🔄 Restore from Backup${NC}"
-    echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-    
-    local backup_dir="/home/n8n/files/backup_full"
-    if [[ ! -d "$backup_dir" ]]; then
-        echo -e "${RED}❌ No backup directory found${NC}"
-        read -p "Press Enter to continue..."
-        return
-    fi
-    
-    echo "Available backups:"
-    local backups=($(ls -t "$backup_dir"/n8n_backup_*.tar.gz 2>/dev/null))
-    
-    if [[ ${#backups[@]} -eq 0 ]]; then
-        echo -e "${RED}❌ No backups found${NC}"
-        read -p "Press Enter to continue..."
-        return
-    fi
-    
-    for i in "${!backups[@]}"; do
-        echo "$((i+1)). $(basename "${backups[i]}")"
-    done
-    
-    echo ""
-    read -p "Select backup to restore (number): " backup_num
-    
-    if [[ $backup_num -ge 1 && $backup_num -le ${#backups[@]} ]]; then
-        local selected_backup="${backups[$((backup_num-1))]}"
-        echo -e "${YELLOW}⚠️  This will stop all services and restore data. Continue? (y/N): ${NC}"
-        read -n 1 -r
-        echo
-        if [[ $REPLY =~ ^[Yy]$ ]]; then
-            /home/n8n/management/restore.sh "$selected_backup"
-        fi
-    else
-        echo -e "${RED}❌ Invalid selection${NC}"
-    fi
-    sleep 2
-}
-
-export_migration() {
-    echo -e "${BLUE}📦 Export for Migration${NC}"
-    echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-    /home/n8n/management/export-migration.sh
-    echo ""
-    read -p "Press Enter to continue..."
-}
-
-change_api_token() {
-    echo -e "${BLUE}🔑 Change News API Token${NC}"
-    echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-    
-    read -p "Enter new Bearer Token (min 20 chars): " new_token
-    
-    if [[ ${#new_token} -ge 20 && "$new_token" =~ ^[a-zA-Z0-9]+$ ]]; then
-        cd /home/n8n
-        sed -i "s/NEWS_API_TOKEN=.*/NEWS_API_TOKEN=$new_token/" docker-compose.yml
-        $DOCKER_COMPOSE restart fastapi
-        echo -e "${GREEN}✅ API Token updated successfully${NC}"
-    else
-        echo -e "${RED}❌ Invalid token format${NC}"
-    fi
-    sleep 2
-}
-
-update_telegram() {
-    echo -e "${BLUE}📱 Update Telegram Config${NC}"
-    echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-    
-    read -p "Enter Telegram Bot Token: " bot_token
-    read -p "Enter Telegram Chat ID: " chat_id
-    
-    if [[ -n "$bot_token" && -n "$chat_id" ]]; then
-        cat > /home/n8n/telegram_config.txt << EOF
-TELEGRAM_BOT_TOKEN="$bot_token"
-TELEGRAM_CHAT_ID="$chat_id"
-EOF
-        chmod 600 /home/n8n/telegram_config.txt
-        echo -e "${GREEN}✅ Telegram config updated${NC}"
-    else
-        echo -e "${RED}❌ Invalid input${NC}"
-    fi
-    sleep 2
-}
-
-add_domain() {
-    echo -e "${BLUE}🌐 Add New Domain${NC}"
-    echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-    echo -e "${YELLOW}⚠️  This feature requires manual configuration.${NC}"
-    echo "Please run the installation script again with --multi-domain option."
-    echo ""
-    read -p "Press Enter to continue..."
-}
-
-remove_domain() {
-    echo -e "${BLUE}🗑️  Remove Domain${NC}"
-    echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-    echo -e "${YELLOW}⚠️  This feature requires manual configuration.${NC}"
-    echo "Please contact support for domain removal."
-    echo ""
-    read -p "Press Enter to continue..."
-}
-
-run_diagnostics() {
-    echo -e "${BLUE}🔧 Running Diagnostics${NC}"
-    echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-    /home/n8n/troubleshoot.sh
-    echo ""
-    read -p "Press Enter to continue..."
-}
-
-fix_issues() {
-    echo -e "${BLUE}🔧 Fix Common Issues${NC}"
-    echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-    
-    echo "1. Restart all services"
-    echo "2. Rebuild containers"
-    echo "3. Clean Docker system"
-    echo "4. Fix permissions"
-    echo "5. Reset SSL certificates"
-    echo ""
-    read -p "Select fix (1-5): " fix_choice
-    
-    case $fix_choice in
-        1) restart_all ;;
-        2) rebuild_containers ;;
-        3) clean_docker ;;
-        4) fix_permissions ;;
-        5) reset_ssl ;;
-        *) echo "Invalid option" ;;
-    esac
-}
-
-clean_docker() {
-    echo -e "${YELLOW}🧹 Cleaning Docker system...${NC}"
-    docker system prune -f
-    docker volume prune -f
-    echo -e "${GREEN}✅ Docker system cleaned${NC}"
-    sleep 2
-}
-
-fix_permissions() {
-    echo -e "${YELLOW}🔧 Fixing permissions...${NC}"
-    chown -R $SUDO_USER:$SUDO_USER /home/n8n
-    chmod +x /home/n8n/*.sh
-    chmod +x /home/n8n/management/*.sh
-    echo -e "${GREEN}✅ Permissions fixed${NC}"
-    sleep 2
-}
-
-reset_ssl() {
-    echo -e "${YELLOW}⚠️  This will reset all SSL certificates. Continue? (y/N): ${NC}"
-    read -n 1 -r
-    echo
-    if [[ $REPLY =~ ^[Yy]$ ]]; then
-        cd /home/n8n
-        $DOCKER_COMPOSE down caddy
-        docker volume rm n8n_caddy_data n8n_caddy_config 2>/dev/null || true
-        $DOCKER_COMPOSE up -d caddy
-        echo -e "${GREEN}✅ SSL certificates reset${NC}"
-    fi
-    sleep 2
-}
-
-# Main loop
-while true; do
-    show_menu
-    read choice
-    
-    case $choice in
-        1) dashboard ;;
-        2) container_status ;;
-        3) view_logs ;;
-        4) resource_usage ;;
-        5) ssl_status ;;
-        6) restart_all ;;
-        7) restart_instance ;;
-        8) update_n8n ;;
-        9) rebuild_containers ;;
-        10) manual_backup ;;
-        11) list_backups ;;
-        12) restore_backup ;;
-        13) export_migration ;;
-        14) change_api_token ;;
-        15) update_telegram ;;
-        16) add_domain ;;
-        17) remove_domain ;;
-        18) run_diagnostics ;;
-        19) fix_issues ;;
-        20) clean_docker ;;
-        0) echo -e "${GREEN}👋 Goodbye!${NC}"; exit 0 ;;
-        *) echo -e "${RED}❌ Invalid option${NC}"; sleep 1 ;;
-    esac
-done
-EOF
-
-    chmod +x "$INSTALL_DIR/management/menu.sh"
-    
-    success "Đã tạo Management Menu"
-}
-
-# =============================================================================
-# ADVANCED BACKUP SYSTEM
-# =============================================================================
-
-create_advanced_backup_system() {
-    log "💾 Tạo Advanced Backup System..."
-    
-    # Enhanced backup script with ZIP and multi-domain support
-    cat > "$INSTALL_DIR/backup-workflows.sh" << 'EOF'
-#!/bin/bash
-
-# =============================================================================
-# N8N ADVANCED BACKUP SCRIPT - Multi-Domain Support with ZIP
+# N8N ENHANCED BACKUP SCRIPT - Multi-Domain Support
 # =============================================================================
 
 set -e
@@ -2313,157 +1793,165 @@ fi
 mkdir -p "$BACKUP_DIR"
 mkdir -p "$TEMP_DIR"
 
-log "🔄 Bắt đầu Advanced Backup N8N Multi-Domain..."
+log "🔄 Bắt đầu Enhanced N8N Backup..."
 
-# Detect N8N instances
-N8N_CONTAINERS=$(docker ps --filter "name=n8n-container" --format "{{.Names}}")
-INSTANCE_COUNT=$(echo "$N8N_CONTAINERS" | wc -l)
+# Detect multi-domain setup
+cd /home/n8n
+MULTI_DOMAIN=false
+INSTANCE_COUNT=0
 
-if [[ -z "$N8N_CONTAINERS" ]]; then
-    error "Không tìm thấy N8N containers!"
-    exit 1
+if docker ps --filter "name=n8n-container-" --format "{{.Names}}" | grep -q "n8n-container-"; then
+    MULTI_DOMAIN=true
+    INSTANCE_COUNT=$(docker ps --filter "name=n8n-container-" --format "{{.Names}}" | wc -l)
+    log "📊 Phát hiện Multi-Domain setup với $INSTANCE_COUNT instances"
+else
+    log "📊 Phát hiện Single Domain setup"
 fi
 
-log "📊 Phát hiện $INSTANCE_COUNT N8N instances"
-
-# Create instance directories
+# Create backup structure
 mkdir -p "$TEMP_DIR/instances"
-mkdir -p "$TEMP_DIR/postgres"
 mkdir -p "$TEMP_DIR/config"
 mkdir -p "$TEMP_DIR/ssl"
 
-# Backup each N8N instance
-instance_num=1
-for container in $N8N_CONTAINERS; do
-    log "📋 Backup N8N Instance $instance_num ($container)..."
-    
-    instance_dir="$TEMP_DIR/instances/instance_$instance_num"
-    mkdir -p "$instance_dir"
-    
-    # Get domain for this instance
-    domain=$(docker inspect $container --format '{{range .Config.Env}}{{if contains "WEBHOOK_URL" .}}{{.}}{{end}}{{end}}' | cut -d'=' -f2 | sed 's|https://||' | sed 's|/||')
-    
-    # Export workflows via N8N CLI
-    if docker exec $container which n8n &> /dev/null; then
-        log "  📄 Export workflows for $domain..."
-        docker exec $container n8n export:workflow --all --output=/tmp/workflows_$instance_num.json 2>/dev/null || true
-        docker cp $container:/tmp/workflows_$instance_num.json "$instance_dir/workflows.json" 2>/dev/null || true
+if [[ "$MULTI_DOMAIN" == "true" ]]; then
+    mkdir -p "$TEMP_DIR/postgres"
+fi
+
+# Backup N8N instances
+log "📋 Backup N8N instances..."
+
+if [[ "$MULTI_DOMAIN" == "true" ]]; then
+    # Multi-domain backup
+    for i in $(seq 1 $INSTANCE_COUNT); do
+        CONTAINER_NAME="n8n-container-$i"
+        INSTANCE_DIR="$TEMP_DIR/instances/instance_$i"
+        mkdir -p "$INSTANCE_DIR"
         
-        # Export credentials
-        docker exec $container n8n export:credentials --all --output=/tmp/credentials_$instance_num.json 2>/dev/null || true
-        docker cp $container:/tmp/credentials_$instance_num.json "$instance_dir/credentials.json" 2>/dev/null || true
+        log "📦 Backup instance $i ($CONTAINER_NAME)..."
+        
+        # Export workflows
+        if docker exec $CONTAINER_NAME which n8n &> /dev/null; then
+            docker exec $CONTAINER_NAME n8n export:workflow --all --output=/tmp/workflows.json 2>/dev/null || true
+            docker cp $CONTAINER_NAME:/tmp/workflows.json "$INSTANCE_DIR/" 2>/dev/null || true
+            
+            docker exec $CONTAINER_NAME n8n export:credentials --all --output=/tmp/credentials.json 2>/dev/null || true
+            docker cp $CONTAINER_NAME:/tmp/credentials.json "$INSTANCE_DIR/" 2>/dev/null || true
+        fi
+        
+        # Copy instance data
+        if [[ -d "/home/n8n/files/n8n_instance_$i" ]]; then
+            cp -r "/home/n8n/files/n8n_instance_$i"/* "$INSTANCE_DIR/" 2>/dev/null || true
+        fi
+        
+        # Create instance metadata
+        cat > "$INSTANCE_DIR/metadata.json" << EOL
+{
+    "instance_id": $i,
+    "container_name": "$CONTAINER_NAME",
+    "backup_date": "$(date -u +"%Y-%m-%dT%H:%M:%SZ")",
+    "domain": "$(grep -E "^[a-zA-Z0-9.-]+.*reverse_proxy.*n8n_$i" /home/n8n/Caddyfile | awk '{print $1}' || echo 'unknown')",
+    "database_type": "$(docker exec $CONTAINER_NAME printenv DB_TYPE 2>/dev/null || echo 'sqlite')"
+}
+EOL
+    done
+    
+    # Backup PostgreSQL databases
+    if docker ps | grep -q "postgres-n8n"; then
+        log "🐘 Backup PostgreSQL databases..."
+        
+        for i in $(seq 1 $INSTANCE_COUNT); do
+            DB_NAME="n8n_db_instance_$i"
+            docker exec postgres-n8n pg_dump -U n8n_user -d $DB_NAME > "$TEMP_DIR/postgres/dump_instance_$i.sql" 2>/dev/null || true
+        done
+        
+        # Backup main database
+        docker exec postgres-n8n pg_dump -U n8n_user -d n8n_db > "$TEMP_DIR/postgres/dump_main.sql" 2>/dev/null || true
     fi
     
-    # Backup database file (if SQLite)
-    if docker exec $container test -f /home/node/.n8n/database.sqlite 2>/dev/null; then
-        log "  💾 Backup SQLite database for $domain..."
-        docker cp $container:/home/node/.n8n/database.sqlite "$instance_dir/database.sqlite" 2>/dev/null || true
+else
+    # Single domain backup
+    INSTANCE_DIR="$TEMP_DIR/instances/instance_1"
+    mkdir -p "$INSTANCE_DIR"
+    
+    log "📦 Backup single N8N instance..."
+    
+    # Export workflows
+    if docker exec n8n-container which n8n &> /dev/null; then
+        docker exec n8n-container n8n export:workflow --all --output=/tmp/workflows.json 2>/dev/null || true
+        docker cp n8n-container:/tmp/workflows.json "$INSTANCE_DIR/" 2>/dev/null || true
+        
+        docker exec n8n-container n8n export:credentials --all --output=/tmp/credentials.json 2>/dev/null || true
+        docker cp n8n-container:/tmp/credentials.json "$INSTANCE_DIR/" 2>/dev/null || true
     fi
     
-    # Backup encryption key
-    if docker exec $container test -f /home/node/.n8n/config 2>/dev/null; then
-        log "  🔑 Backup encryption key for $domain..."
-        docker cp $container:/home/node/.n8n/config "$instance_dir/config" 2>/dev/null || true
+    # Copy instance data
+    if [[ -d "/home/n8n/files" ]]; then
+        cp -r /home/n8n/files/* "$INSTANCE_DIR/" 2>/dev/null || true
     fi
     
     # Create instance metadata
-    cat > "$instance_dir/metadata.json" << EOL
+    cat > "$INSTANCE_DIR/metadata.json" << EOL
 {
-    "instance_number": $instance_num,
-    "container_name": "$container",
-    "domain": "$domain",
+    "instance_id": 1,
+    "container_name": "n8n-container",
     "backup_date": "$(date -u +"%Y-%m-%dT%H:%M:%SZ")",
-    "n8n_version": "$(docker exec $container n8n --version 2>/dev/null || echo 'unknown')",
-    "database_type": "$(docker exec $container printenv DB_TYPE 2>/dev/null || echo 'sqlite')"
+    "domain": "$(grep -E "^[a-zA-Z0-9.-]+.*reverse_proxy.*n8n:" /home/n8n/Caddyfile | awk '{print $1}' || echo 'unknown')",
+    "database_type": "$(docker exec n8n-container printenv DB_TYPE 2>/dev/null || echo 'sqlite')"
 }
 EOL
-    
-    instance_num=$((instance_num + 1))
-done
-
-# Backup PostgreSQL if available
-if docker ps --filter "name=postgres-n8n" --format "{{.Names}}" | grep -q "postgres-n8n"; then
-    log "🐘 Backup PostgreSQL databases..."
-    
-    # Backup main database
-    docker exec postgres-n8n pg_dump -U n8n_user -d n8n_db > "$TEMP_DIR/postgres/dump_main.sql" 2>/dev/null || true
-    
-    # Backup instance databases
-    for i in $(seq 1 10); do
-        db_name="n8n_db_instance_$i"
-        if docker exec postgres-n8n psql -U n8n_user -lqt | cut -d \| -f 1 | grep -qw "$db_name"; then
-            log "  📊 Backup database: $db_name"
-            docker exec postgres-n8n pg_dump -U n8n_user -d "$db_name" > "$TEMP_DIR/postgres/dump_instance_$i.sql" 2>/dev/null || true
-        fi
-    done
-    
-    # Backup PostgreSQL globals
-    docker exec postgres-n8n pg_dumpall -U n8n_user -g > "$TEMP_DIR/postgres/globals.sql" 2>/dev/null || true
 fi
 
 # Backup configuration files
 log "🔧 Backup configuration files..."
-cd /home/n8n
 cp docker-compose.yml "$TEMP_DIR/config/" 2>/dev/null || true
 cp Caddyfile "$TEMP_DIR/config/" 2>/dev/null || true
 cp telegram_config.txt "$TEMP_DIR/config/" 2>/dev/null || true
 
 # Backup SSL certificates
+log "🔒 Backup SSL certificates..."
 if docker volume ls | grep -q "n8n_caddy_data"; then
-    log "🔒 Backup SSL certificates..."
     docker run --rm -v n8n_caddy_data:/data -v "$TEMP_DIR/ssl":/backup alpine tar czf /backup/caddy_data.tar.gz -C /data . 2>/dev/null || true
 fi
 
-# Create comprehensive metadata
+# Create main backup metadata
 log "📊 Tạo backup metadata..."
 cat > "$TEMP_DIR/backup_metadata.json" << EOL
 {
     "backup_date": "$(date -u +"%Y-%m-%dT%H:%M:%SZ")",
     "backup_name": "$BACKUP_NAME",
-    "backup_type": "multi_domain_full",
-    "server_info": {
-        "hostname": "$(hostname)",
-        "os": "$(lsb_release -d | cut -f2)",
-        "kernel": "$(uname -r)",
-        "docker_version": "$(docker --version)",
-        "docker_compose_version": "$($DOCKER_COMPOSE --version)"
-    },
-    "instances": {
-        "total_count": $INSTANCE_COUNT,
-        "containers": [$(echo "$N8N_CONTAINERS" | sed 's/^/"/;s/$/"/;$!s/$/,/' | tr '\n' ' ')]
-    },
-    "database": {
-        "type": "$(docker ps --filter "name=postgres-n8n" --format "{{.Names}}" | grep -q "postgres-n8n" && echo "postgresql" || echo "sqlite")",
-        "postgresql_available": $(docker ps --filter "name=postgres-n8n" --format "{{.Names}}" | grep -q "postgres-n8n" && echo "true" || echo "false")
-    },
-    "components": {
-        "news_api": $(docker ps --filter "name=news-api" --format "{{.Names}}" | grep -q "news-api" && echo "true" || echo "false"),
-        "caddy_proxy": $(docker ps --filter "name=caddy-proxy" --format "{{.Names}}" | grep -q "caddy-proxy" && echo "true" || echo "false")
-    },
-    "backup_size_mb": 0,
+    "backup_type": "enhanced_multi_domain",
+    "multi_domain": $MULTI_DOMAIN,
+    "instance_count": $INSTANCE_COUNT,
+    "n8n_version": "$(docker exec $(docker ps --filter "name=n8n-container" --format "{{.Names}}" | head -1) n8n --version 2>/dev/null || echo 'unknown')",
+    "postgresql_enabled": $(docker ps | grep -q "postgres-n8n" && echo "true" || echo "false"),
+    "domains": [
+$(if [[ "$MULTI_DOMAIN" == "true" ]]; then
+    for i in $(seq 1 $INSTANCE_COUNT); do
+        DOMAIN=$(grep -E "^[a-zA-Z0-9.-]+.*reverse_proxy.*n8n_$i" /home/n8n/Caddyfile | awk '{print $1}' || echo 'unknown')
+        echo "        \"$DOMAIN\"$([ $i -lt $INSTANCE_COUNT ] && echo ",")"
+    done
+else
+    DOMAIN=$(grep -E "^[a-zA-Z0-9.-]+.*reverse_proxy.*n8n:" /home/n8n/Caddyfile | awk '{print $1}' || echo 'unknown')
+    echo "        \"$DOMAIN\""
+fi)
+    ],
     "files": {
-        "instances": "$INSTANCE_COUNT directories",
-        "postgres_dumps": "$(find $TEMP_DIR/postgres -name "*.sql" 2>/dev/null | wc -l) files",
-        "config_files": "$(find $TEMP_DIR/config -type f 2>/dev/null | wc -l) files",
-        "ssl_backup": "$(test -f $TEMP_DIR/ssl/caddy_data.tar.gz && echo "available" || echo "not_available")"
+        "instances": "$(find $TEMP_DIR/instances -name "*.json" | wc -l) files",
+        "config": "$(find $TEMP_DIR/config -name "*" | wc -l) files",
+        "ssl": "$(find $TEMP_DIR/ssl -name "*" | wc -l) files",
+        "postgres": "$(find $TEMP_DIR/postgres -name "*.sql" 2>/dev/null | wc -l || echo 0) files"
     }
 }
 EOL
 
-# Create ZIP backup (preferred over tar.gz for better compression)
-log "📦 Tạo file backup ZIP..."
+# Create compressed backup
+log "📦 Tạo file backup nén..."
 cd /tmp
-zip -r "$BACKUP_DIR/$BACKUP_NAME.zip" "$BACKUP_NAME/" -q
+zip -r "$BACKUP_DIR/$BACKUP_NAME.zip" "$BACKUP_NAME/" > /dev/null 2>&1
 
-# Get backup size and update metadata
-BACKUP_SIZE_BYTES=$(stat -c%s "$BACKUP_DIR/$BACKUP_NAME.zip")
-BACKUP_SIZE_MB=$((BACKUP_SIZE_BYTES / 1024 / 1024))
-BACKUP_SIZE_HUMAN=$(ls -lh "$BACKUP_DIR/$BACKUP_NAME.zip" | awk '{print $5}')
-
-# Update metadata with actual size
-sed -i "s/\"backup_size_mb\": 0/\"backup_size_mb\": $BACKUP_SIZE_MB/" "$TEMP_DIR/backup_metadata.json"
-
-log "✅ Backup hoàn thành: $BACKUP_NAME.zip ($BACKUP_SIZE_HUMAN)"
+# Get backup size
+BACKUP_SIZE=$(ls -lh "$BACKUP_DIR/$BACKUP_NAME.zip" | awk '{print $5}')
+log "✅ Backup hoàn thành: $BACKUP_NAME.zip ($BACKUP_SIZE)"
 
 # Cleanup temp directory
 rm -rf "$TEMP_DIR"
@@ -2471,856 +1959,190 @@ rm -rf "$TEMP_DIR"
 # Keep only last 30 backups
 log "🧹 Cleanup old backups..."
 cd "$BACKUP_DIR"
-ls -t n8n_backup_*.zip 2>/dev/null | tail -n +31 | xargs -r rm -f
+ls -t n8n_backup_*.zip | tail -n +31 | xargs -r rm -f
+
+# Create backup report
+BACKUP_COUNT=$(ls -1 n8n_backup_*.zip 2>/dev/null | wc -l)
+TOTAL_SIZE=$(du -sh . | awk '{print $1}')
+
+cat > "$BACKUP_DIR/latest_backup_report.txt" << EOL
+N8N Enhanced Backup Report
+==========================
+Date: $(date +'%Y-%m-%d %H:%M:%S')
+Backup Name: $BACKUP_NAME.zip
+Backup Size: $BACKUP_SIZE
+Multi-Domain: $MULTI_DOMAIN
+Instance Count: $INSTANCE_COUNT
+PostgreSQL: $(docker ps | grep -q "postgres-n8n" && echo "Enabled" || echo "Disabled")
+
+Domains:
+$(if [[ "$MULTI_DOMAIN" == "true" ]]; then
+    for i in $(seq 1 $INSTANCE_COUNT); do
+        DOMAIN=$(grep -E "^[a-zA-Z0-9.-]+.*reverse_proxy.*n8n_$i" /home/n8n/Caddyfile | awk '{print $1}' || echo 'unknown')
+        echo "  Instance $i: $DOMAIN"
+    done
+else
+    DOMAIN=$(grep -E "^[a-zA-Z0-9.-]+.*reverse_proxy.*n8n:" /home/n8n/Caddyfile | awk '{print $1}' || echo 'unknown')
+    echo "  Single Domain: $DOMAIN"
+fi)
+
+Backup Statistics:
+  Total Backups: $BACKUP_COUNT
+  Total Size: $TOTAL_SIZE
+  Location: $BACKUP_DIR
+
+Status: ✅ SUCCESS
+EOL
 
 # Send to Telegram if configured
-TELEGRAM_SENT=false
 if [[ -f "/home/n8n/telegram_config.txt" ]]; then
     source "/home/n8n/telegram_config.txt"
     
     if [[ -n "$TELEGRAM_BOT_TOKEN" && -n "$TELEGRAM_CHAT_ID" ]]; then
         log "📱 Gửi thông báo Telegram..."
         
-        # Create detailed message
-        MESSAGE="🔄 *N8N Multi-Domain Backup Completed*
+        MESSAGE="🔄 *N8N Enhanced Backup Completed*
 
 📅 Date: $(date +'%Y-%m-%d %H:%M:%S')
 📦 File: \`$BACKUP_NAME.zip\`
-💾 Size: $BACKUP_SIZE_HUMAN
-🌐 Instances: $INSTANCE_COUNT N8N instances
-🐘 Database: $(docker ps --filter "name=postgres-n8n" --format "{{.Names}}" | grep -q "postgres-n8n" && echo "PostgreSQL" || echo "SQLite")
+💾 Size: $BACKUP_SIZE
+🌐 Mode: $([ "$MULTI_DOMAIN" == "true" ] && echo "Multi-Domain ($INSTANCE_COUNT instances)" || echo "Single Domain")
+🐘 PostgreSQL: $(docker ps | grep -q "postgres-n8n" && echo "✅ Enabled" || echo "❌ Disabled")
 📊 Status: ✅ Success
 
-🗂️ Backup location: \`$BACKUP_DIR\`
-🔄 Auto-cleanup: Keep 30 latest backups
+🗂️ Backup Details:
+$(if [[ "$MULTI_DOMAIN" == "true" ]]; then
+    for i in $(seq 1 $INSTANCE_COUNT); do
+        DOMAIN=$(grep -E "^[a-zA-Z0-9.-]+.*reverse_proxy.*n8n_$i" /home/n8n/Caddyfile | awk '{print $1}' || echo 'unknown')
+        echo "• Instance $i: $DOMAIN"
+    done
+else
+    DOMAIN=$(grep -E "^[a-zA-Z0-9.-]+.*reverse_proxy.*n8n:" /home/n8n/Caddyfile | awk '{print $1}' || echo 'unknown')
+    echo "• Domain: $DOMAIN"
+fi)
 
-📋 *Instance Details:*"
-
-        # Add instance details
-        instance_num=1
-        for container in $N8N_CONTAINERS; do
-            domain=$(docker inspect $container --format '{{range .Config.Env}}{{if contains "WEBHOOK_URL" .}}{{.}}{{end}}{{end}}' | cut -d'=' -f2 | sed 's|https://||' | sed 's|/||')
-            MESSAGE="$MESSAGE
-• Instance $instance_num: \`$domain\`"
-            instance_num=$((instance_num + 1))
-        done
+📍 Location: \`$BACKUP_DIR\`
+📈 Total Backups: $BACKUP_COUNT"
 
         # Send message
-        if curl -s -X POST "https://api.telegram.org/bot$TELEGRAM_BOT_TOKEN/sendMessage" \
-            -d chat_id="$TELEGRAM_CHAT_ID" \
-            -d text="$MESSAGE" \
-            -d parse_mode="Markdown" > /dev/null; then
-            
-            # Send file if smaller than 50MB (Telegram limit)
-            if [[ $BACKUP_SIZE_BYTES -lt 52428800 ]]; then
-                if curl -s -X POST "https://api.telegram.org/bot$TELEGRAM_BOT_TOKEN/sendDocument" \
-                    -F chat_id="$TELEGRAM_CHAT_ID" \
-                    -F document="@$BACKUP_DIR/$BACKUP_NAME.zip" \
-                    -F caption="📦 N8N Multi-Domain Backup: $BACKUP_NAME.zip" > /dev/null; then
-                    TELEGRAM_SENT=true
-                    log "✅ Backup file sent to Telegram"
-                else
-                    warning "⚠️ Failed to send backup file to Telegram (file sent notification only)"
-                fi
-            else
-                warning "⚠️ Backup file too large for Telegram (>50MB), notification sent only"
-            fi
-        else
-            warning "⚠️ Failed to send Telegram notification"
-        fi
-    fi
-fi
-
-# Final summary
-log "🎉 Advanced Backup Process Completed!"
-log "📊 Summary:"
-log "   • Instances backed up: $INSTANCE_COUNT"
-log "   • Backup size: $BACKUP_SIZE_HUMAN"
-log "   • Telegram sent: $([ "$TELEGRAM_SENT" = true ] && echo "✅ Yes" || echo "❌ No")"
-log "   • Location: $BACKUP_DIR/$BACKUP_NAME.zip"
-
-# Create backup report
-cat > "$BACKUP_DIR/latest_backup_report.txt" << EOL
-N8N Multi-Domain Backup Report
-==============================
-Date: $(date +'%Y-%m-%d %H:%M:%S')
-Backup File: $BACKUP_NAME.zip
-Size: $BACKUP_SIZE_HUMAN ($BACKUP_SIZE_MB MB)
-Instances: $INSTANCE_COUNT
-Database: $(docker ps --filter "name=postgres-n8n" --format "{{.Names}}" | grep -q "postgres-n8n" && echo "PostgreSQL" || echo "SQLite")
-Telegram: $([ "$TELEGRAM_SENT" = true ] && echo "Sent" || echo "Failed/Not configured")
-Status: Success
-
-Instance Details:
-$(instance_num=1; for container in $N8N_CONTAINERS; do domain=$(docker inspect $container --format '{{range .Config.Env}}{{if contains "WEBHOOK_URL" .}}{{.}}{{end}}{{end}}' | cut -d'=' -f2 | sed 's|https://||' | sed 's|/||'); echo "• Instance $instance_num: $domain"; instance_num=$((instance_num + 1)); done)
-
-Backup Contents:
-• N8N workflows and credentials for all instances
-• Database dumps (PostgreSQL/SQLite)
-• Configuration files (docker-compose.yml, Caddyfile)
-• SSL certificates
-• Instance metadata
-
-Location: $BACKUP_DIR/$BACKUP_NAME.zip
-EOL
-
-log "📋 Backup report saved: $BACKUP_DIR/latest_backup_report.txt"
-EOF
-
-    chmod +x "$INSTALL_DIR/backup-workflows.sh"
-    
-    success "Đã tạo Advanced Backup System với ZIP support"
-}
-
-create_restore_system() {
-    log "🔄 Tạo Restore System..."
-    
-    cat > "$INSTALL_DIR/management/restore.sh" << 'EOF'
-#!/bin/bash
-
-# =============================================================================
-# N8N RESTORE SYSTEM - Multi-Domain Support
-# =============================================================================
-
-set -e
-
-# Colors
-RED='\033[0;31m'
-GREEN='\033[0;32m'
-YELLOW='\033[1;33m'
-BLUE='\033[0;34m'
-NC='\033[0m'
-
-log() {
-    echo -e "${GREEN}[$(date +'%Y-%m-%d %H:%M:%S')] $1${NC}"
-}
-
-error() {
-    echo -e "${RED}[ERROR] $1${NC}"
-}
-
-warning() {
-    echo -e "${YELLOW}[WARNING] $1${NC}"
-}
-
-info() {
-    echo -e "${BLUE}[INFO] $1${NC}"
-}
-
-if [[ $# -ne 1 ]]; then
-    error "Usage: $0 <backup_file.zip>"
-    exit 1
-fi
-
-BACKUP_FILE="$1"
-RESTORE_DIR="/tmp/n8n_restore_$(date +%s)"
-
-if [[ ! -f "$BACKUP_FILE" ]]; then
-    error "Backup file not found: $BACKUP_FILE"
-    exit 1
-fi
-
-# Check Docker Compose command
-if command -v docker-compose &> /dev/null; then
-    DOCKER_COMPOSE="docker-compose"
-elif docker compose version &> /dev/null; then
-    DOCKER_COMPOSE="docker compose"
-else
-    error "Docker Compose không tìm thấy!"
-    exit 1
-fi
-
-log "🔄 Starting N8N Multi-Domain Restore Process..."
-log "📦 Backup file: $(basename "$BACKUP_FILE")"
-
-# Create restore directory
-mkdir -p "$RESTORE_DIR"
-cd "$RESTORE_DIR"
-
-# Extract backup
-log "📂 Extracting backup file..."
-if [[ "$BACKUP_FILE" == *.zip ]]; then
-    unzip -q "$BACKUP_FILE"
-elif [[ "$BACKUP_FILE" == *.tar.gz ]]; then
-    tar -xzf "$BACKUP_FILE"
-else
-    error "Unsupported backup format. Use .zip or .tar.gz"
-    exit 1
-fi
-
-# Find backup directory
-BACKUP_DIR=$(find . -maxdepth 1 -type d -name "n8n_backup_*" | head -1)
-if [[ -z "$BACKUP_DIR" ]]; then
-    error "Invalid backup structure"
-    exit 1
-fi
-
-cd "$BACKUP_DIR"
-
-# Read metadata
-if [[ -f "backup_metadata.json" ]]; then
-    log "📊 Reading backup metadata..."
-    BACKUP_DATE=$(jq -r '.backup_date' backup_metadata.json 2>/dev/null || echo "unknown")
-    INSTANCE_COUNT=$(jq -r '.instances.total_count' backup_metadata.json 2>/dev/null || echo "unknown")
-    DATABASE_TYPE=$(jq -r '.database.type' backup_metadata.json 2>/dev/null || echo "unknown")
-    
-    info "Backup Date: $BACKUP_DATE"
-    info "Instances: $INSTANCE_COUNT"
-    info "Database: $DATABASE_TYPE"
-else
-    warning "No metadata found, proceeding with basic restore"
-fi
-
-# Confirm restore
-echo ""
-warning "⚠️  This will REPLACE all current N8N data!"
-warning "⚠️  Make sure you have a current backup before proceeding!"
-echo ""
-read -p "Continue with restore? (type 'YES' to confirm): " confirm
-
-if [[ "$confirm" != "YES" ]]; then
-    error "Restore cancelled"
-    exit 1
-fi
-
-# Stop all services
-log "🛑 Stopping all N8N services..."
-cd /home/n8n
-$DOCKER_COMPOSE down
-
-# Restore configuration files
-if [[ -d "$RESTORE_DIR/$BACKUP_DIR/config" ]]; then
-    log "🔧 Restoring configuration files..."
-    
-    if [[ -f "$RESTORE_DIR/$BACKUP_DIR/config/docker-compose.yml" ]]; then
-        cp "$RESTORE_DIR/$BACKUP_DIR/config/docker-compose.yml" /home/n8n/
-        info "Restored docker-compose.yml"
-    fi
-    
-    if [[ -f "$RESTORE_DIR/$BACKUP_DIR/config/Caddyfile" ]]; then
-        cp "$RESTORE_DIR/$BACKUP_DIR/config/Caddyfile" /home/n8n/
-        info "Restored Caddyfile"
-    fi
-    
-    if [[ -f "$RESTORE_DIR/$BACKUP_DIR/config/telegram_config.txt" ]]; then
-        cp "$RESTORE_DIR/$BACKUP_DIR/config/telegram_config.txt" /home/n8n/
-        info "Restored Telegram config"
-    fi
-fi
-
-# Restore SSL certificates
-if [[ -f "$RESTORE_DIR/$BACKUP_DIR/ssl/caddy_data.tar.gz" ]]; then
-    log "🔒 Restoring SSL certificates..."
-    
-    # Remove existing SSL data
-    docker volume rm n8n_caddy_data n8n_caddy_config 2>/dev/null || true
-    
-    # Create new volume and restore data
-    docker volume create n8n_caddy_data
-    docker run --rm -v n8n_caddy_data:/data -v "$RESTORE_DIR/$BACKUP_DIR/ssl":/backup alpine tar xzf /backup/caddy_data.tar.gz -C /data
-    info "Restored SSL certificates"
-fi
-
-# Restore PostgreSQL databases
-if [[ -d "$RESTORE_DIR/$BACKUP_DIR/postgres" && "$DATABASE_TYPE" == "postgresql" ]]; then
-    log "🐘 Restoring PostgreSQL databases..."
-    
-    # Start PostgreSQL first
-    $DOCKER_COMPOSE up -d postgres
-    sleep 30
-    
-    # Restore main database
-    if [[ -f "$RESTORE_DIR/$BACKUP_DIR/postgres/dump_main.sql" ]]; then
-        docker exec -i postgres-n8n psql -U n8n_user -d n8n_db < "$RESTORE_DIR/$BACKUP_DIR/postgres/dump_main.sql"
-        info "Restored main database"
-    fi
-    
-    # Restore instance databases
-    for dump_file in "$RESTORE_DIR/$BACKUP_DIR/postgres"/dump_instance_*.sql; do
-        if [[ -f "$dump_file" ]]; then
-            instance_num=$(basename "$dump_file" | sed 's/dump_instance_//' | sed 's/.sql//')
-            db_name="n8n_db_instance_$instance_num"
-            
-            # Create database if not exists
-            docker exec postgres-n8n psql -U n8n_user -d n8n_db -c "CREATE DATABASE $db_name;" 2>/dev/null || true
-            
-            # Restore data
-            docker exec -i postgres-n8n psql -U n8n_user -d "$db_name" < "$dump_file"
-            info "Restored database: $db_name"
-        fi
-    done
-fi
-
-# Restore N8N instances
-if [[ -d "$RESTORE_DIR/$BACKUP_DIR/instances" ]]; then
-    log "🚀 Restoring N8N instances..."
-    
-    for instance_dir in "$RESTORE_DIR/$BACKUP_DIR/instances"/instance_*; do
-        if [[ -d "$instance_dir" ]]; then
-            instance_num=$(basename "$instance_dir" | sed 's/instance_//')
-            target_dir="/home/n8n/files/n8n_instance_$instance_num"
-            
-            # Create target directory
-            mkdir -p "$target_dir"
-            
-            # Restore workflows
-            if [[ -f "$instance_dir/workflows.json" ]]; then
-                cp "$instance_dir/workflows.json" "$target_dir/"
-                info "Restored workflows for instance $instance_num"
-            fi
-            
-            # Restore credentials
-            if [[ -f "$instance_dir/credentials.json" ]]; then
-                cp "$instance_dir/credentials.json" "$target_dir/"
-                info "Restored credentials for instance $instance_num"
-            fi
-            
-            # Restore SQLite database (if using SQLite)
-            if [[ -f "$instance_dir/database.sqlite" && "$DATABASE_TYPE" != "postgresql" ]]; then
-                cp "$instance_dir/database.sqlite" "$target_dir/"
-                info "Restored SQLite database for instance $instance_num"
-            fi
-            
-            # Restore config
-            if [[ -f "$instance_dir/config" ]]; then
-                cp "$instance_dir/config" "$target_dir/"
-                info "Restored config for instance $instance_num"
-            fi
-        fi
-    done
-fi
-
-# Fix permissions
-log "🔧 Fixing permissions..."
-chown -R 1000:1000 /home/n8n/files/
-
-# Start all services
-log "🚀 Starting all services..."
-$DOCKER_COMPOSE up -d
-
-# Wait for services to start
-log "⏳ Waiting for services to start..."
-sleep 60
-
-# Import workflows and credentials
-if [[ -d "$RESTORE_DIR/$BACKUP_DIR/instances" ]]; then
-    log "📥 Importing workflows and credentials..."
-    
-    # Wait a bit more for N8N to be fully ready
-    sleep 30
-    
-    for instance_dir in "$RESTORE_DIR/$BACKUP_DIR/instances"/instance_*; do
-        if [[ -d "$instance_dir" ]]; then
-            instance_num=$(basename "$instance_dir" | sed 's/instance_//')
-            container_name="n8n-container-$instance_num"
-            
-            # Check if container exists
-            if docker ps --format "{{.Names}}" | grep -q "$container_name"; then
-                # Import workflows
-                if [[ -f "$instance_dir/workflows.json" ]]; then
-                    docker cp "$instance_dir/workflows.json" "$container_name:/tmp/"
-                    docker exec "$container_name" n8n import:workflow --input=/tmp/workflows.json 2>/dev/null || warning "Failed to import workflows for instance $instance_num"
-                fi
-                
-                # Import credentials
-                if [[ -f "$instance_dir/credentials.json" ]]; then
-                    docker cp "$instance_dir/credentials.json" "$container_name:/tmp/"
-                    docker exec "$container_name" n8n import:credentials --input=/tmp/credentials.json 2>/dev/null || warning "Failed to import credentials for instance $instance_num"
-                fi
-                
-                info "Imported data for instance $instance_num"
-            else
-                warning "Container $container_name not found"
-            fi
-        fi
-    done
-fi
-
-# Cleanup
-log "🧹 Cleaning up..."
-rm -rf "$RESTORE_DIR"
-
-# Final status check
-log "🔍 Checking service status..."
-sleep 10
-$DOCKER_COMPOSE ps
-
-log "✅ Restore process completed!"
-log "🌐 Please check your domains to ensure everything is working correctly"
-
-# Send Telegram notification if configured
-if [[ -f "/home/n8n/telegram_config.txt" ]]; then
-    source "/home/n8n/telegram_config.txt"
-    
-    if [[ -n "$TELEGRAM_BOT_TOKEN" && -n "$TELEGRAM_CHAT_ID" ]]; then
-        MESSAGE="🔄 *N8N Restore Completed*
-
-📅 Date: $(date +'%Y-%m-%d %H:%M:%S')
-📦 Restored from: $(basename "$BACKUP_FILE")
-🌐 Instances: $INSTANCE_COUNT
-🐘 Database: $DATABASE_TYPE
-📊 Status: ✅ Success
-
-🔍 Please verify all domains are working correctly."
-
         curl -s -X POST "https://api.telegram.org/bot$TELEGRAM_BOT_TOKEN/sendMessage" \
             -d chat_id="$TELEGRAM_CHAT_ID" \
             -d text="$MESSAGE" \
             -d parse_mode="Markdown" > /dev/null || true
-    fi
-fi
-
-echo ""
-log "🎉 N8N Multi-Domain Restore completed successfully!"
-EOF
-
-    chmod +x "$INSTALL_DIR/management/restore.sh"
-    
-    success "Đã tạo Restore System"
-}
-
-create_migration_tools() {
-    log "🚚 Tạo Migration Tools..."
-    
-    cat > "$INSTALL_DIR/management/export-migration.sh" << 'EOF'
-#!/bin/bash
-
-# =============================================================================
-# N8N MIGRATION EXPORT TOOL
-# =============================================================================
-
-set -e
-
-# Colors
-RED='\033[0;31m'
-GREEN='\033[0;32m'
-YELLOW='\033[1;33m'
-BLUE='\033[0;34m'
-NC='\033[0m'
-
-log() {
-    echo -e "${GREEN}[$(date +'%Y-%m-%d %H:%M:%S')] $1${NC}"
-}
-
-error() {
-    echo -e "${RED}[ERROR] $1${NC}"
-}
-
-warning() {
-    echo -e "${YELLOW}[WARNING] $1${NC}"
-}
-
-info() {
-    echo -e "${BLUE}[INFO] $1${NC}"
-}
-
-MIGRATION_DIR="/home/n8n/files/migration"
-TIMESTAMP=$(date +"%Y%m%d_%H%M%S")
-EXPORT_NAME="n8n_migration_$TIMESTAMP"
-
-log "🚚 N8N Migration Export Tool"
-log "📦 Creating migration package..."
-
-# Create migration directory
-mkdir -p "$MIGRATION_DIR"
-cd "$MIGRATION_DIR"
-
-# Create export directory
-mkdir -p "$EXPORT_NAME"
-cd "$EXPORT_NAME"
-
-# Create directories
-mkdir -p {instances,config,docs,scripts}
-
-# Export current configuration
-log "🔧 Exporting configuration..."
-cp /home/n8n/docker-compose.yml config/ 2>/dev/null || true
-cp /home/n8n/Caddyfile config/ 2>/dev/null || true
-cp /home/n8n/telegram_config.txt config/ 2>/dev/null || true
-
-# Export N8N instances data
-log "🚀 Exporting N8N instances..."
-N8N_CONTAINERS=$(docker ps --filter "name=n8n-container" --format "{{.Names}}")
-
-instance_num=1
-for container in $N8N_CONTAINERS; do
-    log "  📋 Exporting instance $instance_num ($container)..."
-    
-    instance_dir="instances/instance_$instance_num"
-    mkdir -p "$instance_dir"
-    
-    # Get domain
-    domain=$(docker inspect $container --format '{{range .Config.Env}}{{if contains "WEBHOOK_URL" .}}{{.}}{{end}}{{end}}' | cut -d'=' -f2 | sed 's|https://||' | sed 's|/||')
-    
-    # Export workflows
-    docker exec $container n8n export:workflow --all --output=/tmp/workflows_export.json 2>/dev/null || true
-    docker cp $container:/tmp/workflows_export.json "$instance_dir/workflows.json" 2>/dev/null || true
-    
-    # Export credentials
-    docker exec $container n8n export:credentials --all --output=/tmp/credentials_export.json 2>/dev/null || true
-    docker cp $container:/tmp/credentials_export.json "$instance_dir/credentials.json" 2>/dev/null || true
-    
-    # Create instance info
-    cat > "$instance_dir/instance_info.json" << EOL
-{
-    "instance_number": $instance_num,
-    "domain": "$domain",
-    "container_name": "$container",
-    "export_date": "$(date -u +"%Y-%m-%dT%H:%M:%SZ")",
-    "n8n_version": "$(docker exec $container n8n --version 2>/dev/null || echo 'unknown')"
-}
-EOL
-    
-    instance_num=$((instance_num + 1))
-done
-
-# Export database schema (PostgreSQL)
-if docker ps --filter "name=postgres-n8n" --format "{{.Names}}" | grep -q "postgres-n8n"; then
-    log "🐘 Exporting PostgreSQL schema..."
-    mkdir -p database
-    
-    # Export schema only (no data)
-    docker exec postgres-n8n pg_dump -U n8n_user -d n8n_db --schema-only > database/schema.sql 2>/dev/null || true
-    
-    # Export database list
-    docker exec postgres-n8n psql -U n8n_user -l > database/database_list.txt 2>/dev/null || true
-fi
-
-# Create migration documentation
-log "📚 Creating migration documentation..."
-
-cat > docs/MIGRATION_GUIDE.md << 'EOL'
-# N8N Migration Guide
-
-## Overview
-This package contains all necessary files to migrate your N8N multi-domain setup to a new server.
-
-## Package Contents
-- `instances/` - N8N workflows and credentials for each instance
-- `config/` - Configuration files (docker-compose.yml, Caddyfile, etc.)
-- `database/` - Database schema (if using PostgreSQL)
-- `scripts/` - Helper scripts for migration
-- `docs/` - This documentation
-
-## Migration Steps
-
-### 1. Prepare New Server
-```bash
-# Install Ubuntu 20.04+ on new server
-# Update system
-sudo apt update && sudo apt upgrade -y
-
-# Install Docker
-curl -fsSL https://get.docker.com -o get-docker.sh
-sudo sh get-docker.sh
-sudo usermod -aG docker $USER
-
-# Install Docker Compose
-sudo apt install docker-compose -y
-```
-
-### 2. Setup DNS
-Point all your domains to the new server IP:
-- Update A records for all domains
-- Wait for DNS propagation (5-60 minutes)
-
-### 3. Transfer Files
-```bash
-# Copy this migration package to new server
-scp -r n8n_migration_* user@new-server:/tmp/
-
-# Or use the installation script with restore option
-```
-
-### 4. Install N8N
-```bash
-# Download and run installation script
-curl -sSL https://raw.githubusercontent.com/KalvinThien/install-n8n-ffmpeg/main/auto_cai_dat_n8n.sh | bash
-
-# Or use migration restore script
-sudo ./scripts/migrate-restore.sh
-```
-
-### 5. Restore Data
-```bash
-# Use the restore script provided
-sudo /home/n8n/management/restore.sh /path/to/backup.zip
-
-# Or manually import workflows
-docker exec n8n-container-1 n8n import:workflow --input=/tmp/workflows.json
-```
-
-### 6. Verify Migration
-- Check all domains are accessible
-- Verify workflows are working
-- Test webhooks and integrations
-- Confirm SSL certificates are issued
-
-## Important Notes
-- Backup current server before migration
-- Test migration on staging environment first
-- Update webhook URLs if domain changes
-- Reconfigure any external integrations
-- Update DNS TTL to low value before migration
-
-## Troubleshooting
-- Check Docker logs: `docker-compose logs -f`
-- Verify DNS: `dig yourdomain.com`
-- Test SSL: `curl -I https://yourdomain.com`
-- Run diagnostics: `/home/n8n/troubleshoot.sh`
-
-## Support
-- GitHub: https://github.com/KalvinThien/install-n8n-ffmpeg
-- YouTube: https://www.youtube.com/@kalvinthiensocial
-- Zalo: 08.8888.4749
-EOL
-
-# Create migration restore script
-cat > scripts/migrate-restore.sh << 'EOL'
-#!/bin/bash
-
-# N8N Migration Restore Script
-# This script helps restore N8N from migration package
-
-set -e
-
-if [[ $EUID -ne 0 ]]; then
-    echo "This script must be run as root"
-    exit 1
-fi
-
-MIGRATION_DIR="$(dirname "$(readlink -f "$0")")/.."
-
-echo "🚚 N8N Migration Restore"
-echo "📂 Migration directory: $MIGRATION_DIR"
-
-# Check if N8N is already installed
-if [[ -d "/home/n8n" ]]; then
-    echo "⚠️  N8N installation detected at /home/n8n"
-    read -p "Continue and overwrite? (y/N): " -n 1 -r
-    echo
-    if [[ ! $REPLY =~ ^[Yy]$ ]]; then
-        exit 1
-    fi
-fi
-
-# Install N8N first if not exists
-if [[ ! -d "/home/n8n" ]]; then
-    echo "📦 Installing N8N first..."
-    curl -sSL https://raw.githubusercontent.com/KalvinThien/install-n8n-ffmpeg/main/auto_cai_dat_n8n.sh | bash
-fi
-
-# Restore configuration
-if [[ -d "$MIGRATION_DIR/config" ]]; then
-    echo "🔧 Restoring configuration..."
-    cp "$MIGRATION_DIR/config"/* /home/n8n/ 2>/dev/null || true
-fi
-
-# Restore instances
-if [[ -d "$MIGRATION_DIR/instances" ]]; then
-    echo "🚀 Restoring N8N instances..."
-    
-    for instance_dir in "$MIGRATION_DIR/instances"/instance_*; do
-        if [[ -d "$instance_dir" ]]; then
-            instance_num=$(basename "$instance_dir" | sed 's/instance_//')
-            target_dir="/home/n8n/files/n8n_instance_$instance_num"
-            
-            mkdir -p "$target_dir"
-            cp "$instance_dir"/* "$target_dir/" 2>/dev/null || true
-            
-            echo "  ✅ Restored instance $instance_num"
+        
+        # Send file if smaller than 50MB
+        BACKUP_SIZE_BYTES=$(stat -c%s "$BACKUP_DIR/$BACKUP_NAME.zip")
+        if [[ $BACKUP_SIZE_BYTES -lt 52428800 ]]; then
+            curl -s -X POST "https://api.telegram.org/bot$TELEGRAM_BOT_TOKEN/sendDocument" \
+                -F chat_id="$TELEGRAM_CHAT_ID" \
+                -F document="@$BACKUP_DIR/$BACKUP_NAME.zip" \
+                -F caption="📦 N8N Enhanced Backup: $BACKUP_NAME.zip" > /dev/null || true
         fi
-    done
+        
+        # Upload to Google Drive if available
+        if [[ -f "/home/n8n/google_drive/gdrive_backup.py" && -f "/home/n8n/google_drive/credentials.json" ]]; then
+            log "☁️ Upload to Google Drive..."
+            python3 /home/n8n/google_drive/gdrive_backup.py upload "$BACKUP_DIR/$BACKUP_NAME.zip" "All-Domains" || true
+        fi
+    fi
 fi
 
-# Fix permissions
-chown -R 1000:1000 /home/n8n/files/
-
-# Restart services
-cd /home/n8n
-docker-compose restart
-
-echo "✅ Migration restore completed!"
-echo "🔍 Please verify all domains are working correctly"
-EOL
-
-chmod +x scripts/migrate-restore.sh
-
-# Create server comparison script
-cat > scripts/compare-servers.sh << 'EOL'
-#!/bin/bash
-
-# Server Comparison Tool
-echo "🔍 Server Comparison Tool"
-echo "========================"
-
-echo "Current Server Info:"
-echo "• OS: $(lsb_release -d | cut -f2)"
-echo "• Kernel: $(uname -r)"
-echo "• Docker: $(docker --version)"
-echo "• Memory: $(free -h | grep Mem | awk '{print $2}')"
-echo "• Disk: $(df -h / | tail -1 | awk '{print $2}')"
-echo "• CPU: $(nproc) cores"
-
-echo ""
-echo "N8N Installation:"
-echo "• Instances: $(docker ps --filter "name=n8n-container" --format "{{.Names}}" | wc -l)"
-echo "• Database: $(docker ps --filter "name=postgres-n8n" --format "{{.Names}}" | grep -q "postgres-n8n" && echo "PostgreSQL" || echo "SQLite")"
-echo "• News API: $(docker ps --filter "name=news-api" --format "{{.Names}}" | grep -q "news-api" && echo "Enabled" || echo "Disabled")"
-
-echo ""
-echo "Domains:"
-grep -E "^[a-zA-Z0-9.-]+\s*{" /home/n8n/Caddyfile | awk '{print "• " $1}'
-
-echo ""
-echo "Recommended New Server Specs:"
-echo "• OS: Ubuntu 20.04+ LTS"
-echo "• Memory: 4GB+ RAM (for multi-domain)"
-echo "• Disk: 50GB+ SSD"
-echo "• CPU: 2+ cores"
-echo "• Network: 1Gbps+"
-EOL
-
-chmod +x scripts/compare-servers.sh
-
-# Create migration metadata
-cat > migration_metadata.json << EOL
-{
-    "export_date": "$(date -u +"%Y-%m-%dT%H:%M:%SZ")",
-    "export_name": "$EXPORT_NAME",
-    "source_server": {
-        "hostname": "$(hostname)",
-        "os": "$(lsb_release -d | cut -f2)",
-        "kernel": "$(uname -r)",
-        "docker_version": "$(docker --version)",
-        "ip_address": "$(curl -s https://api.ipify.org || echo 'unknown')"
-    },
-    "n8n_setup": {
-        "instances": $(docker ps --filter "name=n8n-container" --format "{{.Names}}" | wc -l),
-        "database_type": "$(docker ps --filter "name=postgres-n8n" --format "{{.Names}}" | grep -q "postgres-n8n" && echo "postgresql" || echo "sqlite")",
-        "news_api": $(docker ps --filter "name=news-api" --format "{{.Names}}" | grep -q "news-api" && echo "true" || echo "false"),
-        "domains": [$(grep -E "^[a-zA-Z0-9.-]+\s*{" /home/n8n/Caddyfile | awk '{print "\"" $1 "\""}' | paste -sd,)]
-    },
-    "migration_package_size": "0MB",
-    "instructions": "See docs/MIGRATION_GUIDE.md for detailed migration steps"
-}
-EOL
-
-# Create ZIP package
-cd "$MIGRATION_DIR"
-log "📦 Creating migration package..."
-zip -r "$EXPORT_NAME.zip" "$EXPORT_NAME/" -q
-
-# Get package size
-PACKAGE_SIZE=$(ls -lh "$EXPORT_NAME.zip" | awk '{print $5}')
-sed -i "s/\"migration_package_size\": \"0MB\"/\"migration_package_size\": \"$PACKAGE_SIZE\"/" "$EXPORT_NAME/migration_metadata.json"
-
-# Update ZIP with new metadata
-zip -u "$EXPORT_NAME.zip" "$EXPORT_NAME/migration_metadata.json" -q
-
-# Cleanup
-rm -rf "$EXPORT_NAME"
-
-log "✅ Migration package created: $MIGRATION_DIR/$EXPORT_NAME.zip"
-log "📊 Package size: $PACKAGE_SIZE"
-log "📚 See included documentation for migration steps"
-
-echo ""
-echo -e "${BLUE}📋 Migration Package Contents:${NC}"
-echo "• Complete N8N configuration"
-echo "• All workflows and credentials"
-echo "• Database schema"
-echo "• Migration scripts"
-echo "• Detailed documentation"
-echo ""
-echo -e "${GREEN}📦 Package location: $MIGRATION_DIR/$EXPORT_NAME.zip${NC}"
-echo -e "${YELLOW}📚 Read docs/MIGRATION_GUIDE.md for migration steps${NC}"
+log "🎉 Enhanced backup process completed successfully!"
 EOF
 
-    chmod +x "$INSTALL_DIR/management/export-migration.sh"
-    
-    success "Đã tạo Migration Tools"
-}
-
-# =============================================================================
-# BACKUP SYSTEM
-# =============================================================================
-
-create_backup_scripts() {
-    create_advanced_backup_system
+    chmod +x "$INSTALL_DIR/backup-workflows-enhanced.sh"
     
     # Manual backup test script
     cat > "$INSTALL_DIR/backup-manual.sh" << 'EOF'
 #!/bin/bash
 
-echo "🧪 MANUAL BACKUP TEST - Multi-Domain"
-echo "===================================="
+echo "🧪 ENHANCED MANUAL BACKUP TEST"
+echo "=============================="
 echo ""
 
 cd /home/n8n
 
 echo "📋 Thông tin hệ thống:"
 echo "• Thời gian: $(date)"
-echo "• N8N Instances: $(docker ps --filter "name=n8n-container" --format "{{.Names}}" | wc -l)"
-echo "• Database: $(docker ps --filter "name=postgres-n8n" --format "{{.Names}}" | grep -q "postgres-n8n" && echo "PostgreSQL" || echo "SQLite")"
 echo "• Disk usage: $(df -h /home/n8n | tail -1 | awk '{print $5}')"
 echo "• Memory: $(free -h | grep Mem | awk '{print $3"/"$2}')"
+echo "• Docker containers: $(docker ps --filter "name=n8n" --format "{{.Names}}" | wc -l)"
 echo ""
 
-echo "🔄 Chạy advanced backup test..."
-./backup-workflows.sh
+echo "🔄 Chạy enhanced backup test..."
+./backup-workflows-enhanced.sh
 
 echo ""
 echo "📊 Kết quả backup:"
 ls -lah /home/n8n/files/backup_full/n8n_backup_*.zip | tail -5
 
 echo ""
-echo "📋 Latest backup report:"
-if [[ -f "/home/n8n/files/backup_full/latest_backup_report.txt" ]]; then
-    cat /home/n8n/files/backup_full/latest_backup_report.txt
-fi
+echo "📄 Backup report:"
+cat /home/n8n/files/backup_full/latest_backup_report.txt
 
 echo ""
-echo "✅ Manual backup test completed!"
+echo "✅ Enhanced manual backup test completed!"
 EOF
 
     chmod +x "$INSTALL_DIR/backup-manual.sh"
     
-    success "Đã tạo Backup Scripts"
+    success "Đã tạo hệ thống backup enhanced"
 }
 
-create_update_script() {
-    if [[ "$ENABLE_AUTO_UPDATE" != "true" ]]; then
-        return 0
-    fi
+create_restore_script() {
+    log "🔄 Tạo restore script..."
     
-    log "🔄 Tạo script auto-update..."
-    
-    cat > "$INSTALL_DIR/update-n8n.sh" << 'EOF'
+    cat > "$INSTALL_DIR/restore-from-backup.sh" << 'EOF'
 #!/bin/bash
 
 # =============================================================================
-# N8N AUTO-UPDATE SCRIPT - Multi-Domain Support
+# N8N ENHANCED RESTORE SCRIPT - Multi-Domain Support
 # =============================================================================
 
 set -e
-
-LOG_FILE="/home/n8n/logs/update.log"
-TIMESTAMP=$(date +"%Y-%m-%d %H:%M:%S")
 
 # Colors
 RED='\033[0;31m'
 GREEN='\033[0;32m'
 YELLOW='\033[1;33m'
+BLUE='\033[0;34m'
 NC='\033[0m'
 
 log() {
-    echo -e "${GREEN}[$TIMESTAMP] $1${NC}" | tee -a "$LOG_FILE"
+    echo -e "${GREEN}[$(date +'%Y-%m-%d %H:%M:%S')] $1${NC}"
 }
 
 error() {
-    echo -e "${RED}[$TIMESTAMP] [ERROR] $1${NC}" | tee -a "$LOG_FILE"
+    echo -e "${RED}[ERROR] $1${NC}"
 }
+
+warning() {
+    echo -e "${YELLOW}[WARNING] $1${NC}"
+}
+
+info() {
+    echo -e "${BLUE}[INFO] $1${NC}"
+}
+
+# Check arguments
+if [[ $# -lt 1 ]]; then
+    echo "Sử dụng: $0 <backup_file.zip> [domain_filter]"
+    echo ""
+    echo "Ví dụ:"
+    echo "  $0 /path/to/n8n_backup_20250628_140000.zip"
+    echo "  $0 /path/to/backup.zip domain.com"
+    echo ""
+    exit 1
+fi
+
+BACKUP_FILE="$1"
+DOMAIN_FILTER="${2:-}"
+
+# Check if backup file exists
+if [[ ! -f "$BACKUP_FILE" ]]; then
+    error "Backup file không tồn tại: $BACKUP_FILE"
+    exit 1
+fi
 
 # Check Docker Compose command
 if command -v docker-compose &> /dev/null; then
@@ -3332,112 +2154,2087 @@ else
     exit 1
 fi
 
+log "🔄 Bắt đầu restore từ backup: $(basename $BACKUP_FILE)"
+
+# Create temp directory
+TEMP_DIR="/tmp/n8n_restore_$(date +%s)"
+mkdir -p "$TEMP_DIR"
+
+# Extract backup
+log "📦 Giải nén backup file..."
+cd "$TEMP_DIR"
+unzip -q "$BACKUP_FILE"
+
+# Find backup directory
+BACKUP_DIR=$(find . -name "n8n_backup_*" -type d | head -1)
+if [[ -z "$BACKUP_DIR" ]]; then
+    error "Không tìm thấy backup data trong file"
+    rm -rf "$TEMP_DIR"
+    exit 1
+fi
+
+cd "$BACKUP_DIR"
+
+# Read backup metadata
+if [[ -f "backup_metadata.json" ]]; then
+    log "📊 Đọc backup metadata..."
+    BACKUP_TYPE=$(python3 -c "import json; print(json.load(open('backup_metadata.json'))['backup_type'])" 2>/dev/null || echo "unknown")
+    MULTI_DOMAIN=$(python3 -c "import json; print(json.load(open('backup_metadata.json'))['multi_domain'])" 2>/dev/null || echo "false")
+    INSTANCE_COUNT=$(python3 -c "import json; print(json.load(open('backup_metadata.json'))['instance_count'])" 2>/dev/null || echo "1")
+    
+    info "Backup Type: $BACKUP_TYPE"
+    info "Multi-Domain: $MULTI_DOMAIN"
+    info "Instance Count: $INSTANCE_COUNT"
+else
+    warning "Không tìm thấy metadata, sử dụng restore mode cơ bản"
+    MULTI_DOMAIN="false"
+    INSTANCE_COUNT="1"
+fi
+
+# Confirm restore
+echo ""
+warning "⚠️  CẢNH BÁO: Restore sẽ ghi đè dữ liệu hiện tại!"
+if [[ -n "$DOMAIN_FILTER" ]]; then
+    info "Chỉ restore cho domain: $DOMAIN_FILTER"
+fi
+read -p "Bạn có chắc chắn muốn tiếp tục? (y/N): " -n 1 -r
+echo
+if [[ ! $REPLY =~ ^[Yy]$ ]]; then
+    log "Hủy restore"
+    rm -rf "$TEMP_DIR"
+    exit 0
+fi
+
+# Stop services
+log "🛑 Dừng N8N services..."
 cd /home/n8n
+$DOCKER_COMPOSE down
 
-log "🔄 Bắt đầu auto-update N8N Multi-Domain..."
+# Restore configuration files
+if [[ -d "config" ]]; then
+    log "🔧 Restore configuration files..."
+    
+    if [[ -f "config/docker-compose.yml" ]]; then
+        cp "config/docker-compose.yml" /home/n8n/
+    fi
+    
+    if [[ -f "config/Caddyfile" ]]; then
+        cp "config/Caddyfile" /home/n8n/
+    fi
+    
+    if [[ -f "config/telegram_config.txt" ]]; then
+        cp "config/telegram_config.txt" /home/n8n/
+    fi
+fi
 
-# Get N8N instances
-N8N_CONTAINERS=$(docker ps --filter "name=n8n-container" --format "{{.Names}}")
-INSTANCE_COUNT=$(echo "$N8N_CONTAINERS" | wc -l)
+# Restore SSL certificates
+if [[ -d "ssl" && -f "ssl/caddy_data.tar.gz" ]]; then
+    log "🔒 Restore SSL certificates..."
+    docker volume create n8n_caddy_data 2>/dev/null || true
+    docker run --rm -v n8n_caddy_data:/data -v "$(pwd)/ssl":/backup alpine tar xzf /backup/caddy_data.tar.gz -C /data
+fi
 
-log "📊 Phát hiện $INSTANCE_COUNT N8N instances"
+# Restore PostgreSQL databases
+if [[ -d "postgres" && "$MULTI_DOMAIN" == "true" ]]; then
+    log "🐘 Restore PostgreSQL databases..."
+    
+    # Start PostgreSQL first
+    $DOCKER_COMPOSE up -d postgres
+    sleep 10
+    
+    # Restore each instance database
+    for sql_file in postgres/dump_instance_*.sql; do
+        if [[ -f "$sql_file" ]]; then
+            INSTANCE_NUM=$(echo "$sql_file" | grep -o '[0-9]\+')
+            DB_NAME="n8n_db_instance_$INSTANCE_NUM"
+            
+            log "Restore database: $DB_NAME"
+            docker exec -i postgres-n8n psql -U n8n_user -d $DB_NAME < "$sql_file" || true
+        fi
+    done
+    
+    # Restore main database
+    if [[ -f "postgres/dump_main.sql" ]]; then
+        log "Restore main database"
+        docker exec -i postgres-n8n psql -U n8n_user -d n8n_db < "postgres/dump_main.sql" || true
+    fi
+fi
 
-# Backup before update
-log "💾 Backup trước khi update..."
-./backup-workflows.sh
+# Restore N8N instances
+if [[ -d "instances" ]]; then
+    log "📋 Restore N8N instances..."
+    
+    for instance_dir in instances/instance_*; do
+        if [[ -d "$instance_dir" ]]; then
+            INSTANCE_NUM=$(echo "$instance_dir" | grep -o '[0-9]\+')
+            
+            # Check domain filter
+            if [[ -n "$DOMAIN_FILTER" && -f "$instance_dir/metadata.json" ]]; then
+                INSTANCE_DOMAIN=$(python3 -c "import json; print(json.load(open('$instance_dir/metadata.json'))['domain'])" 2>/dev/null || echo "unknown")
+                if [[ "$INSTANCE_DOMAIN" != "$DOMAIN_FILTER" ]]; then
+                    info "Bỏ qua instance $INSTANCE_NUM (domain: $INSTANCE_DOMAIN)"
+                    continue
+                fi
+            fi
+            
+            log "Restore instance $INSTANCE_NUM..."
+            
+            if [[ "$MULTI_DOMAIN" == "true" ]]; then
+                TARGET_DIR="/home/n8n/files/n8n_instance_$INSTANCE_NUM"
+            else
+                TARGET_DIR="/home/n8n/files"
+            fi
+            
+            mkdir -p "$TARGET_DIR"
+            cp -r "$instance_dir"/* "$TARGET_DIR/" 2>/dev/null || true
+            
+            # Import workflows and credentials if available
+            if [[ -f "$instance_dir/workflows.json" ]]; then
+                log "Import workflows cho instance $INSTANCE_NUM"
+                # Will be imported after containers start
+            fi
+            
+            if [[ -f "$instance_dir/credentials.json" ]]; then
+                log "Import credentials cho instance $INSTANCE_NUM"
+                # Will be imported after containers start
+            fi
+        fi
+    done
+fi
 
-# Pull latest images
-log "📦 Pull latest Docker images..."
-$DOCKER_COMPOSE pull
-
-# Update yt-dlp in all N8N containers
-log "📺 Update yt-dlp trong tất cả containers..."
-for container in $N8N_CONTAINERS; do
-    log "  🔄 Updating yt-dlp in $container..."
-    docker exec $container pip3 install --break-system-packages -U yt-dlp || true
-done
-
-# Restart services
-log "🔄 Restart services..."
+# Start services
+log "🚀 Khởi động N8N services..."
 $DOCKER_COMPOSE up -d
 
 # Wait for services to be ready
 log "⏳ Đợi services khởi động..."
-sleep 60
+sleep 30
 
-# Check if all services are running
-log "🔍 Kiểm tra trạng thái services..."
+# Import workflows and credentials
+if [[ -d "instances" ]]; then
+    log "📥 Import workflows và credentials..."
+    
+    for instance_dir in instances/instance_*; do
+        if [[ -d "$instance_dir" ]]; then
+            INSTANCE_NUM=$(echo "$instance_dir" | grep -o '[0-9]\+')
+            
+            # Check domain filter
+            if [[ -n "$DOMAIN_FILTER" && -f "$instance_dir/metadata.json" ]]; then
+                INSTANCE_DOMAIN=$(python3 -c "import json; print(json.load(open('$instance_dir/metadata.json'))['domain'])" 2>/dev/null || echo "unknown")
+                if [[ "$INSTANCE_DOMAIN" != "$DOMAIN_FILTER" ]]; then
+                    continue
+                fi
+            fi
+            
+            if [[ "$MULTI_DOMAIN" == "true" ]]; then
+                CONTAINER_NAME="n8n-container-$INSTANCE_NUM"
+            else
+                CONTAINER_NAME="n8n-container"
+            fi
+            
+            # Import workflows
+            if [[ -f "$instance_dir/workflows.json" ]]; then
+                log "Import workflows vào $CONTAINER_NAME..."
+                docker cp "$instance_dir/workflows.json" $CONTAINER_NAME:/tmp/
+                docker exec $CONTAINER_NAME n8n import:workflow --input=/tmp/workflows.json 2>/dev/null || true
+            fi
+            
+            # Import credentials
+            if [[ -f "$instance_dir/credentials.json" ]]; then
+                log "Import credentials vào $CONTAINER_NAME..."
+                docker cp "$instance_dir/credentials.json" $CONTAINER_NAME:/tmp/
+                docker exec $CONTAINER_NAME n8n import:credentials --input=/tmp/credentials.json 2>/dev/null || true
+            fi
+        fi
+    done
+fi
 
-all_healthy=true
+# Cleanup
+rm -rf "$TEMP_DIR"
 
-# Check N8N instances
-for container in $N8N_CONTAINERS; do
-    if docker ps | grep -q "$container"; then
-        log "✅ $container đang chạy"
+# Verify services
+log "🔍 Kiểm tra services..."
+sleep 10
+
+if [[ "$MULTI_DOMAIN" == "true" ]]; then
+    for i in $(seq 1 $INSTANCE_COUNT); do
+        CONTAINER_NAME="n8n-container-$i"
+        if docker ps | grep -q "$CONTAINER_NAME"; then
+            log "✅ $CONTAINER_NAME đang chạy"
+        else
+            warning "❌ $CONTAINER_NAME không chạy"
+        fi
+    done
+else
+    if docker ps | grep -q "n8n-container"; then
+        log "✅ N8N container đang chạy"
     else
-        error "❌ $container không chạy"
-        all_healthy=false
+        warning "❌ N8N container không chạy"
     fi
-done
+fi
 
-# Check other services
 if docker ps | grep -q "caddy-proxy"; then
     log "✅ Caddy proxy đang chạy"
 else
-    error "❌ Caddy proxy không chạy"
-    all_healthy=false
+    warning "❌ Caddy proxy không chạy"
 fi
 
-if docker ps | grep -q "postgres-n8n"; then
-    log "✅ PostgreSQL đang chạy"
-elif docker ps | grep -q "news-api"; then
-    log "✅ News API đang chạy"
+log "🎉 Restore completed successfully!"
+echo ""
+echo "📋 Thông tin sau restore:"
+echo "• Backup file: $(basename $BACKUP_FILE)"
+echo "• Restore time: $(date)"
+if [[ -n "$DOMAIN_FILTER" ]]; then
+    echo "• Domain filter: $DOMAIN_FILTER"
 fi
-
-# Send Telegram notification if configured
-if [[ -f "/home/n8n/telegram_config.txt" ]]; then
-    source "/home/n8n/telegram_config.txt"
-    
-    if [[ -n "$TELEGRAM_BOT_TOKEN" && -n "$TELEGRAM_CHAT_ID" ]]; then
-        STATUS_ICON="✅"
-        STATUS_TEXT="Success"
-        
-        if [[ "$all_healthy" != "true" ]]; then
-            STATUS_ICON="⚠️"
-            STATUS_TEXT="Warning - Some services may have issues"
-        fi
-        
-        MESSAGE="🔄 *N8N Multi-Domain Auto-Update*
-
-📅 Date: $TIMESTAMP
-🌐 Instances: $INSTANCE_COUNT N8N instances
-$STATUS_ICON Status: $STATUS_TEXT
-
-📦 Components updated:
-• N8N Docker images
-• yt-dlp (all instances)
-• System dependencies
-
-🔍 All services status checked
-💾 Backup completed before update"
-
-        curl -s -X POST "https://api.telegram.org/bot$TELEGRAM_BOT_TOKEN/sendMessage" \
-            -d chat_id="$TELEGRAM_CHAT_ID" \
-            -d text="$MESSAGE" \
-            -d parse_mode="Markdown" > /dev/null || true
-    fi
-fi
-
-if [[ "$all_healthy" == "true" ]]; then
-    log "🎉 Auto-update completed successfully!"
+echo "• Multi-domain: $MULTI_DOMAIN"
+echo "• Instance count: $INSTANCE_COUNT"
+echo ""
+echo "🌐 Truy cập N8N:"
+if [[ "$MULTI_DOMAIN" == "true" ]]; then
+    for i in $(seq 1 $INSTANCE_COUNT); do
+        DOMAIN=$(grep -E "^[a-zA-Z0-9.-]+.*reverse_proxy.*n8n_$i" /home/n8n/Caddyfile | awk '{print $1}' || echo 'unknown')
+        echo "• Instance $i: https://$DOMAIN"
+    done
 else
-    error "⚠️ Auto-update completed with warnings - check logs"
+    DOMAIN=$(grep -E "^[a-zA-Z0-9.-]+.*reverse_proxy.*n8n:" /home/n8n/Caddyfile | awk '{print $1}' || echo 'unknown')
+    echo "• N8N: https://$DOMAIN"
 fi
 EOF
 
-    chmod +x "$INSTALL_DIR/update-n8n.sh"
+    chmod +x "$INSTALL_DIR/restore-from-backup.sh"
     
-    success "Đã tạo script auto-update với Multi-Domain support"
+    success "Đã tạo restore script"
+}
+
+# =============================================================================
+# GOOGLE DRIVE INTEGRATION
+# =============================================================================
+
+create_google_drive_integration() {
+    if [[ "$ENABLE_GOOGLE_DRIVE" != "true" ]]; then
+        return 0
+    fi
+    
+    log "☁️ Tạo Google Drive integration..."
+    
+    # Install Google API dependencies
+    pip3 install google-api-python-client google-auth google-auth-oauthlib google-auth-httplib2 || true
+    
+    # Create Google Drive backup script
+    cat > "$INSTALL_DIR/google_drive/gdrive_backup.py" << 'EOF'
+#!/usr/bin/env python3
+
+import os
+import sys
+import json
+import argparse
+from datetime import datetime
+from pathlib import Path
+
+try:
+    from google.oauth2.service_account import Credentials
+    from googleapiclient.discovery import build
+    from googleapiclient.http import MediaFileUpload
+    from googleapiclient.errors import HttpError
+except ImportError:
+    print("❌ Google API libraries not installed. Run: pip3 install google-api-python-client google-auth")
+    sys.exit(1)
+
+class GoogleDriveBackup:
+    def __init__(self, credentials_file):
+        self.credentials_file = credentials_file
+        self.service = None
+        self.root_folder_id = None
+        self.connect()
+    
+    def connect(self):
+        """Connect to Google Drive API"""
+        try:
+            credentials = Credentials.from_service_account_file(
+                self.credentials_file,
+                scopes=['https://www.googleapis.com/auth/drive']
+            )
+            self.service = build('drive', 'v3', credentials=credentials)
+            print("✅ Connected to Google Drive API")
+        except Exception as e:
+            print(f"❌ Failed to connect to Google Drive: {e}")
+            sys.exit(1)
+    
+    def find_or_create_folder(self, name, parent_id=None):
+        """Find or create a folder"""
+        try:
+            # Search for existing folder
+            query = f"name='{name}' and mimeType='application/vnd.google-apps.folder'"
+            if parent_id:
+                query += f" and '{parent_id}' in parents"
+            
+            results = self.service.files().list(q=query).execute()
+            items = results.get('files', [])
+            
+            if items:
+                return items[0]['id']
+            
+            # Create new folder
+            folder_metadata = {
+                'name': name,
+                'mimeType': 'application/vnd.google-apps.folder'
+            }
+            if parent_id:
+                folder_metadata['parents'] = [parent_id]
+            
+            folder = self.service.files().create(body=folder_metadata).execute()
+            print(f"📁 Created folder: {name}")
+            return folder.get('id')
+            
+        except HttpError as e:
+            print(f"❌ Error creating folder {name}: {e}")
+            return None
+    
+    def get_folder_structure(self, domain):
+        """Get or create folder structure: N8N-Backups/YYYY/MM-Month/Domain/"""
+        now = datetime.now()
+        year = now.strftime("%Y")
+        month = now.strftime("%m-%B")
+        
+        # Find or create root folder
+        if not self.root_folder_id:
+            self.root_folder_id = self.find_or_create_folder("N8N-Backups")
+        
+        # Create year folder
+        year_folder_id = self.find_or_create_folder(year, self.root_folder_id)
+        
+        # Create month folder
+        month_folder_id = self.find_or_create_folder(month, year_folder_id)
+        
+        # Create domain folder
+        domain_folder_id = self.find_or_create_folder(domain, month_folder_id)
+        
+        return domain_folder_id
+    
+    def upload_file(self, file_path, domain):
+        """Upload backup file to Google Drive"""
+        try:
+            folder_id = self.get_folder_structure(domain)
+            if not folder_id:
+                print("❌ Failed to create folder structure")
+                return False
+            
+            file_name = os.path.basename(file_path)
+            file_metadata = {
+                'name': file_name,
+                'parents': [folder_id]
+            }
+            
+            media = MediaFileUpload(file_path, resumable=True)
+            
+            print(f"☁️ Uploading {file_name} to Google Drive...")
+            file = self.service.files().create(
+                body=file_metadata,
+                media_body=media,
+                fields='id'
+            ).execute()
+            
+            print(f"✅ Upload completed. File ID: {file.get('id')}")
+            return True
+            
+        except HttpError as e:
+            print(f"❌ Upload failed: {e}")
+            return False
+    
+    def list_backups(self, domain=None):
+        """List backup files"""
+        try:
+            if domain and domain != "all":
+                # List backups for specific domain
+                query = f"name contains 'n8n_backup_' and mimeType!='application/vnd.google-apps.folder'"
+                # Add domain-specific search if needed
+            else:
+                # List all backups
+                query = f"name contains 'n8n_backup_' and mimeType!='application/vnd.google-apps.folder'"
+            
+            results = self.service.files().list(
+                q=query,
+                orderBy='createdTime desc',
+                fields='files(id, name, size, createdTime, parents)'
+            ).execute()
+            
+            items = results.get('files', [])
+            
+            if not items:
+                print("📁 No backup files found")
+                return
+            
+            print(f"📋 Found {len(items)} backup files:")
+            for item in items:
+                size_mb = int(item.get('size', 0)) / (1024 * 1024)
+                created = item.get('createdTime', 'Unknown')
+                print(f"  • {item['name']} ({size_mb:.1f} MB) - {created}")
+                print(f"    ID: {item['id']}")
+            
+        except HttpError as e:
+            print(f"❌ Failed to list backups: {e}")
+    
+    def download_file(self, file_id, output_path):
+        """Download backup file from Google Drive"""
+        try:
+            print(f"📥 Downloading file ID: {file_id}")
+            
+            request = self.service.files().get_media(fileId=file_id)
+            
+            with open(output_path, 'wb') as f:
+                downloader = MediaIoBaseDownload(f, request)
+                done = False
+                while done is False:
+                    status, done = downloader.next_chunk()
+                    print(f"Download progress: {int(status.progress() * 100)}%")
+            
+            print(f"✅ Download completed: {output_path}")
+            return True
+            
+        except HttpError as e:
+            print(f"❌ Download failed: {e}")
+            return False
+
+def main():
+    parser = argparse.ArgumentParser(description='Google Drive N8N Backup Manager')
+    parser.add_argument('action', choices=['upload', 'list', 'download'], help='Action to perform')
+    parser.add_argument('file_or_id', nargs='?', help='File path (for upload) or File ID (for download)')
+    parser.add_argument('domain_or_output', nargs='?', help='Domain name (for upload) or Output path (for download)')
+    
+    args = parser.parse_args()
+    
+    # Check credentials file
+    credentials_file = '/home/n8n/google_drive/credentials.json'
+    if not os.path.exists(credentials_file):
+        print(f"❌ Credentials file not found: {credentials_file}")
+        print("Please upload your Google Service Account JSON file to this location.")
+        sys.exit(1)
+    
+    # Initialize Google Drive backup
+    gdrive = GoogleDriveBackup(credentials_file)
+    
+    if args.action == 'upload':
+        if not args.file_or_id or not args.domain_or_output:
+            print("Usage: python3 gdrive_backup.py upload <file_path> <domain>")
+            sys.exit(1)
+        
+        if not os.path.exists(args.file_or_id):
+            print(f"❌ File not found: {args.file_or_id}")
+            sys.exit(1)
+        
+        success = gdrive.upload_file(args.file_or_id, args.domain_or_output)
+        sys.exit(0 if success else 1)
+    
+    elif args.action == 'list':
+        domain = args.file_or_id or "all"
+        gdrive.list_backups(domain)
+    
+    elif args.action == 'download':
+        if not args.file_or_id or not args.domain_or_output:
+            print("Usage: python3 gdrive_backup.py download <file_id> <output_path>")
+            sys.exit(1)
+        
+        success = gdrive.download_file(args.file_or_id, args.domain_or_output)
+        sys.exit(0 if success else 1)
+
+if __name__ == '__main__':
+    main()
+EOF
+    
+    chmod +x "$INSTALL_DIR/google_drive/gdrive_backup.py"
+    
+    # Create cleanup script
+    cat > "$INSTALL_DIR/google_drive/cleanup_old_backups.py" << 'EOF'
+#!/usr/bin/env python3
+
+import os
+import sys
+import argparse
+from datetime import datetime, timedelta
+
+try:
+    from google.oauth2.service_account import Credentials
+    from googleapiclient.discovery import build
+    from googleapiclient.errors import HttpError
+except ImportError:
+    print("❌ Google API libraries not installed")
+    sys.exit(1)
+
+def cleanup_old_backups(credentials_file, days=90):
+    """Delete backup files older than specified days"""
+    try:
+        credentials = Credentials.from_service_account_file(
+            credentials_file,
+            scopes=['https://www.googleapis.com/auth/drive']
+        )
+        service = build('drive', 'v3', credentials=credentials)
+        
+        # Calculate cutoff date
+        cutoff_date = datetime.now() - timedelta(days=days)
+        cutoff_str = cutoff_date.isoformat() + 'Z'
+        
+        # Find old backup files
+        query = f"name contains 'n8n_backup_' and createdTime < '{cutoff_str}'"
+        
+        results = service.files().list(
+            q=query,
+            fields='files(id, name, createdTime)'
+        ).execute()
+        
+        items = results.get('files', [])
+        
+        if not items:
+            print(f"📁 No backup files older than {days} days found")
+            return
+        
+        print(f"🗑️ Found {len(items)} backup files older than {days} days:")
+        
+        for item in items:
+            print(f"  • Deleting: {item['name']} ({item['createdTime']})")
+            service.files().delete(fileId=item['id']).execute()
+        
+        print(f"✅ Cleanup completed. Deleted {len(items)} files.")
+        
+    except HttpError as e:
+        print(f"❌ Cleanup failed: {e}")
+
+def main():
+    parser = argparse.ArgumentParser(description='Cleanup old N8N backups from Google Drive')
+    parser.add_argument('--days', type=int, default=90, help='Delete files older than this many days (default: 90)')
+    
+    args = parser.parse_args()
+    
+    credentials_file = '/home/n8n/google_drive/credentials.json'
+    if not os.path.exists(credentials_file):
+        print(f"❌ Credentials file not found: {credentials_file}")
+        sys.exit(1)
+    
+    cleanup_old_backups(credentials_file, args.days)
+
+if __name__ == '__main__':
+    main()
+EOF
+    
+    chmod +x "$INSTALL_DIR/google_drive/cleanup_old_backups.py"
+    
+    # Create placeholder for credentials
+    cat > "$INSTALL_DIR/google_drive/README.md" << 'EOF'
+# Google Drive Backup Setup
+
+## 1. Upload Credentials File
+
+Upload your Google Service Account JSON file to:
+```
+/home/n8n/google_drive/credentials.json
+```
+
+## 2. Usage
+
+### Upload backup
+```bash
+python3 /home/n8n/google_drive/gdrive_backup.py upload /path/to/backup.zip domain.com
+```
+
+### List backups
+```bash
+python3 /home/n8n/google_drive/gdrive_backup.py list all
+python3 /home/n8n/google_drive/gdrive_backup.py list domain.com
+```
+
+### Download backup
+```bash
+python3 /home/n8n/google_drive/gdrive_backup.py download FILE_ID /path/to/output.zip
+```
+
+### Cleanup old backups
+```bash
+python3 /home/n8n/google_drive/cleanup_old_backups.py --days 90
+```
+EOF
+    
+    success "Đã tạo Google Drive integration"
+}
+
+# =============================================================================
+# TELEGRAM BOT MANAGEMENT
+# =============================================================================
+
+create_telegram_bot() {
+    if [[ "$ENABLE_TELEGRAM_BOT" != "true" ]]; then
+        return 0
+    fi
+    
+    log "🤖 Tạo Telegram Bot Management..."
+    
+    # Create Telegram bot script
+    cat > "$INSTALL_DIR/telegram_bot/bot.py" << 'EOF'
+#!/usr/bin/env python3
+
+import os
+import sys
+import json
+import subprocess
+import time
+from datetime import datetime
+import logging
+
+try:
+    import requests
+except ImportError:
+    print("❌ requests library not installed. Run: pip3 install requests")
+    sys.exit(1)
+
+# Configure logging
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s - %(levelname)s - %(message)s',
+    handlers=[
+        logging.FileHandler('/home/n8n/logs/telegram_bot.log'),
+        logging.StreamHandler()
+    ]
+)
+logger = logging.getLogger(__name__)
+
+class N8NTelegramBot:
+    def __init__(self, token, chat_id):
+        self.token = token
+        self.chat_id = chat_id
+        self.base_url = f"https://api.telegram.org/bot{token}"
+        self.last_update_id = 0
+        
+    def send_message(self, text, parse_mode="Markdown"):
+        """Send message to Telegram"""
+        try:
+            url = f"{self.base_url}/sendMessage"
+            data = {
+                'chat_id': self.chat_id,
+                'text': text,
+                'parse_mode': parse_mode
+            }
+            response = requests.post(url, data=data, timeout=10)
+            return response.json()
+        except Exception as e:
+            logger.error(f"Failed to send message: {e}")
+            return None
+    
+    def get_updates(self):
+        """Get updates from Telegram"""
+        try:
+            url = f"{self.base_url}/getUpdates"
+            params = {'offset': self.last_update_id + 1, 'timeout': 10}
+            response = requests.get(url, params=params, timeout=15)
+            return response.json()
+        except Exception as e:
+            logger.error(f"Failed to get updates: {e}")
+            return None
+    
+    def run_command(self, command):
+        """Run shell command and return output"""
+        try:
+            result = subprocess.run(
+                command,
+                shell=True,
+                capture_output=True,
+                text=True,
+                timeout=60,
+                cwd='/home/n8n'
+            )
+            return result.stdout + result.stderr
+        except subprocess.TimeoutExpired:
+            return "❌ Command timeout (60s)"
+        except Exception as e:
+            return f"❌ Command failed: {e}"
+    
+    def get_system_status(self):
+        """Get system status"""
+        try:
+            # System info
+            uptime = self.run_command("uptime -p").strip()
+            memory = self.run_command("free -h | grep Mem | awk '{print $3\"/\"$2}'").strip()
+            disk = self.run_command("df -h /home/n8n | tail -1 | awk '{print $5}'").strip()
+            
+            # Container status
+            containers = self.run_command("docker ps --format 'table {{.Names}}\t{{.Status}}' | grep -E '(n8n|caddy|postgres|news-api)'")
+            
+            # Domain info
+            domains = []
+            if os.path.exists('/home/n8n/Caddyfile'):
+                caddyfile = open('/home/n8n/Caddyfile').read()
+                for line in caddyfile.split('\n'):
+                    if '{' in line and 'reverse_proxy' not in line:
+                        domain = line.split()[0]
+                        if '.' in domain:
+                            domains.append(domain)
+            
+            message = f"""🚀 *N8N System Status*
+
+📊 *System Info:*
+• Uptime: {uptime}
+• Memory: {memory}
+• Disk Usage: {disk}
+
+🌐 *Domains ({len(domains)}):*
+{chr(10).join([f"• {domain}" for domain in domains[:10]])}
+
+🐳 *Containers:*
+```
+{containers}
+```"""
+            
+            return message
+            
+        except Exception as e:
+            return f"❌ Failed to get system status: {e}"
+    
+    def get_performance_metrics(self):
+        """Get performance metrics"""
+        try:
+            # CPU and memory usage
+            cpu = self.run_command("top -bn1 | grep 'Cpu(s)' | awk '{print $2}' | cut -d'%' -f1").strip()
+            load = self.run_command("uptime | awk -F'load average:' '{print $2}'").strip()
+            
+            # Docker stats
+            docker_stats = self.run_command("docker stats --no-stream --format 'table {{.Container}}\t{{.CPUPerc}}\t{{.MemUsage}}'")
+            
+            # Network connections
+            connections = self.run_command("netstat -an | grep ESTABLISHED | wc -l").strip()
+            
+            message = f"""📈 *Performance Metrics*
+📅 {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}
+
+🐳 *Container Resources:*
+```
+{docker_stats}
+```
+
+⚡ *System Load:* {load}
+🌐 *Active Connections:* {connections}"""
+            
+            return message
+            
+        except Exception as e:
+            return f"❌ Failed to get performance metrics: {e}"
+    
+    def get_health_check(self):
+        """Get detailed health check"""
+        try:
+            # Container status
+            containers = self.run_command("docker ps --format 'table {{.Names}}\t{{.Status}}\t{{.Ports}}'")
+            
+            # SSL status
+            ssl_status = []
+            if os.path.exists('/home/n8n/Caddyfile'):
+                caddyfile = open('/home/n8n/Caddyfile').read()
+                for line in caddyfile.split('\n'):
+                    if '{' in line and 'reverse_proxy' not in line:
+                        domain = line.split()[0]
+                        if '.' in domain:
+                            ssl_check = self.run_command(f"curl -I https://{domain} 2>/dev/null | head -1")
+                            status = "✅" if "200 OK" in ssl_check else "❌"
+                            ssl_status.append(f"{status} {domain}")
+            
+            # Recent backups
+            backups = self.run_command("ls -la /home/n8n/files/backup_full/n8n_backup_*.zip 2>/dev/null | tail -3")
+            
+            message = f"""🏥 *Health Check Report*
+📅 Generated: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}
+
+🐳 *Container Status:*
+```
+{containers}
+```
+
+🔒 *SSL Status:*
+{chr(10).join(ssl_status[:10])}
+
+💾 *Recent Backups:*
+```
+{backups}
+```"""
+            
+            return message
+            
+        except Exception as e:
+            return f"❌ Failed to get health check: {e}"
+    
+    def restart_service(self, service):
+        """Restart specific service"""
+        try:
+            if service == "all":
+                output = self.run_command("docker-compose restart")
+                return f"🔄 *Restarting all services...*\n```\n{output}\n```"
+            elif service in ["n8n", "caddy", "postgres", "fastapi", "telegram-bot"]:
+                if service == "telegram-bot":
+                    output = self.run_command("systemctl restart n8n-telegram-bot")
+                else:
+                    output = self.run_command(f"docker-compose restart {service}")
+                return f"🔄 *Restarting {service}...*\n```\n{output}\n```"
+            else:
+                return f"❌ Unknown service: {service}\nAvailable: all, n8n, caddy, postgres, fastapi, telegram-bot"
+        except Exception as e:
+            return f"❌ Failed to restart {service}: {e}"
+    
+    def get_logs(self, service, lines=20):
+        """Get logs for specific service"""
+        try:
+            if service == "all":
+                output = self.run_command(f"docker-compose logs --tail={lines}")
+            elif service in ["n8n", "caddy", "postgres", "fastapi"]:
+                output = self.run_command(f"docker-compose logs --tail={lines} {service}")
+            elif service == "telegram-bot":
+                output = self.run_command(f"journalctl -u n8n-telegram-bot --no-pager -n {lines}")
+            else:
+                return f"❌ Unknown service: {service}\nAvailable: all, n8n, caddy, postgres, fastapi, telegram-bot"
+            
+            # Truncate if too long
+            if len(output) > 3000:
+                output = output[-3000:] + "\n... (truncated)"
+            
+            return f"📋 *Logs for {service}:*\n```\n{output}\n```"
+        except Exception as e:
+            return f"❌ Failed to get logs for {service}: {e}"
+    
+    def run_backup(self):
+        """Run manual backup"""
+        try:
+            output = self.run_command("/home/n8n/backup-workflows-enhanced.sh")
+            return f"💾 *Manual Backup Started*\n```\n{output}\n```"
+        except Exception as e:
+            return f"❌ Failed to run backup: {e}"
+    
+    def run_troubleshoot(self):
+        """Run troubleshoot script"""
+        try:
+            output = self.run_command("/home/n8n/troubleshoot.sh")
+            # Truncate if too long
+            if len(output) > 3000:
+                output = output[-3000:] + "\n... (truncated)"
+            return f"🔧 *Troubleshoot Report*\n```\n{output}\n```"
+        except Exception as e:
+            return f"❌ Failed to run troubleshoot: {e}"
+    
+    def process_command(self, text):
+        """Process incoming command"""
+        text = text.strip().lower()
+        
+        if text == "/start":
+            return """🤖 *N8N Telegram Bot Management*
+
+📋 *Available Commands:*
+• `/status` - System status overview
+• `/health` - Detailed health check
+• `/performance` - Performance metrics
+• `/restart <service>` - Restart service
+• `/logs <service> [lines]` - View logs
+• `/backup` - Run manual backup
+• `/troubleshoot` - Run diagnostic
+• `/help` - Show this help
+
+🛠️ *Services:* all, n8n, caddy, postgres, fastapi, telegram-bot
+
+👨‍💻 *Created by Nguyễn Ngọc Thiện*"""
+        
+        elif text == "/help":
+            return self.process_command("/start")
+        
+        elif text == "/status":
+            return self.get_system_status()
+        
+        elif text == "/health":
+            return self.get_health_check()
+        
+        elif text == "/performance":
+            return self.get_performance_metrics()
+        
+        elif text.startswith("/restart"):
+            parts = text.split()
+            service = parts[1] if len(parts) > 1 else "all"
+            return self.restart_service(service)
+        
+        elif text.startswith("/logs"):
+            parts = text.split()
+            service = parts[1] if len(parts) > 1 else "all"
+            lines = int(parts[2]) if len(parts) > 2 and parts[2].isdigit() else 20
+            lines = min(lines, 100)  # Limit to 100 lines
+            return self.get_logs(service, lines)
+        
+        elif text == "/backup":
+            return self.run_backup()
+        
+        elif text == "/troubleshoot":
+            return self.run_troubleshoot()
+        
+        else:
+            return f"❌ Unknown command: {text}\nUse /help for available commands"
+    
+    def run(self):
+        """Main bot loop"""
+        logger.info("🤖 N8N Telegram Bot started")
+        self.send_message("🤖 *N8N Telegram Bot Started*\n\nUse /help for available commands")
+        
+        while True:
+            try:
+                updates = self.get_updates()
+                if not updates or not updates.get('ok'):
+                    time.sleep(5)
+                    continue
+                
+                for update in updates.get('result', []):
+                    self.last_update_id = update['update_id']
+                    
+                    if 'message' not in update:
+                        continue
+                    
+                    message = update['message']
+                    chat_id = message['chat']['id']
+                    
+                    # Check if message is from authorized chat
+                    if str(chat_id) != str(self.chat_id):
+                        logger.warning(f"Unauthorized access attempt from chat_id: {chat_id}")
+                        continue
+                    
+                    if 'text' not in message:
+                        continue
+                    
+                    text = message['text']
+                    logger.info(f"Received command: {text}")
+                    
+                    # Process command
+                    response = self.process_command(text)
+                    
+                    # Send response
+                    self.send_message(response)
+                
+                time.sleep(1)
+                
+            except KeyboardInterrupt:
+                logger.info("Bot stopped by user")
+                break
+            except Exception as e:
+                logger.error(f"Bot error: {e}")
+                time.sleep(10)
+
+def main():
+    # Load config
+    config_file = '/home/n8n/telegram_config.txt'
+    if not os.path.exists(config_file):
+        print(f"❌ Config file not found: {config_file}")
+        sys.exit(1)
+    
+    # Parse config
+    config = {}
+    with open(config_file) as f:
+        for line in f:
+            if '=' in line:
+                key, value = line.strip().split('=', 1)
+                config[key] = value.strip('"')
+    
+    token = config.get('TELEGRAM_BOT_TOKEN')
+    chat_id = config.get('TELEGRAM_CHAT_ID')
+    
+    if not token or not chat_id:
+        print("❌ Missing TELEGRAM_BOT_TOKEN or TELEGRAM_CHAT_ID in config")
+        sys.exit(1)
+    
+    # Start bot
+    bot = N8NTelegramBot(token, chat_id)
+    bot.run()
+
+if __name__ == '__main__':
+    main()
+EOF
+    
+    chmod +x "$INSTALL_DIR/telegram_bot/bot.py"
+    
+    # Create bot startup script
+    cat > "$INSTALL_DIR/telegram_bot/start_bot.sh" << 'EOF'
+#!/bin/bash
+
+# Install required Python packages
+pip3 install requests
+
+# Start Telegram bot
+cd /home/n8n
+python3 /home/n8n/telegram_bot/bot.py
+EOF
+    
+    chmod +x "$INSTALL_DIR/telegram_bot/start_bot.sh"
+    
+    success "Đã tạo Telegram Bot Management"
+}
+
+# =============================================================================
+# WEB DASHBOARD
+# =============================================================================
+
+create_web_dashboard() {
+    log "📊 Tạo Web Dashboard..."
+    
+    # Create dashboard HTML
+    cat > "$INSTALL_DIR/dashboard/index.html" << 'EOF'
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>N8N Multi-Domain Dashboard</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+        
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+        
+        .header {
+            text-align: center;
+            color: white;
+            margin-bottom: 30px;
+        }
+        
+        .header h1 {
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+        }
+        
+        .header p {
+            font-size: 1.1rem;
+            opacity: 0.9;
+        }
+        
+        .dashboard-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+        
+        .card {
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 15px;
+            padding: 25px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+            backdrop-filter: blur(10px);
+        }
+        
+        .card h3 {
+            color: #2c3e50;
+            margin-bottom: 20px;
+            font-size: 1.3rem;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .status-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px 0;
+            border-bottom: 1px solid #ecf0f1;
+        }
+        
+        .status-item:last-child {
+            border-bottom: none;
+        }
+        
+        .status-running {
+            background: #27ae60;
+            color: white;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            font-weight: bold;
+        }
+        
+        .status-stopped {
+            background: #e74c3c;
+            color: white;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            font-weight: bold;
+        }
+        
+        .status-warning {
+            background: #f39c12;
+            color: white;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            font-weight: bold;
+        }
+        
+        .actions {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 15px;
+            margin-top: 30px;
+        }
+        
+        .btn {
+            background: linear-gradient(135deg, #3498db, #2980b9);
+            color: white;
+            border: none;
+            padding: 12px 20px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 0.9rem;
+            font-weight: bold;
+            transition: all 0.3s ease;
+            text-decoration: none;
+            text-align: center;
+            display: inline-block;
+        }
+        
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(52, 152, 219, 0.4);
+        }
+        
+        .btn-success {
+            background: linear-gradient(135deg, #27ae60, #229954);
+        }
+        
+        .btn-warning {
+            background: linear-gradient(135deg, #f39c12, #e67e22);
+        }
+        
+        .btn-danger {
+            background: linear-gradient(135deg, #e74c3c, #c0392b);
+        }
+        
+        .btn-info {
+            background: linear-gradient(135deg, #17a2b8, #138496);
+        }
+        
+        .last-updated {
+            text-align: center;
+            color: white;
+            margin-top: 20px;
+            opacity: 0.8;
+        }
+        
+        .loading {
+            text-align: center;
+            color: #7f8c8d;
+            font-style: italic;
+        }
+        
+        .metric-value {
+            font-size: 1.5rem;
+            font-weight: bold;
+            color: #2c3e50;
+        }
+        
+        .metric-label {
+            font-size: 0.9rem;
+            color: #7f8c8d;
+        }
+        
+        @media (max-width: 768px) {
+            .dashboard-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .header h1 {
+                font-size: 2rem;
+            }
+            
+            .actions {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🚀 N8N Multi-Domain Dashboard</h1>
+            <p>Real-time monitoring and management</p>
+        </div>
+        
+        <div class="dashboard-grid">
+            <div class="card">
+                <h3>📊 System Overview</h3>
+                <div id="system-overview" class="loading">Loading...</div>
+            </div>
+            
+            <div class="card">
+                <h3>🐳 Container Status</h3>
+                <div id="container-status" class="loading">Loading...</div>
+            </div>
+            
+            <div class="card">
+                <h3>🌐 N8N Instances</h3>
+                <div id="n8n-instances" class="loading">Loading...</div>
+            </div>
+            
+            <div class="card">
+                <h3>🔒 SSL Certificates</h3>
+                <div id="ssl-status" class="loading">Loading...</div>
+            </div>
+            
+            <div class="card">
+                <h3>💾 Backup Status</h3>
+                <div id="backup-status" class="loading">Loading...</div>
+            </div>
+            
+            <div class="card">
+                <h3>📈 Performance Metrics</h3>
+                <div id="performance-metrics" class="loading">Loading...</div>
+            </div>
+        </div>
+        
+        <div class="actions">
+            <button class="btn" onclick="refreshData()">🔄 Refresh Data</button>
+            <button class="btn btn-warning" onclick="restartAll()">🔄 Restart All</button>
+            <button class="btn btn-success" onclick="runBackup()">💾 Manual Backup</button>
+            <a href="/logs" class="btn btn-info" target="_blank">📋 View Logs</a>
+            <button class="btn btn-warning" onclick="updateSystem()">⬆️ Update System</button>
+            <a href="/troubleshoot" class="btn btn-danger" target="_blank">🔧 Troubleshoot</a>
+        </div>
+        
+        <div class="last-updated">
+            Last updated: <span id="last-updated">Never</span>
+        </div>
+    </div>
+
+    <script>
+        let autoRefreshInterval;
+        
+        async function fetchSystemData() {
+            try {
+                const response = await fetch('/api/system-status');
+                const data = await response.json();
+                updateDashboard(data);
+                document.getElementById('last-updated').textContent = new Date().toLocaleString();
+            } catch (error) {
+                console.error('Failed to fetch system data:', error);
+            }
+        }
+        
+        function updateDashboard(data) {
+            // System Overview
+            document.getElementById('system-overview').innerHTML = `
+                <div class="status-item">
+                    <span>Uptime</span>
+                    <span class="metric-value">${data.uptime || 'Unknown'}</span>
+                </div>
+                <div class="status-item">
+                    <span>Memory Usage</span>
+                    <span class="metric-value">${data.memory || 'Unknown'}</span>
+                </div>
+                <div class="status-item">
+                    <span>Disk Usage</span>
+                    <span class="metric-value">${data.disk || 'Unknown'}</span>
+                </div>
+                <div class="status-item">
+                    <span>Load Average</span>
+                    <span class="metric-value">${data.load || 'Unknown'}</span>
+                </div>
+            `;
+            
+            // Container Status
+            let containerHtml = '';
+            if (data.containers && data.containers.length > 0) {
+                data.containers.forEach(container => {
+                    const statusClass = container.state === 'running' ? 'status-running' : 'status-stopped';
+                    containerHtml += `
+                        <div class="status-item">
+                            <span>${container.name}</span>
+                            <span class="${statusClass}">${container.state}</span>
+                        </div>
+                    `;
+                });
+            } else {
+                containerHtml = '<div class="loading">No container data</div>';
+            }
+            document.getElementById('container-status').innerHTML = containerHtml;
+            
+            // N8N Instances
+            let instancesHtml = '';
+            if (data.instances && data.instances.length > 0) {
+                data.instances.forEach(instance => {
+                    const statusClass = instance.status === 'healthy' ? 'status-running' : 'status-warning';
+                    instancesHtml += `
+                        <div class="status-item">
+                            <span>${instance.domain}</span>
+                            <span class="${statusClass}">${instance.status}</span>
+                        </div>
+                    `;
+                });
+            } else {
+                instancesHtml = '<div class="loading">No instance data</div>';
+            }
+            document.getElementById('n8n-instances').innerHTML = instancesHtml;
+            
+            // SSL Status
+            let sslHtml = '';
+            if (data.ssl && data.ssl.length > 0) {
+                data.ssl.forEach(ssl => {
+                    const statusClass = ssl.valid ? 'status-running' : 'status-warning';
+                    const statusText = ssl.valid ? 'Valid' : 'Invalid';
+                    sslHtml += `
+                        <div class="status-item">
+                            <span>${ssl.domain}</span>
+                            <span class="${statusClass}">${statusText}</span>
+                        </div>
+                    `;
+                });
+            } else {
+                sslHtml = '<div class="loading">No SSL data</div>';
+            }
+            document.getElementById('ssl-status').innerHTML = sslHtml;
+            
+            // Backup Status
+            document.getElementById('backup-status').innerHTML = `
+                <div class="status-item">
+                    <span>Backup Count</span>
+                    <span class="metric-value">${data.backup?.count || '0'}</span>
+                </div>
+                <div class="status-item">
+                    <span>Last Backup</span>
+                    <span class="metric-label">${data.backup?.last || 'Never'}</span>
+                </div>
+                <div class="status-item">
+                    <span>Total Size</span>
+                    <span class="metric-value">${data.backup?.size || '0 MB'}</span>
+                </div>
+            `;
+            
+            // Performance Metrics
+            document.getElementById('performance-metrics').innerHTML = `
+                <div class="status-item">
+                    <span>CPU Usage</span>
+                    <span class="metric-value">${data.performance?.cpu || 'Unknown'}</span>
+                </div>
+                <div class="status-item">
+                    <span>Network I/O</span>
+                    <span class="metric-value">${data.performance?.network || 'Normal'}</span>
+                </div>
+                <div class="status-item">
+                    <span>Active Connections</span>
+                    <span class="metric-value">${data.performance?.connections || '0'}</span>
+                </div>
+            `;
+        }
+        
+        async function refreshData() {
+            await fetchSystemData();
+        }
+        
+        async function restartAll() {
+            if (confirm('Are you sure you want to restart all services?')) {
+                try {
+                    const response = await fetch('/api/restart-all', { method: 'POST' });
+                    const result = await response.text();
+                    alert('Restart initiated. Please wait a few minutes and refresh.');
+                } catch (error) {
+                    alert('Failed to restart services: ' + error.message);
+                }
+            }
+        }
+        
+        async function runBackup() {
+            if (confirm('Run manual backup now?')) {
+                try {
+                    const response = await fetch('/api/backup', { method: 'POST' });
+                    const result = await response.text();
+                    alert('Backup started. Check Telegram for status updates.');
+                } catch (error) {
+                    alert('Failed to start backup: ' + error.message);
+                }
+            }
+        }
+        
+        async function updateSystem() {
+            if (confirm('Update system now? This may take several minutes.')) {
+                try {
+                    const response = await fetch('/api/update', { method: 'POST' });
+                    const result = await response.text();
+                    alert('System update started. Please wait and refresh in a few minutes.');
+                } catch (error) {
+                    alert('Failed to start update: ' + error.message);
+                }
+            }
+        }
+        
+        // Auto-refresh every 30 seconds
+        function startAutoRefresh() {
+            autoRefreshInterval = setInterval(fetchSystemData, 30000);
+        }
+        
+        function stopAutoRefresh() {
+            if (autoRefreshInterval) {
+                clearInterval(autoRefreshInterval);
+            }
+        }
+        
+        // Keyboard shortcuts
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'r' || e.key === 'R') {
+                e.preventDefault();
+                refreshData();
+            } else if (e.key === 'b' || e.key === 'B') {
+                e.preventDefault();
+                runBackup();
+            } else if (e.key === 'l' || e.key === 'L') {
+                e.preventDefault();
+                window.open('/logs', '_blank');
+            } else if (e.key === 't' || e.key === 'T') {
+                e.preventDefault();
+                window.open('/troubleshoot', '_blank');
+            }
+        });
+        
+        // Initialize
+        fetchSystemData();
+        startAutoRefresh();
+        
+        // Stop auto-refresh when page is hidden
+        document.addEventListener('visibilitychange', function() {
+            if (document.hidden) {
+                stopAutoRefresh();
+            } else {
+                startAutoRefresh();
+            }
+        });
+    </script>
+</body>
+</html>
+EOF
+    
+    # Create dashboard server
+    cat > "$INSTALL_DIR/dashboard/server.py" << 'EOF'
+#!/usr/bin/env python3
+
+import os
+import json
+import subprocess
+import threading
+from http.server import HTTPServer, BaseHTTPRequestHandler
+from urllib.parse import urlparse, parse_qs
+import time
+
+class DashboardHandler(BaseHTTPRequestHandler):
+    def do_GET(self):
+        parsed_path = urlparse(self.path)
+        path = parsed_path.path
+        
+        if path == '/' or path == '/index.html':
+            self.serve_file('/home/n8n/dashboard/index.html', 'text/html')
+        elif path == '/api/system-status':
+            self.serve_system_status()
+        elif path == '/logs':
+            self.serve_logs()
+        elif path == '/troubleshoot':
+            self.serve_troubleshoot()
+        else:
+            self.send_error(404)
+    
+    def do_POST(self):
+        parsed_path = urlparse(self.path)
+        path = parsed_path.path
+        
+        if path == '/api/restart-all':
+            self.restart_all_services()
+        elif path == '/api/backup':
+            self.run_backup()
+        elif path == '/api/update':
+            self.update_system()
+        else:
+            self.send_error(404)
+    
+    def serve_file(self, file_path, content_type):
+        try:
+            with open(file_path, 'r') as f:
+                content = f.read()
+            
+            self.send_response(200)
+            self.send_header('Content-type', content_type)
+            self.end_headers()
+            self.wfile.write(content.encode())
+        except FileNotFoundError:
+            self.send_error(404)
+    
+    def run_command(self, command):
+        try:
+            result = subprocess.run(
+                command,
+                shell=True,
+                capture_output=True,
+                text=True,
+                timeout=30,
+                cwd='/home/n8n'
+            )
+            return result.stdout + result.stderr
+        except:
+            return "Command failed"
+    
+    def serve_system_status(self):
+        try:
+            # System info
+            uptime = self.run_command("uptime -p").strip()
+            memory = self.run_command("free -h | grep Mem | awk '{print $3\"/\"$2}'").strip()
+            disk = self.run_command("df -h /home/n8n | tail -1 | awk '{print $5}'").strip()
+            load = self.run_command("uptime | awk -F'load average:' '{print $2}'").strip()
+            
+            # Container status
+            containers = []
+            container_output = self.run_command("docker ps --format '{{.Names}}\t{{.State}}'")
+            for line in container_output.split('\n'):
+                if line.strip():
+                    parts = line.split('\t')
+                    if len(parts) >= 2:
+                        containers.append({
+                            'name': parts[0],
+                            'state': 'running' if 'running' in parts[1].lower() else 'stopped'
+                        })
+            
+            # N8N instances
+            instances = []
+            if os.path.exists('/home/n8n/Caddyfile'):
+                with open('/home/n8n/Caddyfile') as f:
+                    caddyfile = f.read()
+                    for line in caddyfile.split('\n'):
+                        if '{' in line and 'reverse_proxy' not in line:
+                            domain = line.split()[0]
+                            if '.' in domain:
+                                # Simple health check
+                                health = self.run_command(f"curl -I https://{domain} 2>/dev/null | head -1")
+                                status = 'healthy' if '200 OK' in health else 'unhealthy'
+                                instances.append({
+                                    'domain': domain,
+                                    'status': status
+                                })
+            
+            # SSL status
+            ssl_status = []
+            for instance in instances:
+                domain = instance['domain']
+                ssl_check = self.run_command(f"curl -I https://{domain} 2>/dev/null | head -1")
+                ssl_status.append({
+                    'domain': domain,
+                    'valid': '200 OK' in ssl_check
+                })
+            
+            # Backup status
+            backup_count = self.run_command("ls -1 /home/n8n/files/backup_full/n8n_backup_*.zip 2>/dev/null | wc -l").strip()
+            backup_size = self.run_command("du -sh /home/n8n/files/backup_full 2>/dev/null | awk '{print $1}'").strip()
+            latest_backup = self.run_command("ls -t /home/n8n/files/backup_full/n8n_backup_*.zip 2>/dev/null | head -1 | xargs basename 2>/dev/null").strip()
+            
+            # Performance metrics
+            cpu = self.run_command("top -bn1 | grep 'Cpu(s)' | awk '{print $2}' | cut -d'%' -f1").strip()
+            connections = self.run_command("netstat -an | grep ESTABLISHED | wc -l").strip()
+            
+            data = {
+                'uptime': uptime,
+                'memory': memory,
+                'disk': disk,
+                'load': load,
+                'containers': containers,
+                'instances': instances,
+                'ssl': ssl_status,
+                'backup': {
+                    'count': backup_count,
+                    'size': backup_size,
+                    'last': latest_backup
+                },
+                'performance': {
+                    'cpu': f"{cpu}%" if cpu else "Unknown",
+                    'network': "Normal",
+                    'connections': connections
+                }
+            }
+            
+            self.send_response(200)
+            self.send_header('Content-type', 'application/json')
+            self.send_header('Access-Control-Allow-Origin', '*')
+            self.end_headers()
+            self.wfile.write(json.dumps(data).encode())
+            
+        except Exception as e:
+            self.send_error(500, str(e))
+    
+    def restart_all_services(self):
+        try:
+            def restart_async():
+                self.run_command("docker-compose restart")
+            
+            thread = threading.Thread(target=restart_async)
+            thread.start()
+            
+            self.send_response(200)
+            self.send_header('Content-type', 'text/plain')
+            self.end_headers()
+            self.wfile.write(b'Restart initiated')
+        except Exception as e:
+            self.send_error(500, str(e))
+    
+    def run_backup(self):
+        try:
+            def backup_async():
+                self.run_command("/home/n8n/backup-workflows-enhanced.sh")
+            
+            thread = threading.Thread(target=backup_async)
+            thread.start()
+            
+            self.send_response(200)
+            self.send_header('Content-type', 'text/plain')
+            self.end_headers()
+            self.wfile.write(b'Backup started')
+        except Exception as e:
+            self.send_error(500, str(e))
+    
+    def update_system(self):
+        try:
+            def update_async():
+                if os.path.exists('/home/n8n/update-n8n.sh'):
+                    self.run_command("/home/n8n/update-n8n.sh")
+            
+            thread = threading.Thread(target=update_async)
+            thread.start()
+            
+            self.send_response(200)
+            self.send_header('Content-type', 'text/plain')
+            self.end_headers()
+            self.wfile.write(b'Update started')
+        except Exception as e:
+            self.send_error(500, str(e))
+    
+    def serve_logs(self):
+        try:
+            logs = self.run_command("docker-compose logs --tail=100")
+            
+            html = f"""
+            <!DOCTYPE html>
+            <html>
+            <head>
+                <title>N8N Logs</title>
+                <style>
+                    body {{ font-family: monospace; background: #2c3e50; color: #ecf0f1; padding: 20px; }}
+                    pre {{ white-space: pre-wrap; word-wrap: break-word; }}
+                    .header {{ color: #3498db; margin-bottom: 20px; }}
+                </style>
+            </head>
+            <body>
+                <div class="header">
+                    <h1>🔍 N8N System Logs</h1>
+                    <p>Last 100 lines - Auto-refresh every 30 seconds</p>
+                </div>
+                <pre>{logs}</pre>
+                <script>
+                    setTimeout(() => location.reload(), 30000);
+                </script>
+            </body>
+            </html>
+            """
+            
+            self.send_response(200)
+            self.send_header('Content-type', 'text/html')
+            self.end_headers()
+            self.wfile.write(html.encode())
+        except Exception as e:
+            self.send_error(500, str(e))
+    
+    def serve_troubleshoot(self):
+        try:
+            troubleshoot = self.run_command("/home/n8n/troubleshoot.sh")
+            
+            html = f"""
+            <!DOCTYPE html>
+            <html>
+            <head>
+                <title>N8N Troubleshoot</title>
+                <style>
+                    body {{ font-family: monospace; background: #2c3e50; color: #ecf0f1; padding: 20px; }}
+                    pre {{ white-space: pre-wrap; word-wrap: break-word; }}
+                    .header {{ color: #e74c3c; margin-bottom: 20px; }}
+                </style>
+            </head>
+            <body>
+                <div class="header">
+                    <h1>🔧 N8N Troubleshoot Report</h1>
+                    <p>Generated: {time.strftime('%Y-%m-%d %H:%M:%S')}</p>
+                </div>
+                <pre>{troubleshoot}</pre>
+            </body>
+            </html>
+            """
+            
+            self.send_response(200)
+            self.send_header('Content-type', 'text/html')
+            self.end_headers()
+            self.wfile.write(html.encode())
+        except Exception as e:
+            self.send_error(500, str(e))
+
+def run_dashboard():
+    server_address = ('0.0.0.0', 8080)
+    httpd = HTTPServer(server_address, DashboardHandler)
+    print(f"🌐 Dashboard server running on http://0.0.0.0:8080")
+    httpd.serve_forever()
+
+if __name__ == '__main__':
+    run_dashboard()
+EOF
+    
+    chmod +x "$INSTALL_DIR/dashboard/server.py"
+    
+    success "Đã tạo Web Dashboard"
+}
+
+# =============================================================================
+# TROUBLESHOOTING SCRIPT
+# =============================================================================
+
+create_troubleshooting_script() {
+    log "🔧 Tạo script chẩn đoán enhanced..."
+    
+    cat > "$INSTALL_DIR/troubleshoot.sh" << 'EOF'
+#!/bin/bash
+
+# =============================================================================
+# N8N ENHANCED TROUBLESHOOTING SCRIPT - Multi-Domain Support
+# =============================================================================
+
+# Colors
+RED='\033[0;31m'
+GREEN='\033[0;32m'
+YELLOW='\033[1;33m'
+BLUE='\033[0;34m'
+CYAN='\033[0;36m'
+WHITE='\033[1;37m'
+NC='\033[0m'
+
+echo -e "${CYAN}╔══════════════════════════════════════════════════════════════════════════════╗${NC}"
+echo -e "${CYAN}║${WHITE}                🔧 N8N ENHANCED TROUBLESHOOTING SCRIPT                       ${CYAN}║${NC}"
+echo -e "${CYAN}╚══════════════════════════════════════════════════════════════════════════════╝${NC}"
+echo ""
+
+# Check Docker Compose command
+if command -v docker-compose &> /dev/null; then
+    DOCKER_COMPOSE="docker-compose"
+elif docker compose version &> /dev/null; then
+    DOCKER_COMPOSE="docker compose"
+else
+    echo -e "${RED}❌ Docker Compose không tìm thấy!${NC}"
+    exit 1
+fi
+
+cd /home/n8n
+
+echo -e "${BLUE}📍 1. System Information:${NC}"
+echo "• OS: $(lsb_release -d | cut -f2 2>/dev/null || echo 'Unknown')"
+echo "• Kernel: $(uname -r)"
+echo "• Docker: $(docker --version 2>/dev/null || echo 'Not installed')"
+echo "• Docker Compose: $($DOCKER_COMPOSE --version 2>/dev/null || echo 'Not installed')"
+echo "• Disk Usage: $(df -h /home/n8n | tail -1 | awk '{print $5}' 2>/dev/null || echo 'Unknown')"
+echo "• Memory: $(free -h | grep Mem | awk '{print $3"/"$2}' 2>/dev/null || echo 'Unknown')"
+echo "• Uptime: $(uptime -p 2>/dev/null || echo 'Unknown')"
+echo "• Swap: $(swapon --show | grep -v NAME | awk '{print $3}' | head -1 || echo 'None')"
+echo ""
+
+echo -e "${BLUE}📍 2. Multi-Domain Detection:${NC}"
+MULTI_DOMAIN=false
+INSTANCE_COUNT=0
+
+if docker ps --filter "name=n8n-container-" --format "{{.Names}}" | grep -q "n8n-container-"; then
+    MULTI_DOMAIN=true
+    INSTANCE_COUNT=$(docker ps --filter "name=n8n-container-" --format "{{.Names}}" | wc -l)
+    echo "• Mode: Multi-Domain"
+    echo "• Instance Count: $INSTANCE_COUNT"
+else
+    echo "• Mode: Single Domain"
+    INSTANCE_COUNT=1
+fi
+
+# PostgreSQL detection
+if docker ps | grep -q "postgres-n8n"; then
+    echo "• Database: PostgreSQL"
+else
+    echo "• Database: SQLite"
+fi
+echo ""
+
+echo -e "${BLUE}📍 3. Container Status:${NC}"
+$DOCKER_COMPOSE ps 2>/dev/null || echo "No containers found"
+echo ""
+
+echo -e "${BLUE}📍 4. Docker Images:${NC}"
+docker images | grep -E "(n8n|caddy|news-api|postgres)" || echo "No relevant images found"
+echo ""
+
+echo -e "${BLUE}📍 5. Network Status:${NC}"
+echo "• Port 80: $(netstat -tulpn 2>/dev/null | grep :80 | wc -l) connections"
+echo "• Port 443: $(netstat -tulpn 2>/dev/null | grep :443 | wc -l) connections"
+echo "• Port 8080: $(netstat -tulpn 2>/dev/null | grep :8080 | wc -l) connections (Dashboard)"
+echo "• Docker Networks:"
+docker network ls | grep n8n || echo "  No N8N networks found"
+echo ""
+
+echo -e "${BLUE}📍 6. Domain & SSL Status:${NC}"
+if [[ -f "Caddyfile" ]]; then
+    echo "• Domains configured:"
+    grep -E "^[a-zA-Z0-9.-]+\s*{" Caddyfile | awk '{print "  - " $1}' || echo "  No domains found"
+    
+    echo "• SSL Certificate Status:"
+    grep -E "^[a-zA-Z0-9.-]+\s*{" Caddyfile | awk '{print $1}' | while read domain; do
+        if [[ -n "$domain" && "$domain" != "{" ]]; then
+            SSL_STATUS=$(timeout 10 curl -I "https://$domain" 2>/dev/null | head -1 || echo "Connection failed")
+            if echo "$SSL_STATUS" | grep -q "200 OK"; then
+                echo "  ✅ $domain: SSL OK"
+            else
+                echo "  ❌ $domain: SSL Failed ($SSL_STATUS)"
+            fi
+        fi
+    done
+else
+    echo "• No Caddyfile found"
+fi
+echo ""
+
+echo -e "${BLUE}📍 7. Service Health Checks:${NC}"
+if [[ "$MULTI_DOMAIN" == "true" ]]; then
+    for i in $(seq 1 $INSTANCE_COUNT); do
+        CONTAINER_NAME="n8n-container-$i"
+        if docker ps | grep -q "$CONTAINER_NAME"; then
+            echo "  ✅ $CONTAINER_NAME: Running"
+            # Check if N8N is responding
+            PORT=$((5677 + i))
+            HEALTH=$(curl -s "http://localhost:$PORT/healthz" 2>/dev/null || echo "No response")
+            echo "    Health: $HEALTH"
+        else
+            echo "  ❌ $CONTAINER_NAME: Not running"
+        fi
+    done
+else
+    if docker ps | grep -q "n8n-container"; then
+        echo "  ✅ n8n-container: Running"
+        HEALTH=$(curl -s "http://localhost:5678/healthz" 2>/dev/null || echo "No response")
+        echo "    Health: $HEALTH"
+    else
+        echo "  ❌ n8n-container: Not running"
+    fi
+fi
+
+# Check other services
+if docker ps | grep -q "caddy-proxy"; then
+    echo "  ✅ caddy-proxy: Running"
+else
+    echo "  ❌ caddy-proxy: Not running"
+fi
+
+if docker ps | grep -q "postgres-n8n"; then
+    echo "  ✅ postgres-n8n: Running"
+    # Check PostgreSQL connection
+    PG_STATUS=$(docker exec postgres-n8n pg_isready -U n8n_user 2>/dev/null || echo "Connection failed")
+    echo "    PostgreSQL: $PG_STATUS"
+else
+    echo "  ℹ️ postgres-n8n: Not configured"
+fi
+
+if docker ps | grep -q "news-api-container"; then
+    echo "  ✅ news-api-container: Running"
+    API_STATUS=$(curl -s "http://localhost:8000/health" 2>/dev/null | grep -o '"status":"[^"]*"' || echo "No response")
+    echo "    API Health: $API_STATUS"
+else
+    echo "  ℹ️ news-api-container: Not configured"
+fi
+echo ""
+
+echo -e "${BLUE}📍 8. Recent Logs (last 10 lines):${NC}"
+echo -e "${YELLOW}N8N Logs:${NC}"
+if [[ "$MULTI_DOMAIN" == "true" ]]; then
+    for i in $(seq 1 $INSTANCE_COUNT); do
+        echo "  Instance $i:"
+        $DOCKER_COMPOSE logs --tail=5 "n8n_$i" 2>/dev/null | sed 's/^/    /' || echo "    No logs available"
+    done
+else
+    $DOCKER_COMPOSE logs --tail=10 n8n 2>/dev/null || echo "No N8N logs"
+fi
+
+echo ""
+echo -e "${YELLOW}Caddy Logs:${NC}"
+$DOCKER_COMPOSE logs --tail=10 caddy 2>/dev/null || echo "No Caddy logs"
+
+if docker ps | grep -q "news-api"; then
+    echo ""
+    echo -e "${YELLOW}News API Logs:${NC}"
+    $DOCKER_COMPOSE logs --tail=10 fastapi 2>/dev/null || echo "No News API logs"
+fi
+
+if docker ps | grep -q "postgres-n8n"; then
+    echo ""
+    echo -e "${YELLOW}PostgreSQL Logs:${NC}"
+    $DOCKER_COMPOSE logs --tail=10 postgres 2>/dev/null || echo "No PostgreSQL logs"
+fi
+echo ""
+
+echo -e "${BLUE}📍 9. Backup Status:${NC}"
+if [[ -d "/home/n8n/files/backup_full" ]]; then
+    BACKUP_COUNT=$(ls -1 /home/n8n/files/backup_full/n8n_backup_*.zip 2>/dev/null | wc -l)
+    echo "• Backup files: $BACKUP_COUNT"
+    if [[ $BACKUP_COUNT -gt 0 ]]; then
+        echo "• Latest backup: $(ls -t /home/n8n/files/backup_full/n8n_backup_*.zip 2>/dev/null | head -1 | xargs basename 2>/dev/null)"
+        echo "• Latest backup size: $(ls -lh /home/n8n/files/backup_full/n8n_backup_*.zip 2>/dev/null | head -1 | awk '{print $5}')"
+        echo "• Total backup size: $(du -sh /home/n8n/files/backup_full 2>/dev/null | awk '{print $1}')"
+    fi
+    
+    # Check backup report
+    if [[ -f "/home/n8n/files/backup_full/latest_backup_report.txt" ]]; then
+        echo "• Latest backup report available"
+    fi
+else
+    echo "• No backup directory found"
+fi
+
+# Check Google Drive integration
+if [[ -f "/home/n8n/google_drive/credentials.json" ]]; then
+    echo "• Google Drive: Configured"
+else
+    echo "• Google Drive: Not configured"
+fi
+echo ""
+
+echo -e "${BLUE}📍 10. Cron Jobs & Services:${NC}"
+echo "• Cron jobs:"
+crontab -l 2>/dev/null | grep -E "(n8n|backup)" | sed 's/^/  /' || echo "  No N8N cron jobs found"
+
+echo "• Systemd services:"
+if systemctl is-active --quiet n8n-telegram-bot; then
+    echo "  ✅ n8n-telegram-bot: Active"
+else
+    echo "  ❌ n8n-telegram-bot: Inactive"
+fi
+
+if systemctl is-active --quiet n8n-dashboard; then
+    echo "  ✅ n8n-dashboard: Active"
+else
+    echo "  ❌ n8n-dashboard: Inactive"
+fi
+echo ""
+
+echo -e "${BLUE}📍 11. Configuration Files:${NC}"
+echo "• docker-compose.yml: $([ -f docker-compose.yml ] && echo "✅ Present" || echo "❌ Missing")"
+echo "• Caddyfile: $([ -f Caddyfile ] && echo "✅ Present" || echo "❌ Missing")"
+echo "• telegram_config.txt: $([ -f telegram_config.txt ] && echo "✅ Present" || echo "❌ Missing")"
+echo "• Dockerfile: $([ -f Dockerfile ] && echo "✅ Present" || echo "❌ Missing")"
+
+if [[ "$MULTI_DOMAIN" == "true" ]]; then
+    echo "• init-multi-db.sh: $([ -f init-multi-db.sh ] && echo "✅ Present" || echo "❌ Missing")"
+fi
+echo ""
+
+echo -e "${BLUE}📍 12. Resource Usage:${NC}"
+echo "• Docker system usage:"
+docker system df 2>/dev/null | sed 's/^/  /' || echo "  Unable to get Docker usage"
+
+echo "• Top processes:"
+ps aux --sort=-%cpu | head -6 | sed 's/^/  /' || echo "  Unable to get process list"
+echo ""
+
+echo -e "${GREEN}🔧 QUICK FIX COMMANDS:${NC}"
+echo -e "${YELLOW}• Restart all services:${NC} cd /home/n8n && $DOCKER_COMPOSE restart"
+echo -e "${YELLOW}• View live logs:${NC} cd /home/n8n && $DOCKER_COMPOSE logs -f"
+echo -e "${YELLOW}• Rebuild containers:${NC} cd /home/n8n && $DOCKER_COMPOSE down && $DOCKER_COMPOSE up -d --build"
+echo -e "${YELLOW}• Manual backup:${NC} /home/n8n/backup-manual.sh"
+echo -e "${YELLOW}• Enhanced backup:${NC} /home/n8n/backup-workflows-enhanced.sh"
+echo -e "${YELLOW}• Web dashboard:${NC} http://$(curl -s https://api.ipify.org):8080"
+
+if [[ "$MULTI_DOMAIN" == "true" ]]; then
+    echo -e "${YELLOW}• Check specific instance:${NC} docker logs n8n-container-1"
+    echo -e "${YELLOW}• PostgreSQL shell:${NC} docker exec -it postgres-n8n psql -U n8n_user -d n8n_db"
+fi
+
+echo -e "${YELLOW}• Check SSL for domain:${NC} curl -I https://YOUR_DOMAIN"
+echo ""
+
+echo -e "${CYAN}✅ Enhanced troubleshooting completed!${NC}"
+echo -e "${CYAN}📊 Dashboard: http://$(curl -s https://api.ipify.org 2>/dev/null):8080${NC}"
+echo -e "${CYAN}📋 For detailed logs: /home/n8n/logs/${NC}"
+EOF
+
+    chmod +x "$INSTALL_DIR/troubleshoot.sh"
+    
+    success "Đã tạo script chẩn đoán enhanced"
+}
+
+# =============================================================================
+# SYSTEMD SERVICES
+# =============================================================================
+
+create_systemd_services() {
+    log "⚙️ Tạo systemd services..."
+    
+    # Telegram Bot service
+    if [[ "$ENABLE_TELEGRAM_BOT" == "true" ]]; then
+        cat > /etc/systemd/system/n8n-telegram-bot.service << 'EOF'
+[Unit]
+Description=N8N Telegram Bot Management
+After=docker.service
+Requires=docker.service
+
+[Service]
+Type=simple
+User=root
+WorkingDirectory=/home/n8n
+ExecStart=/home/n8n/telegram_bot/start_bot.sh
+Restart=always
+RestartSec=10
+StandardOutput=journal
+StandardError=journal
+
+[Install]
+WantedBy=multi-user.target
+EOF
+        
+        systemctl daemon-reload
+        systemctl enable n8n-telegram-bot
+        systemctl start n8n-telegram-bot
+        
+        success "Đã tạo Telegram Bot service"
+    fi
+    
+    # Dashboard service
+    cat > /etc/systemd/system/n8n-dashboard.service << 'EOF'
+[Unit]
+Description=N8N Web Dashboard
+After=docker.service
+Requires=docker.service
+
+[Service]
+Type=simple
+User=root
+WorkingDirectory=/home/n8n
+ExecStart=/usr/bin/python3 /home/n8n/dashboard/server.py
+Restart=always
+RestartSec=10
+StandardOutput=journal
+StandardError=journal
+
+[Install]
+WantedBy=multi-user.target
+EOF
+    
+    systemctl daemon-reload
+    systemctl enable n8n-dashboard
+    systemctl start n8n-dashboard
+    
+    success "Đã tạo Dashboard service"
 }
 
 # =============================================================================
@@ -3445,7 +4242,7 @@ EOF
 # =============================================================================
 
 setup_telegram_config() {
-    if [[ "$ENABLE_TELEGRAM" != "true" ]]; then
+    if [[ "$ENABLE_TELEGRAM" != "true" && "$ENABLE_TELEGRAM_BOT" != "true" ]]; then
         return 0
     fi
     
@@ -3464,23 +4261,26 @@ EOF
     local domain_list=""
     if [[ "$ENABLE_MULTI_DOMAIN" == "true" ]]; then
         for i in "${!DOMAINS[@]}"; do
-            domain_list="$domain_list• Instance $((i+1)): ${DOMAINS[i]}\n"
+            domain_list="$domain_list• Instance $((i+1)): ${DOMAINS[$i]}\n"
         done
     else
-        domain_list="• Main domain: ${DOMAINS[0]}\n"
+        domain_list="• Domain: ${DOMAINS[0]}\n"
     fi
     
-    TEST_MESSAGE="🚀 *N8N Multi-Domain Installation Completed*
+    TEST_MESSAGE="🚀 *N8N Enhanced Installation Completed*
 
 📅 Date: $(date +'%Y-%m-%d %H:%M:%S')
-🌐 Domains configured:
-$domain_list
-📰 API Domain: $([[ "$ENABLE_NEWS_API" == "true" ]] && echo "$API_DOMAIN" || echo "Disabled")
-🐘 Database: $([[ "$ENABLE_POSTGRESQL" == "true" ]] && echo "PostgreSQL" || echo "SQLite")
-💾 Backup: Enabled with ZIP compression
-🔄 Auto-update: $([[ "$ENABLE_AUTO_UPDATE" == "true" ]] && echo "Enabled" || echo "Disabled")
+🌐 Mode: $([[ "$ENABLE_MULTI_DOMAIN" == "true" ]] && echo "Multi-Domain (${#DOMAINS[@]} instances)" || echo "Single Domain")
+🐘 PostgreSQL: $([[ "$ENABLE_POSTGRESQL" == "true" ]] && echo "✅ Enabled" || echo "❌ Disabled")
+📰 News API: $([[ "$ENABLE_NEWS_API" == "true" ]] && echo "✅ Enabled" || echo "❌ Disabled")
+☁️ Google Drive: $([[ "$ENABLE_GOOGLE_DRIVE" == "true" ]] && echo "✅ Enabled" || echo "❌ Disabled")
+🤖 Telegram Bot: $([[ "$ENABLE_TELEGRAM_BOT" == "true" ]] && echo "✅ Enabled" || echo "❌ Disabled")
 
-✅ Multi-Domain system is ready!"
+🌐 Domains:
+$domain_list
+📊 Dashboard: http://$(curl -s https://api.ipify.org 2>/dev/null):8080
+
+✅ System is ready!"
 
     if curl -s -X POST "https://api.telegram.org/bot$TELEGRAM_BOT_TOKEN/sendMessage" \
         -d chat_id="$TELEGRAM_CHAT_ID" \
@@ -3502,12 +4302,12 @@ setup_cron_jobs() {
     # Remove existing cron jobs for n8n
     crontab -l 2>/dev/null | grep -v "/home/n8n" | crontab - 2>/dev/null || true
     
-    # Add backup job (daily at 2:00 AM)
-    (crontab -l 2>/dev/null; echo "0 2 * * * /home/n8n/backup-workflows.sh") | crontab -
+    # Add enhanced backup job (daily at 2:00 AM)
+    (crontab -l 2>/dev/null; echo "0 2 * * * /home/n8n/backup-workflows-enhanced.sh") | crontab -
     
-    # Add auto-update job if enabled
-    if [[ "$ENABLE_AUTO_UPDATE" == "true" ]]; then
-        (crontab -l 2>/dev/null; echo "0 */12 * * * /home/n8n/update-n8n.sh") | crontab -
+    # Add Google Drive cleanup job (weekly)
+    if [[ "$ENABLE_GOOGLE_DRIVE" == "true" ]]; then
+        (crontab -l 2>/dev/null; echo "0 3 * * 0 /usr/bin/python3 /home/n8n/google_drive/cleanup_old_backups.py --days 90") | crontab -
     fi
     
     success "Đã thiết lập cron jobs"
@@ -3543,18 +4343,13 @@ check_ssl_rate_limit() {
         echo -e "  • Cần đợi đến tuần sau để cấp SSL mới"
         echo ""
         echo -e "${YELLOW}💡 GIẢI PHÁP:${NC}"
-        echo -e "  ${GREEN}1. CÀI LẠI UBUNTU (KHUYẾN NGHỊ):${NC}"
-        echo -e "     • Cài lại Ubuntu Server hoàn toàn"
-        echo -e "     • Sử dụng subdomain khác (vd: n8n2.domain.com)"
-        echo -e "     • Chạy lại script này"
-        echo ""
-        echo -e "  ${GREEN}2. SỬ DỤNG STAGING SSL (TẠM THỜI):${NC}"
+        echo -e "  ${GREEN}1. SỬ DỤNG STAGING SSL (KHUYẾN NGHỊ):${NC}"
         echo -e "     • Website sẽ hiển thị 'Not Secure' nhưng vẫn hoạt động"
         echo -e "     • Chức năng N8N và API hoạt động đầy đủ"
-        echo -e "     • Có thể chuyển về production SSL sau 29/06/2025"
+        echo -e "     • Có thể chuyển về production SSL sau"
         echo ""
-        echo -e "  ${GREEN}3. ĐỢI ĐẾN TUẦN SAU:${NC}"
-        echo -e "     • Đợi đến sau 29/06/2025 13:24 UTC"
+        echo -e "  ${GREEN}2. ĐỢI ĐẾN TUẦN SAU:${NC}"
+        echo -e "     • Đợi đến sau ngày rate limit reset"
         echo -e "     • Chạy lại script để cấp SSL mới"
         echo ""
         
@@ -3564,11 +4359,10 @@ check_ssl_rate_limit() {
             setup_staging_ssl
         else
             echo ""
-            echo -e "${CYAN}📋 HƯỚNG DẪN CÀI LẠI UBUNTU:${NC}"
-            echo -e "  1. Backup dữ liệu quan trọng"
-            echo -e "  2. Cài lại Ubuntu Server từ đầu"
-            echo -e "  3. Sử dụng subdomain khác hoặc domain khác"
-            echo -e "  4. Chạy lại script: curl -sSL https://raw.githubusercontent.com/KalvinThien/install-n8n-ffmpeg/main/auto_cai_dat_n8n.sh | bash"
+            echo -e "${CYAN}📋 HƯỚNG DẪN KHẮC PHỤC:${NC}"
+            echo -e "  1. Đợi rate limit reset (thường 1 tuần)"
+            echo -e "  2. Sử dụng subdomain khác"
+            echo -e "  3. Chạy lại script với domains mới"
             echo ""
             exit 1
         fi
@@ -3579,23 +4373,24 @@ check_ssl_rate_limit() {
         
         for domain in "${DOMAINS[@]}"; do
             if curl -I "https://$domain" &>/dev/null; then
-                success "✅ SSL certificate cho $domain đã được cấp thành công"
+                success "✅ SSL certificate đã được cấp cho $domain"
             else
-                warning "⚠️ SSL cho $domain có thể chưa sẵn sàng - đợi thêm vài phút"
+                warning "⚠️ SSL cho $domain có thể chưa sẵn sàng"
                 ssl_success=false
             fi
         done
         
         if [[ "$ENABLE_NEWS_API" == "true" ]]; then
             if curl -I "https://$API_DOMAIN" &>/dev/null; then
-                success "✅ SSL certificate cho $API_DOMAIN đã được cấp thành công"
+                success "✅ SSL certificate đã được cấp cho $API_DOMAIN"
             else
-                warning "⚠️ SSL cho $API_DOMAIN có thể chưa sẵn sàng - đợi thêm vài phút"
+                warning "⚠️ SSL cho $API_DOMAIN có thể chưa sẵn sàng"
+                ssl_success=false
             fi
         fi
         
-        if [[ "$ssl_success" == "true" ]]; then
-            success "✅ Tất cả SSL certificates đã được cấp thành công"
+        if [[ "$ssl_success" == "false" ]]; then
+            warning "⚠️ Một số SSL certificates chưa sẵn sàng - đợi thêm vài phút"
         fi
     fi
 }
@@ -3619,13 +4414,14 @@ setup_staging_ssl() {
 
 EOF
 
-    # Add all domains with staging SSL
+    # Add N8N domains with staging SSL
     if [[ "$ENABLE_MULTI_DOMAIN" == "true" ]]; then
         for i in "${!DOMAINS[@]}"; do
             local instance_num=$((i+1))
+            local domain="${DOMAINS[$i]}"
             
             cat >> "$INSTALL_DIR/Caddyfile" << EOF
-${DOMAINS[i]} {
+${domain} {
     reverse_proxy n8n_${instance_num}:5678
     
     header {
@@ -3633,12 +4429,13 @@ ${DOMAINS[i]} {
         X-Content-Type-Options "nosniff"
         X-Frame-Options "DENY"
         X-XSS-Protection "1; mode=block"
+        Referrer-Policy "strict-origin-when-cross-origin"
     }
     
     encode gzip
     
     log {
-        output file /var/log/caddy/n8n_instance_${instance_num}.log
+        output file /var/log/caddy/n8n_${instance_num}.log
         format json
     }
 }
@@ -3655,6 +4452,7 @@ ${DOMAINS[0]} {
         X-Content-Type-Options "nosniff"
         X-Frame-Options "DENY"
         X-XSS-Protection "1; mode=block"
+        Referrer-Policy "strict-origin-when-cross-origin"
     }
     
     encode gzip
@@ -3668,6 +4466,7 @@ ${DOMAINS[0]} {
 EOF
     fi
 
+    # Add API domain with staging SSL
     if [[ "$ENABLE_NEWS_API" == "true" ]]; then
         cat >> "$INSTALL_DIR/Caddyfile" << EOF
 ${API_DOMAIN} {
@@ -3681,6 +4480,7 @@ ${API_DOMAIN} {
         Access-Control-Allow-Origin "*"
         Access-Control-Allow-Methods "GET, POST, PUT, DELETE, OPTIONS"
         Access-Control-Allow-Headers "Content-Type, Authorization"
+        Referrer-Policy "strict-origin-when-cross-origin"
     }
     
     encode gzip
@@ -3733,213 +4533,20 @@ build_and_deploy() {
 }
 
 # =============================================================================
-# TROUBLESHOOTING SCRIPT
-# =============================================================================
-
-create_troubleshooting_script() {
-    log "🔧 Tạo script chẩn đoán..."
-    
-    cat > "$INSTALL_DIR/troubleshoot.sh" << 'EOF'
-#!/bin/bash
-
-# =============================================================================
-# N8N TROUBLESHOOTING SCRIPT - Multi-Domain Support
-# =============================================================================
-
-# Colors
-RED='\033[0;31m'
-GREEN='\033[0;32m'
-YELLOW='\033[1;33m'
-BLUE='\033[0;34m'
-CYAN='\033[0;36m'
-WHITE='\033[1;37m'
-NC='\033[0m'
-
-echo -e "${CYAN}╔══════════════════════════════════════════════════════════════════════════════╗${NC}"
-echo -e "${CYAN}║${WHITE}                🔧 N8N TROUBLESHOOTING SCRIPT - Multi-Domain                ${CYAN}║${NC}"
-echo -e "${CYAN}╚══════════════════════════════════════════════════════════════════════════════╝${NC}"
-echo ""
-
-# Check Docker Compose command
-if command -v docker-compose &> /dev/null; then
-    DOCKER_COMPOSE="docker-compose"
-elif docker compose version &> /dev/null; then
-    DOCKER_COMPOSE="docker compose"
-else
-    echo -e "${RED}❌ Docker Compose không tìm thấy!${NC}"
-    exit 1
-fi
-
-cd /home/n8n
-
-echo -e "${BLUE}📍 1. System Information:${NC}"
-echo "• OS: $(lsb_release -d | cut -f2)"
-echo "• Kernel: $(uname -r)"
-echo "• Docker: $(docker --version)"
-echo "• Docker Compose: $($DOCKER_COMPOSE --version)"
-echo "• Disk Usage: $(df -h /home/n8n | tail -1 | awk '{print $5}')"
-echo "• Memory: $(free -h | grep Mem | awk '{print $3"/"$2}')"
-echo "• Swap: $(free -h | grep Swap | awk '{print $3"/"$2}')"
-echo "• Uptime: $(uptime -p)"
-echo ""
-
-echo -e "${BLUE}📍 2. Container Status:${NC}"
-$DOCKER_COMPOSE ps
-echo ""
-
-echo -e "${BLUE}📍 3. N8N Instances:${NC}"
-N8N_CONTAINERS=$(docker ps --filter "name=n8n-container" --format "{{.Names}}")
-INSTANCE_COUNT=$(echo "$N8N_CONTAINERS" | wc -l)
-
-if [[ -z "$N8N_CONTAINERS" ]]; then
-    echo -e "${RED}❌ Không tìm thấy N8N containers${NC}"
-else
-    echo "• Total instances: $INSTANCE_COUNT"
-    
-    instance_num=1
-    for container in $N8N_CONTAINERS; do
-        domain=$(docker inspect $container --format '{{range .Config.Env}}{{if contains "WEBHOOK_URL" .}}{{.}}{{end}}{{end}}' | cut -d'=' -f2 | sed 's|https://||' | sed 's|/||')
-        status=$(docker inspect $container --format '{{.State.Status}}')
-        
-        echo "• Instance $instance_num: $container"
-        echo "  - Domain: $domain"
-        echo "  - Status: $status"
-        echo "  - Health: $(curl -s -o /dev/null -w "%{http_code}" "http://localhost:$((5677 + instance_num))" | grep -q "200\|302" && echo "✅ OK" || echo "❌ Error")"
-        
-        instance_num=$((instance_num + 1))
-    done
-fi
-echo ""
-
-echo -e "${BLUE}📍 4. Database Status:${NC}"
-if docker ps --filter "name=postgres-n8n" --format "{{.Names}}" | grep -q "postgres-n8n"; then
-    echo "• Type: PostgreSQL"
-    echo "• Status: $(docker inspect postgres-n8n --format '{{.State.Status}}')"
-    echo "• Connections: $(docker exec postgres-n8n psql -U n8n_user -d n8n_db -t -c "SELECT count(*) FROM pg_stat_activity;" 2>/dev/null | xargs || echo "Error")"
-    echo "• Databases:"
-    docker exec postgres-n8n psql -U n8n_user -l 2>/dev/null | grep "n8n_db" | while read line; do
-        echo "  - $(echo $line | awk '{print $1}')"
-    done
-else
-    echo "• Type: SQLite"
-    echo "• Files:"
-    find /home/n8n/files -name "database.sqlite" -exec ls -lh {} \; | while read line; do
-        echo "  - $line"
-    done
-fi
-echo ""
-
-echo -e "${BLUE}📍 5. Docker Images:${NC}"
-docker images | grep -E "(n8n|caddy|postgres|news-api)"
-echo ""
-
-echo -e "${BLUE}📍 6. Network Status:${NC}"
-echo "• Port 80: $(netstat -tulpn 2>/dev/null | grep :80 | wc -l) connections"
-echo "• Port 443: $(netstat -tulpn 2>/dev/null | grep :443 | wc -l) connections"
-echo "• Docker Networks:"
-docker network ls | grep n8n
-echo ""
-
-echo -e "${BLUE}📍 7. SSL Certificate Status:${NC}"
-DOMAINS=$(grep -E "^[a-zA-Z0-9.-]+\s*{" Caddyfile | awk '{print $1}')
-for domain in $DOMAINS; do
-    echo -n "• $domain: "
-    if timeout 10 curl -I https://$domain 2>/dev/null | head -1 | grep -q "200\|301\|302"; then
-        echo -e "${GREEN}✅ SSL Active${NC}"
-    else
-        echo -e "${RED}❌ SSL Error${NC}"
-    fi
-done
-echo ""
-
-echo -e "${BLUE}📍 8. News API Status:${NC}"
-if docker ps --filter "name=news-api" --format "{{.Names}}" | grep -q "news-api"; then
-    echo "• Status: Running"
-    API_DOMAIN=$(grep -E "^api\." Caddyfile | awk '{print $1}' | head -1)
-    if [[ -n "$API_DOMAIN" ]]; then
-        echo -n "• Health check: "
-        if timeout 10 curl -s "https://$API_DOMAIN/health" >/dev/null 2>&1; then
-            echo -e "${GREEN}✅ OK${NC}"
-        else
-            echo -e "${RED}❌ Error${NC}"
-        fi
-    fi
-else
-    echo "• Status: Not enabled"
-fi
-echo ""
-
-echo -e "${BLUE}📍 9. Backup Status:${NC}"
-if [[ -d "/home/n8n/files/backup_full" ]]; then
-    BACKUP_COUNT=$(ls -1 /home/n8n/files/backup_full/n8n_backup_*.zip 2>/dev/null | wc -l)
-    echo "• Backup files: $BACKUP_COUNT"
-    if [[ $BACKUP_COUNT -gt 0 ]]; then
-        LATEST_BACKUP=$(ls -t /home/n8n/files/backup_full/n8n_backup_*.zip | head -1)
-        echo "• Latest backup: $(basename "$LATEST_BACKUP")"
-        echo "• Size: $(ls -lh "$LATEST_BACKUP" | awk '{print $5}')"
-        echo "• Date: $(stat -c %y "$LATEST_BACKUP" | cut -d' ' -f1)"
-    fi
-else
-    echo "• No backup directory found"
-fi
-echo ""
-
-echo -e "${BLUE}📍 10. Recent Logs (last 10 lines):${NC}"
-echo -e "${YELLOW}N8N Logs:${NC}"
-$DOCKER_COMPOSE logs --tail=10 $(echo "$N8N_CONTAINERS" | head -1) 2>/dev/null || echo "No N8N logs"
-echo ""
-echo -e "${YELLOW}Caddy Logs:${NC}"
-$DOCKER_COMPOSE logs --tail=10 caddy 2>/dev/null || echo "No Caddy logs"
-echo ""
-
-if docker ps | grep -q "postgres-n8n"; then
-    echo -e "${YELLOW}PostgreSQL Logs:${NC}"
-    $DOCKER_COMPOSE logs --tail=10 postgres 2>/dev/null || echo "No PostgreSQL logs"
-    echo ""
-fi
-
-if docker ps | grep -q "news-api"; then
-    echo -e "${YELLOW}News API Logs:${NC}"
-    $DOCKER_COMPOSE logs --tail=10 fastapi 2>/dev/null || echo "No News API logs"
-    echo ""
-fi
-
-echo -e "${BLUE}📍 11. Cron Jobs:${NC}"
-crontab -l 2>/dev/null | grep -E "(n8n|backup)" || echo "• No N8N cron jobs found"
-echo ""
-
-echo -e "${GREEN}🔧 QUICK FIX COMMANDS:${NC}"
-echo -e "${YELLOW}• Restart all services:${NC} cd /home/n8n && $DOCKER_COMPOSE restart"
-echo -e "${YELLOW}• View live logs:${NC} cd /home/n8n && $DOCKER_COMPOSE logs -f"
-echo -e "${YELLOW}• Rebuild containers:${NC} cd /home/n8n && $DOCKER_COMPOSE down && $DOCKER_COMPOSE up -d --build"
-echo -e "${YELLOW}• Manual backup:${NC} /home/n8n/backup-manual.sh"
-echo -e "${YELLOW}• Management menu:${NC} /home/n8n/management/menu.sh"
-echo -e "${YELLOW}• Dashboard:${NC} /home/n8n/management/dashboard.sh"
-echo ""
-
-echo -e "${CYAN}✅ Multi-Domain Troubleshooting completed!${NC}"
-EOF
-
-    chmod +x "$INSTALL_DIR/troubleshoot.sh"
-    
-    success "Đã tạo script chẩn đoán với Multi-Domain support"
-}
-
-# =============================================================================
 # FINAL SUMMARY
 # =============================================================================
 
 show_final_summary() {
     clear
     echo -e "${GREEN}╔══════════════════════════════════════════════════════════════════════════════╗${NC}"
-    echo -e "${GREEN}║${WHITE}                🎉 N8N MULTI-DOMAIN ĐÃ ĐƯỢC CÀI ĐẶT THÀNH CÔNG!              ${GREEN}║${NC}"
+    echo -e "${GREEN}║${WHITE}                🎉 N8N ENHANCED SYSTEM ĐÃ ĐƯỢC CÀI ĐẶT THÀNH CÔNG!            ${GREEN}║${NC}"
     echo -e "${GREEN}╚══════════════════════════════════════════════════════════════════════════════╝${NC}"
     echo ""
     
     echo -e "${CYAN}🌐 TRUY CẬP DỊCH VỤ:${NC}"
     if [[ "$ENABLE_MULTI_DOMAIN" == "true" ]]; then
         for i in "${!DOMAINS[@]}"; do
-            echo -e "  • N8N Instance $((i+1)): ${WHITE}https://${DOMAINS[i]}${NC}"
+            echo -e "  • N8N Instance $((i+1)): ${WHITE}https://${DOMAINS[$i]}${NC}"
         done
     else
         echo -e "  • N8N: ${WHITE}https://${DOMAINS[0]}${NC}"
@@ -3951,34 +4558,40 @@ show_final_summary() {
         echo -e "  • Bearer Token: ${YELLOW}Đã được đặt (không hiển thị vì bảo mật)${NC}"
     fi
     
+    # Get server IP for dashboard
+    local server_ip=$(curl -s https://api.ipify.org || echo "YOUR_SERVER_IP")
+    echo -e "  • Web Dashboard: ${WHITE}http://${server_ip}:8080${NC}"
+    
     echo ""
-    echo -e "${CYAN}📊 THÔNG TIN HỆ THỐNG:${NC}"
-    echo -e "  • Architecture: ${WHITE}Multi-Domain Support${NC}"
-    echo -e "  • N8N Instances: ${WHITE}${#DOMAINS[@]} instances${NC}"
-    echo -e "  • Database: ${WHITE}$([[ "$ENABLE_POSTGRESQL" == "true" ]] && echo "PostgreSQL (Shared)" || echo "SQLite (Per instance)")${NC}"
+    echo -e "${CYAN}📁 THÔNG TIN HỆ THỐNG:${NC}"
+    echo -e "  • Chế độ: ${WHITE}$([[ "$ENABLE_MULTI_DOMAIN" == "true" ]] && echo "Multi-Domain (${#DOMAINS[@]} instances)" || echo "Single Domain")${NC}"
+    echo -e "  • Database: ${WHITE}$([[ "$ENABLE_POSTGRESQL" == "true" ]] && echo "PostgreSQL" || echo "SQLite")${NC}"
     echo -e "  • Thư mục cài đặt: ${WHITE}${INSTALL_DIR}${NC}"
-    echo -e "  • Management Dashboard: ${WHITE}${INSTALL_DIR}/management/dashboard.sh${NC}"
-    echo -e "  • Management Menu: ${WHITE}${INSTALL_DIR}/management/menu.sh${NC}"
+    echo -e "  • Script chẩn đoán: ${WHITE}${INSTALL_DIR}/troubleshoot.sh${NC}"
+    echo -e "  • Test backup: ${WHITE}${INSTALL_DIR}/backup-manual.sh${NC}"
+    echo -e "  • Enhanced backup: ${WHITE}${INSTALL_DIR}/backup-workflows-enhanced.sh${NC}"
     echo ""
     
-    echo -e "${CYAN}💾 CẤU HÌNH BACKUP NÂNG CAO:${NC}"
+    echo -e "${CYAN}💾 CẤU HÌNH BACKUP & MONITORING:${NC}"
     local swap_info=$(swapon --show | grep -v NAME | awk '{print $3}' | head -1)
     echo -e "  • Swap: ${WHITE}${swap_info:-"Không có"}${NC}"
-    echo -e "  • Format: ${WHITE}ZIP compression (tối ưu)${NC}"
-    echo -e "  • Multi-domain: ${WHITE}Backup tất cả instances cùng lúc${NC}"
-    echo -e "  • Auto-update: ${WHITE}$([[ "$ENABLE_AUTO_UPDATE" == "true" ]] && echo "Enabled (mỗi 12h)" || echo "Disabled")${NC}"
-    echo -e "  • Telegram backup: ${WHITE}$([[ "$ENABLE_TELEGRAM" == "true" ]] && echo "Enabled với detailed reports" || echo "Disabled")${NC}"
+    echo -e "  • Telegram backup: ${WHITE}$([[ "$ENABLE_TELEGRAM" == "true" ]] && echo "Enabled" || echo "Disabled")${NC}"
+    echo -e "  • Telegram Bot: ${WHITE}$([[ "$ENABLE_TELEGRAM_BOT" == "true" ]] && echo "Enabled" || echo "Disabled")${NC}"
+    echo -e "  • Google Drive: ${WHITE}$([[ "$ENABLE_GOOGLE_DRIVE" == "true" ]] && echo "Enabled" || echo "Disabled")${NC}"
     echo -e "  • Backup tự động: ${WHITE}Hàng ngày lúc 2:00 AM${NC}"
     echo -e "  • Backup location: ${WHITE}${INSTALL_DIR}/files/backup_full/${NC}"
     echo ""
     
-    echo -e "${CYAN}🛠️ QUẢN LÝ TẬP TRUNG:${NC}"
-    echo -e "  • Dashboard: ${WHITE}${INSTALL_DIR}/management/dashboard.sh${NC}"
-    echo -e "  • Management Menu: ${WHITE}${INSTALL_DIR}/management/menu.sh${NC}"
-    echo -e "  • Troubleshooting: ${WHITE}${INSTALL_DIR}/troubleshoot.sh${NC}"
-    echo -e "  • Manual Backup: ${WHITE}${INSTALL_DIR}/backup-manual.sh${NC}"
-    echo -e "  • Migration Export: ${WHITE}${INSTALL_DIR}/management/export-migration.sh${NC}"
-    echo ""
+    if [[ "$ENABLE_TELEGRAM_BOT" == "true" ]]; then
+        echo -e "${CYAN}🤖 TELEGRAM BOT COMMANDS:${NC}"
+        echo -e "  • ${WHITE}/status${NC} - Trạng thái tất cả instances"
+        echo -e "  • ${WHITE}/health${NC} - Health check chi tiết"
+        echo -e "  • ${WHITE}/restart n8n${NC} - Restart N8N container"
+        echo -e "  • ${WHITE}/backup${NC} - Chạy backup manual"
+        echo -e "  • ${WHITE}/logs caddy 50${NC} - Xem 50 dòng logs Caddy"
+        echo -e "  • ${WHITE}/performance${NC} - Performance metrics"
+        echo ""
+    fi
     
     if [[ "$ENABLE_NEWS_API" == "true" ]]; then
         echo -e "${CYAN}🔧 ĐỔI BEARER TOKEN:${NC}"
@@ -3986,19 +4599,19 @@ show_final_summary() {
         echo ""
     fi
     
-    echo -e "${CYAN}🚚 MIGRATION & BACKUP:${NC}"
-    echo -e "  • Export for migration: ${WHITE}${INSTALL_DIR}/management/export-migration.sh${NC}"
-    echo -e "  • Restore from backup: ${WHITE}${INSTALL_DIR}/management/restore.sh backup_file.zip${NC}"
-    echo -e "  • Backup format: ${WHITE}ZIP với metadata chi tiết${NC}"
-    echo -e "  • Migration guide: ${WHITE}Included in export package${NC}"
-    echo ""
+    if [[ "$ENABLE_GOOGLE_DRIVE" == "true" ]]; then
+        echo -e "${CYAN}☁️ GOOGLE DRIVE SETUP:${NC}"
+        echo -e "  1. Upload credentials.json to: ${WHITE}/home/n8n/google_drive/credentials.json${NC}"
+        echo -e "  2. Test upload: ${WHITE}python3 /home/n8n/google_drive/gdrive_backup.py list all${NC}"
+        echo ""
+    fi
     
     echo -e "${CYAN}🚀 TÁC GIẢ:${NC}"
     echo -e "  • Tên: ${WHITE}Nguyễn Ngọc Thiện${NC}"
     echo -e "  • YouTube: ${WHITE}https://www.youtube.com/@kalvinthiensocial?sub_confirmation=1${NC}"
     echo -e "  • Zalo: ${WHITE}08.8888.4749${NC}"
-    echo -e "  • Version: ${WHITE}3.0 - Multi-Domain + Advanced Management${NC}"
     echo -e "  • Cập nhật: ${WHITE}28/06/2025${NC}"
+    echo -e "  • Version: ${WHITE}3.0 Enhanced${NC}"
     echo ""
     
     echo -e "${YELLOW}🎬 ĐĂNG KÝ KÊNH YOUTUBE ĐỂ ỦNG HỘ MÌNH NHÉ! 🔔${NC}"
@@ -4025,13 +4638,18 @@ main() {
     # Setup swap
     setup_swap
     
+    # Get installation mode if not set by arguments
+    if [[ "$ENABLE_MULTI_DOMAIN" == "false" && "$ENABLE_POSTGRESQL" == "false" && "$ENABLE_GOOGLE_DRIVE" == "false" && "$ENABLE_TELEGRAM_BOT" == "false" ]]; then
+        get_installation_mode
+    fi
+    
     # Get user input
     get_domain_input
     get_cleanup_option
-    get_postgresql_config
     get_news_api_config
     get_telegram_config
-    get_auto_update_config
+    get_google_drive_config
+    get_telegram_bot_config
     
     # Verify DNS
     verify_dns
@@ -4047,21 +4665,23 @@ main() {
     
     # Create configuration files
     create_dockerfile
-    create_postgresql_init_script
+    create_postgresql_init
     create_news_api
     create_docker_compose
     create_caddyfile
     
-    # Create management tools
-    create_management_dashboard
-    create_management_menu
-    
-    # Create backup and restore systems
+    # Create scripts
     create_backup_scripts
-    create_restore_system
-    create_migration_tools
-    create_update_script
+    create_restore_script
     create_troubleshooting_script
+    
+    # Create advanced features
+    create_google_drive_integration
+    create_telegram_bot
+    create_web_dashboard
+    
+    # Setup services
+    create_systemd_services
     
     # Setup Telegram
     setup_telegram_config
