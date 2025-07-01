@@ -85,19 +85,19 @@ Script tự động cài đặt N8N với đầy đủ tính năng mở rộng v
 ### 1️⃣ Cài Đặt Cơ Bản (Single Domain)
 
 ```bash
-cd /tmp && curl -sSL https://raw.githubusercontent.com/KalvinThien/install-n8n-ffmpeg/main/auto_install_multi_n8n.sh | tr -d '\r' > install_n8n.sh && chmod +x install_n8n.sh && sudo bash install_n8n.sh
+cd /tmp && curl -sSL https://github.com/KalvinThien/Multi-N8N-instances/blob/main/auto_cai_dat_n8n.sh | tr -d '\r' > install_n8n.sh && chmod +x install_n8n.sh && sudo bash install_n8n.sh
 ```
 
 ### 2️⃣ Cài Đặt Multi-Domain + PostgreSQL
 
 ```bash
-cd /tmp && curl -sSL https://raw.githubusercontent.com/KalvinThien/install-n8n-ffmpeg/main/auto_install_multi_n8n.sh | tr -d '\r' > install_n8n.sh && chmod +x install_n8n.sh && sudo bash install_n8n.sh --multi-domain --postgresql
+cd /tmp && curl -sSL https://github.com/KalvinThien/Multi-N8N-instances/blob/main/auto_cai_dat_n8n.sh | tr -d '\r' > install_n8n.sh && chmod +x install_n8n.sh && sudo bash install_n8n.sh --multi-domain --postgresql
 ```
 
 ### 3️⃣ Cài Đặt Full Features
 
 ```bash
-cd /tmp && curl -sSL https://raw.githubusercontent.com/KalvinThien/install-n8n-ffmpeg/main/auto_install_multi_n8n.sh | tr -d '\r' > install_n8n.sh && chmod +x install_n8n.sh && sudo bash install_n8n.sh --multi-domain --postgresql --google-drive --telegram-bot
+cd /tmp && curl -sSL https://github.com/KalvinThien/Multi-N8N-instances/blob/main/auto_cai_dat_n8n.sh | tr -d '\r' > install_n8n.sh && chmod +x install_n8n.sh && sudo bash install_n8n.sh --multi-domain --postgresql --google-drive --telegram-bot
 ```
 
 ### 4️⃣ Options Nâng Cao
