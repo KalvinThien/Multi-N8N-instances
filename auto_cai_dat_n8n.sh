@@ -1,13 +1,13 @@
 #!/bin/bash
 
 # =============================================================================
-# 🚀 SCRIPT CÀI ĐẶT N8N MULTI-DOMAIN TỰ ĐỘNG 2025 - ENHANCED VERSION 3.0
+# 🚀 SCRIPT CÀI ĐẶT N8N MULTI-DOMAIN TỰ ĐỘNG 2025 - ENHANCED VERSION 3.1
 # =============================================================================
 # Tác giả: Nguyễn Ngọc Thiện
 # YouTube: https://www.youtube.com/@kalvinthiensocial
 # Zalo: 08.8888.4749
-# Cập nhật: 28/06/2025
-# Features: Multi-Domain + PostgreSQL + Telegram Bot + Google Drive + Web Dashboard
+# Cập nhật: 01/07/2025
+# Features: Multi-Domain + PostgreSQL + Telegram Bot + Google Drive + Web Dashboard + SSL Auto-Fix
 # =============================================================================
 
 set -e
@@ -29,6 +29,7 @@ API_DOMAIN=""
 BEARER_TOKEN=""
 TELEGRAM_BOT_TOKEN=""
 TELEGRAM_CHAT_ID=""
+SSL_EMAIL=""
 ENABLE_NEWS_API=false
 ENABLE_TELEGRAM=false
 ENABLE_MULTI_DOMAIN=false
@@ -45,20 +46,21 @@ SKIP_DOCKER=false
 show_banner() {
     clear
     echo -e "${CYAN}╔══════════════════════════════════════════════════════════════════════════════╗${NC}"
-    echo -e "${CYAN}║${WHITE}              🚀 N8N MULTI-DOMAIN INSTALLER 2025 - VERSION 3.0 🚀             ${CYAN}║${NC}"
+    echo -e "${CYAN}║${WHITE}              🚀 N8N MULTI-DOMAIN INSTALLER 2025 - VERSION 3.1 🚀             ${CYAN}║${NC}"
     echo -e "${CYAN}╠══════════════════════════════════════════════════════════════════════════════╣${NC}"
     echo -e "${CYAN}║${WHITE} ✨ Multi-Domain N8N + PostgreSQL + Telegram Bot + Google Drive            ${CYAN}║${NC}"
-    echo -e "${CYAN}║${WHITE} 🔒 SSL Certificate tự động với Caddy                                      ${CYAN}║${NC}"
+    echo -e "${CYAN}║${WHITE} 🔒 SSL Certificate tự động với Caddy + Smart Email Detection              ${CYAN}║${NC}"
     echo -e "${CYAN}║${WHITE} 📰 News Content API với FastAPI + Newspaper4k                            ${CYAN}║${NC}"
     echo -e "${CYAN}║${WHITE} 📱 Telegram Bot Management + Backup                                      ${CYAN}║${NC}"
     echo -e "${CYAN}║${WHITE} ☁️ Google Drive Auto Backup                                              ${CYAN}║${NC}"
-    echo -e "${CYAN}║${WHITE} 📊 Web Dashboard Management                                               ${CYAN}║${NC}"
+    echo -e "${CYAN}║${WHITE} 📊 Web Dashboard Management + Health Check                               ${CYAN}║${NC}"
+    echo -e "${CYAN}║${WHITE} 🛠️ Auto-Fix Permission + Container Names + Database Issues              ${CYAN}║${NC}"
     echo -e "${CYAN}╠══════════════════════════════════════════════════════════════════════════════╣${NC}"
     echo -e "${CYAN}║${YELLOW} 👨‍💻 Tác giả: Nguyễn Ngọc Thiện                                           ${CYAN}║${NC}"
     echo -e "${CYAN}║${YELLOW} 📺 YouTube: https://www.youtube.com/@kalvinthiensocial                  ${CYAN}║${NC}"
     echo -e "${CYAN}║${YELLOW} 📱 Zalo: 08.8888.4749                                                   ${CYAN}║${NC}"
-    echo -e "${CYAN}║${YELLOW} 🎬 Đăng ký kênh để ủng hộ mình nhé! 🔔                                  ${CYAN}║${NC}"
-    echo -e "${CYAN}║${YELLOW} 📅 Cập nhật: 28/06/2025                                                 ${CYAN}║${NC}"
+    echo -e "${CYAN}║${YELLOW} 🎬 ĐĂNG KÝ KÊNH ĐỂ ỦNG HỘ MÌNH NHÉ! 🔔                                 ${CYAN}║${NC}"
+    echo -e "${CYAN}║${YELLOW} 📅 Cập nhật: 01/07/2025 - Version 3.1 Enhanced                         ${CYAN}║${NC}"
     echo -e "${CYAN}╚══════════════════════════════════════════════════════════════════════════════╝${NC}"
     echo ""
 }
@@ -385,6 +387,74 @@ get_cleanup_option() {
             CLEAN_INSTALL=true
         fi
     fi
+}
+
+get_ssl_email_config() {
+    echo ""
+    echo -e "${CYAN}╔══════════════════════════════════════════════════════════════════════════════╗${NC}"
+    echo -e "${CYAN}║${WHITE}                        🔒 SSL CERTIFICATE EMAIL                            ${CYAN}║${NC}"
+    echo -e "${CYAN}╚══════════════════════════════════════════════════════════════════════════════╝${NC}"
+    echo ""
+    echo -e "${WHITE}SSL Certificate Email được sử dụng để:${NC}"
+    echo -e "  🔐 Đăng ký tài khoản Let's Encrypt"
+    echo -e "  📧 Nhận thông báo về SSL certificates"
+    echo -e "  🔄 Tự động renew certificates khi hết hạn"
+    echo -e "  🚨 Cảnh báo khi certificates sắp hết hạn"
+    if [[ "$ENABLE_MULTI_DOMAIN" == "true" ]]; then
+        echo -e "  🌐 Quản lý SSL cho tất cả ${#DOMAINS[@]} domains"
+    fi
+    echo ""
+    echo -e "${YELLOW}⚠️ Lưu ý quan trọng:${NC}"
+    echo -e "  • KHÔNG sử dụng email @example.com (sẽ bị từ chối)"
+    echo -e "  • Sử dụng email thật (Gmail, Yahoo, domain riêng...)"
+    echo -e "  • Email này sẽ nhận notifications từ Let's Encrypt"
+    echo -e "  • có thể nhập email rác, tuy nhiên sẽ khó theo dõi chứng chỉ này, nếu cảm thấy không cần thiết, có thể nhập mail rác."
+    echo ""
+    
+    # Smart email detection from system
+    SUGGESTED_EMAIL=""
+    if [[ -n "$USER" && "$USER" != "root" ]]; then
+        SUGGESTED_EMAIL="${USER}@gmail.com"
+    elif command -v whoami &> /dev/null; then
+        CURRENT_USER=$(whoami 2>/dev/null)
+        if [[ -n "$CURRENT_USER" && "$CURRENT_USER" != "root" ]]; then
+            SUGGESTED_EMAIL="${CURRENT_USER}@gmail.com"
+        fi
+    fi
+    
+    while true; do
+        if [[ -n "$SUGGESTED_EMAIL" ]]; then
+            echo -e "${BLUE}💡 Đề xuất: $SUGGESTED_EMAIL${NC}"
+            read -p "📧 Nhập email cho SSL certificates (Enter=dùng đề xuất): " SSL_EMAIL
+            if [[ -z "$SSL_EMAIL" ]]; then
+                SSL_EMAIL="$SUGGESTED_EMAIL"
+            fi
+        else
+            read -p "📧 Nhập email cho SSL certificates: " SSL_EMAIL
+        fi
+        
+        # Validate email format và domain
+        if [[ -n "$SSL_EMAIL" && "$SSL_EMAIL" =~ ^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$ ]]; then
+            # Check for forbidden domains
+            if [[ "$SSL_EMAIL" == *"@example.com" || "$SSL_EMAIL" == *"@example.org" || "$SSL_EMAIL" == *"@test.com" ]]; then
+                error "Email domain bị cấm bởi Let's Encrypt. Vui lòng sử dụng email thật."
+                continue
+            fi
+            
+            # Confirm email
+            echo ""
+            info "Email SSL đã chọn: $SSL_EMAIL"
+            read -p "✅ Xác nhận email này? (Y/n): " -n 1 -r
+            echo
+            if [[ ! $REPLY =~ ^[Nn]$ ]]; then
+                break
+            fi
+        else
+            error "Email không hợp lệ. Vui lòng nhập email đúng định dạng."
+        fi
+    done
+    
+    success "Đã thiết lập SSL email: $SSL_EMAIL"
 }
 
 get_news_api_config() {
@@ -802,6 +872,21 @@ create_project_structure() {
     
     # Create Management directory
     mkdir -p management
+    
+    # Copy fix script to installation directory
+    if [[ -f "$(dirname "$0")/fix_n8n.sh" ]]; then
+        cp "$(dirname "$0")/fix_n8n.sh" "$INSTALL_DIR/"
+        chmod +x "$INSTALL_DIR/fix_n8n.sh"
+        info "Đã copy script fix_n8n.sh vào thư mục cài đặt"
+    else
+        warning "Không tìm thấy fix_n8n.sh, sẽ tạo placeholder"
+        cat > "$INSTALL_DIR/fix_n8n.sh" << 'FIXEOF'
+#!/bin/bash
+echo "Fix script sẽ được cập nhật sau. Vui lòng download từ:"
+echo "https://github.com/your-repo/fix_n8n.sh"
+FIXEOF
+        chmod +x "$INSTALL_DIR/fix_n8n.sh"
+    fi
     
     success "Đã tạo cấu trúc thư mục"
 }
@@ -1644,7 +1729,7 @@ create_caddyfile() {
     
     cat > "$INSTALL_DIR/Caddyfile" << EOF
 {
-    email admin@${DOMAINS[0]}
+    email ${SSL_EMAIL}
     acme_ca https://acme-v02.api.letsencrypt.org/directory
 }
 
@@ -1655,11 +1740,14 @@ EOF
         for i in "${!DOMAINS[@]}"; do
             local instance_num=$((i+1))
             local domain="${DOMAINS[$i]}"
-            local port=$((5678 + i))
             
             cat >> "$INSTALL_DIR/Caddyfile" << EOF
 ${domain} {
-    reverse_proxy n8n_${instance_num}:5678
+    reverse_proxy n8n-container-${instance_num}:5678 {
+        health_uri /healthz
+        health_interval 30s
+        health_timeout 10s
+    }
     
     header {
         Strict-Transport-Security "max-age=31536000; includeSubDomains"
@@ -1672,7 +1760,10 @@ ${domain} {
     encode gzip
     
     log {
-        output file /var/log/caddy/n8n_${instance_num}.log
+        output file /var/log/caddy/n8n_${instance_num}.log {
+            roll_size 10mb
+            roll_keep 5
+        }
         format json
     }
 }
@@ -1682,7 +1773,11 @@ EOF
     else
         cat >> "$INSTALL_DIR/Caddyfile" << EOF
 ${DOMAINS[0]} {
-    reverse_proxy n8n:5678
+    reverse_proxy n8n-container:5678 {
+        health_uri /healthz
+        health_interval 30s
+        health_timeout 10s
+    }
     
     header {
         Strict-Transport-Security "max-age=31536000; includeSubDomains"
@@ -1695,7 +1790,10 @@ ${DOMAINS[0]} {
     encode gzip
     
     log {
-        output file /var/log/caddy/n8n.log
+        output file /var/log/caddy/n8n.log {
+            roll_size 10mb
+            roll_keep 5
+        }
         format json
     }
 }
@@ -1707,7 +1805,11 @@ EOF
     if [[ "$ENABLE_NEWS_API" == "true" ]]; then
         cat >> "$INSTALL_DIR/Caddyfile" << EOF
 ${API_DOMAIN} {
-    reverse_proxy fastapi:8000
+    reverse_proxy news-api-container:8000 {
+        health_uri /health
+        health_interval 30s
+        health_timeout 10s
+    }
     
     header {
         Strict-Transport-Security "max-age=31536000; includeSubDomains"
@@ -1723,14 +1825,17 @@ ${API_DOMAIN} {
     encode gzip
     
     log {
-        output file /var/log/caddy/api.log
+        output file /var/log/caddy/api.log {
+            roll_size 10mb
+            roll_keep 5
+        }
         format json
     }
 }
 EOF
     fi
     
-    success "Đã tạo Caddyfile"
+    success "Đã tạo Caddyfile với email SSL: $SSL_EMAIL"
 }
 
 # =============================================================================
@@ -4422,7 +4527,11 @@ EOF
             
             cat >> "$INSTALL_DIR/Caddyfile" << EOF
 ${domain} {
-    reverse_proxy n8n_${instance_num}:5678
+    reverse_proxy n8n-container-${instance_num}:5678 {
+        health_uri /healthz
+        health_interval 30s
+        health_timeout 10s
+    }
     
     header {
         Strict-Transport-Security "max-age=31536000; includeSubDomains"
@@ -4435,7 +4544,10 @@ ${domain} {
     encode gzip
     
     log {
-        output file /var/log/caddy/n8n_${instance_num}.log
+        output file /var/log/caddy/n8n_${instance_num}.log {
+            roll_size 10mb
+            roll_keep 5
+        }
         format json
     }
 }
@@ -4445,7 +4557,11 @@ EOF
     else
         cat >> "$INSTALL_DIR/Caddyfile" << EOF
 ${DOMAINS[0]} {
-    reverse_proxy n8n:5678
+    reverse_proxy n8n-container:5678 {
+        health_uri /healthz
+        health_interval 30s
+        health_timeout 10s
+    }
     
     header {
         Strict-Transport-Security "max-age=31536000; includeSubDomains"
@@ -4458,7 +4574,10 @@ ${DOMAINS[0]} {
     encode gzip
     
     log {
-        output file /var/log/caddy/n8n.log
+        output file /var/log/caddy/n8n.log {
+            roll_size 10mb
+            roll_keep 5
+        }
         format json
     }
 }
@@ -4470,7 +4589,11 @@ EOF
     if [[ "$ENABLE_NEWS_API" == "true" ]]; then
         cat >> "$INSTALL_DIR/Caddyfile" << EOF
 ${API_DOMAIN} {
-    reverse_proxy fastapi:8000
+    reverse_proxy news-api-container:8000 {
+        health_uri /health
+        health_interval 30s
+        health_timeout 10s
+    }
     
     header {
         Strict-Transport-Security "max-age=31536000; includeSubDomains"
@@ -4486,7 +4609,10 @@ ${API_DOMAIN} {
     encode gzip
     
     log {
-        output file /var/log/caddy/api.log
+        output file /var/log/caddy/api.log {
+            roll_size 10mb
+            roll_keep 5
+        }
         format json
     }
 }
@@ -4566,8 +4692,10 @@ show_final_summary() {
     echo -e "${CYAN}📁 THÔNG TIN HỆ THỐNG:${NC}"
     echo -e "  • Chế độ: ${WHITE}$([[ "$ENABLE_MULTI_DOMAIN" == "true" ]] && echo "Multi-Domain (${#DOMAINS[@]} instances)" || echo "Single Domain")${NC}"
     echo -e "  • Database: ${WHITE}$([[ "$ENABLE_POSTGRESQL" == "true" ]] && echo "PostgreSQL" || echo "SQLite")${NC}"
+    echo -e "  • SSL Email: ${WHITE}${SSL_EMAIL}${NC}"
     echo -e "  • Thư mục cài đặt: ${WHITE}${INSTALL_DIR}${NC}"
     echo -e "  • Script chẩn đoán: ${WHITE}${INSTALL_DIR}/troubleshoot.sh${NC}"
+    echo -e "  • Script fix lỗi: ${WHITE}${INSTALL_DIR}/fix_n8n.sh${NC}"
     echo -e "  • Test backup: ${WHITE}${INSTALL_DIR}/backup-manual.sh${NC}"
     echo -e "  • Enhanced backup: ${WHITE}${INSTALL_DIR}/backup-workflows-enhanced.sh${NC}"
     echo ""
@@ -4610,8 +4738,9 @@ show_final_summary() {
     echo -e "  • Tên: ${WHITE}Nguyễn Ngọc Thiện${NC}"
     echo -e "  • YouTube: ${WHITE}https://www.youtube.com/@kalvinthiensocial?sub_confirmation=1${NC}"
     echo -e "  • Zalo: ${WHITE}08.8888.4749${NC}"
-    echo -e "  • Cập nhật: ${WHITE}28/06/2025${NC}"
-    echo -e "  • Version: ${WHITE}3.0 Enhanced${NC}"
+    echo -e "  • Facebook: ${WHITE}https://www.facebook.com/Ban.Thien.Handsome/${NC}"
+    echo -e "  • Cập nhật: ${WHITE}01/07/2025${NC}"
+    echo -e "  • Version: ${WHITE}3.1 Enhanced - SSL Auto-Fix${NC}"
     echo ""
     
     echo -e "${YELLOW}🎬 ĐĂNG KÝ KÊNH YOUTUBE ĐỂ ỦNG HỘ MÌNH NHÉ! 🔔${NC}"
@@ -4646,6 +4775,7 @@ main() {
     # Get user input
     get_domain_input
     get_cleanup_option
+    get_ssl_email_config
     get_news_api_config
     get_telegram_config
     get_google_drive_config
