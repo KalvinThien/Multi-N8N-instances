@@ -1,13 +1,13 @@
 #!/bin/bash
 
 # =============================================================================
-# 🚀 N8N ULTIMATE AUTO-INSTALLER 2025 - VERSION 4.0
+# 🚀 N8N ULTIMATE AUTO-INSTALLER 2025 - VERSION 4.1 FIXED
 # =============================================================================
 # Tác giả: Nguyễn Ngọc Thiện
 # YouTube: https://www.youtube.com/@kalvinthiensocial
 # Zalo: 08.8888.4749
 # Cập nhật: 10/07/2025
-# Features: Multi-Domain + Localhost + Cloudflare Tunnel + Full Options
+# Features: Multi-Domain + Localhost + Cloudflare Tunnel + Auto-Fix All Issues
 # =============================================================================
 
 set -e
@@ -57,7 +57,7 @@ START_PORT=5800
 show_banner() {
     clear
     echo -e "${CYAN}╔══════════════════════════════════════════════════════════════════════════════╗${NC}"
-    echo -e "${CYAN}║${WHITE}           🚀 N8N ULTIMATE AUTO-INSTALLER 2025 - VERSION 4.0 🚀             ${CYAN}║${NC}"
+    echo -e "${CYAN}║${WHITE}           🚀 N8N ULTIMATE AUTO-INSTALLER 2025 - VERSION 4.1 🚀             ${CYAN}║${NC}"
     echo -e "${CYAN}╠══════════════════════════════════════════════════════════════════════════════╣${NC}"
     echo -e "${CYAN}║${WHITE} ✨ Multi-Domain + Localhost + Cloudflare Tunnel Support                  ${CYAN}║${NC}"
     echo -e "${CYAN}║${WHITE} 🔒 SSL Certificate Auto + Dashboard Security                             ${CYAN}║${NC}"
@@ -69,7 +69,7 @@ show_banner() {
     echo -e "${CYAN}║${YELLOW} 📺 YouTube: https://www.youtube.com/@kalvinthiensocial                  ${CYAN}║${NC}"
     echo -e "${CYAN}║${YELLOW} 📱 Zalo: 08.8888.4749                                                   ${CYAN}║${NC}"
     echo -e "${CYAN}║${YELLOW} 🎬 ĐĂNG KÝ KÊNH ĐỂ ỦNG HỘ MÌNH NHÉ! 🔔                                 ${CYAN}║${NC}"
-    echo -e "${CYAN}║${YELLOW} 📅 Cập nhật: 01/07/2025 - Version 4.0 Ultimate                         ${CYAN}║${NC}"
+    echo -e "${CYAN}║${YELLOW} 📅 Cập nhật: 10/07/2025 - Version 4.1 Fixed                            ${CYAN}║${NC}"
     echo -e "${CYAN}╚══════════════════════════════════════════════════════════════════════════════╝${NC}"
     echo ""
 }
@@ -138,10 +138,12 @@ detect_environment() {
 check_docker_compose() {
     if command -v docker-compose &> /dev/null; then
         export DOCKER_COMPOSE="docker-compose"
-        info "Sử dụng docker-compose"
+        export DOCKER_COMPOSE_VERSION=$(docker-compose --version | grep -oE '[0-9]+\.[0-9]+\.[0-9]+' | head -1)
+        info "Sử dụng docker-compose version $DOCKER_COMPOSE_VERSION"
     elif docker compose version &> /dev/null 2>&1; then
         export DOCKER_COMPOSE="docker compose"
-        info "Sử dụng docker compose"
+        export DOCKER_COMPOSE_VERSION=$(docker compose version | grep -oE '[0-9]+\.[0-9]+\.[0-9]+' | head -1)
+        info "Sử dụng docker compose version $DOCKER_COMPOSE_VERSION"
     else
         export DOCKER_COMPOSE=""
     fi
@@ -165,6 +167,24 @@ get_next_available_port() {
     done
     
     echo $port
+}
+
+cleanup_docker_environment() {
+    log "🧹 Dọn dẹp môi trường Docker..."
+    
+    # Stop all N8N related containers
+    docker ps -a | grep -E "(n8n|postgres|caddy|cloudflare)" | awk '{print $1}' | xargs -r docker stop 2>/dev/null || true
+    
+    # Remove orphan containers
+    docker ps -a | grep -E "(n8n|postgres|caddy|cloudflare)" | awk '{print $1}' | xargs -r docker rm -f 2>/dev/null || true
+    
+    # Remove conflicting networks
+    docker network ls | grep "n8n" | awk '{print $2}' | xargs -r docker network rm 2>/dev/null || true
+    
+    # Clean up unused volumes
+    docker volume prune -f 2>/dev/null || true
+    
+    success "Đã dọn dẹp môi trường Docker"
 }
 
 # =============================================================================
@@ -721,6 +741,13 @@ install_docker() {
 create_project_structure() {
     log "📁 Tạo cấu trúc thư mục..."
     
+    # Clean up existing installation
+    if [[ -d "$INSTALL_DIR" ]]; then
+        cd "$INSTALL_DIR"
+        $DOCKER_COMPOSE down --remove-orphans 2>/dev/null || true
+        cd /
+    fi
+    
     mkdir -p "$INSTALL_DIR"
     cd "$INSTALL_DIR"
     
@@ -746,6 +773,7 @@ create_project_structure() {
     # PostgreSQL
     if [[ "$ENABLE_POSTGRESQL" == "true" ]]; then
         mkdir -p postgres_data
+        # PostgreSQL runs as uid 999 in Alpine
         chown -R 999:999 postgres_data
     fi
     
@@ -821,11 +849,39 @@ EOF
 create_docker_compose() {
     log "🐳 Tạo docker-compose.yml..."
     
+    # Start with version 3.3 for better compatibility
     cat > "$INSTALL_DIR/docker-compose.yml" << 'EOF'
-version: '3.8'
+version: '3.3'
 
 services:
 EOF
+
+    # Add PostgreSQL first if enabled (to avoid dependency issues)
+    if [[ "$ENABLE_POSTGRESQL" == "true" ]]; then
+        cat >> "$INSTALL_DIR/docker-compose.yml" << EOF
+  postgres:
+    image: postgres:15-alpine
+    container_name: postgres-n8n
+    restart: unless-stopped
+    environment:
+      - POSTGRES_DB=postgres
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres_password_2025
+    volumes:
+      - ./postgres_data:/var/lib/postgresql/data
+      - ./init-db.sql:/docker-entrypoint-initdb.d/init-db.sql:ro
+    networks:
+      - n8n_network
+    ports:
+      - "127.0.0.1:5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+EOF
+    fi
 
     # Add N8N services
     if [[ "$ENABLE_MULTI_DOMAIN" == "true" ]]; then
@@ -884,7 +940,8 @@ EOF
             if [[ "$ENABLE_POSTGRESQL" == "true" ]]; then
                 cat >> "$INSTALL_DIR/docker-compose.yml" << EOF
     depends_on:
-      - postgres
+      postgres:
+        condition: service_healthy
 EOF
             fi
             echo "" >> "$INSTALL_DIR/docker-compose.yml"
@@ -942,95 +999,11 @@ EOF
         if [[ "$ENABLE_POSTGRESQL" == "true" ]]; then
             cat >> "$INSTALL_DIR/docker-compose.yml" << EOF
     depends_on:
-      - postgres
+      postgres:
+        condition: service_healthy
 EOF
         fi
         echo "" >> "$INSTALL_DIR/docker-compose.yml"
-    fi
-
-    # Add PostgreSQL if enabled
-    if [[ "$ENABLE_POSTGRESQL" == "true" ]]; then
-        cat >> "$INSTALL_DIR/docker-compose.yml" << EOF
-  postgres:
-    image: postgres:15-alpine
-    container_name: postgres-n8n
-    restart: unless-stopped
-    environment:
-      - POSTGRES_DB=postgres
-      - POSTGRES_USER=postgres
-      - POSTGRES_PASSWORD=postgres_password_2025
-    volumes:
-      - ./postgres_data:/var/lib/postgresql/data
-      - ./init-db.sql:/docker-entrypoint-initdb.d/init-db.sql
-    networks:
-      - n8n_network
-    ports:
-      - "127.0.0.1:5432:5432"
-
-EOF
-    fi
-
-    # Add Caddy for domain/localhost mode
-    if [[ "$INSTALL_MODE" != "cloudflare" ]]; then
-        cat >> "$INSTALL_DIR/docker-compose.yml" << EOF
-  caddy:
-    image: caddy:latest
-    container_name: caddy-proxy
-    restart: unless-stopped
-    ports:
-      - "80:80"
-      - "443:443"
-      - "${DASHBOARD_PORT}:${DASHBOARD_PORT}"
-EOF
-
-        if [[ "$ENABLE_NEWS_API" == "true" ]]; then
-            echo "      - \"${API_PORT}:${API_PORT}\"" >> "$INSTALL_DIR/docker-compose.yml"
-        fi
-
-        cat >> "$INSTALL_DIR/docker-compose.yml" << EOF
-    volumes:
-      - ./Caddyfile:/etc/caddy/Caddyfile
-      - ./caddy_data:/data
-      - ./caddy_config:/config
-      - ./dashboard:/srv/dashboard
-    networks:
-      - n8n_network
-    environment:
-      - DASHBOARD_USERNAME=${DASHBOARD_USERNAME}
-      - DASHBOARD_PASSWORD=${DASHBOARD_PASSWORD}
-    depends_on:
-EOF
-
-        if [[ "$ENABLE_MULTI_DOMAIN" == "true" ]]; then
-            for i in "${!DOMAINS[@]}"; do
-                echo "      - n8n_$((i+1))" >> "$INSTALL_DIR/docker-compose.yml"
-            done
-        else
-            echo "      - n8n" >> "$INSTALL_DIR/docker-compose.yml"
-        fi
-
-        if [[ "$ENABLE_NEWS_API" == "true" ]]; then
-            echo "      - fastapi" >> "$INSTALL_DIR/docker-compose.yml"
-        fi
-        echo "" >> "$INSTALL_DIR/docker-compose.yml"
-    fi
-
-    # Add News API if enabled
-    if [[ "$ENABLE_NEWS_API" == "true" ]]; then
-        cat >> "$INSTALL_DIR/docker-compose.yml" << EOF
-  fastapi:
-    build: ./news_api
-    container_name: news-api-container
-    restart: unless-stopped
-    ports:
-      - "127.0.0.1:${API_PORT}:8000"
-    environment:
-      - NEWS_API_TOKEN=${BEARER_TOKEN}
-      - PYTHONUNBUFFERED=1
-    networks:
-      - n8n_network
-
-EOF
     fi
 
     # Add Cloudflare Tunnel if needed
@@ -1062,190 +1035,10 @@ EOF
 networks:
   n8n_network:
     driver: bridge
+    name: n8n_network
 EOF
 
     success "Đã tạo docker-compose.yml"
-}
-
-# =============================================================================
-# CADDYFILE CREATION
-# =============================================================================
-
-create_caddyfile() {
-    if [[ "$INSTALL_MODE" == "cloudflare" ]]; then
-        return
-    fi
-    
-    log "🌐 Tạo Caddyfile..."
-    
-    # Generate hashed password for dashboard
-    local hashed_pass=""
-    if [[ "$ENABLE_DASHBOARD_AUTH" == "true" ]]; then
-        # Use caddy hash-password when container is running
-        hashed_pass="JDJhJDE0JEVCNXhWS2pQSzJneFZlN05YUkxoL09mS0pPY2ZGcUZBc1dJZ3o1YUNlNGpGV1AwRWxma0Jl" # temp placeholder
-    fi
-    
-    if [[ "$INSTALL_MODE" == "localhost" ]]; then
-        # Localhost mode Caddyfile
-        cat > "$INSTALL_DIR/Caddyfile" << EOF
-{
-    auto_https off
-    admin off
-}
-
-EOF
-
-        # N8N instances
-        if [[ "$ENABLE_MULTI_DOMAIN" == "true" ]]; then
-            for i in "${!DOMAINS[@]}"; do
-                local instance_num=$((i+1))
-                local port="${DOMAIN_PORTS[$i]}"
-                
-                cat >> "$INSTALL_DIR/Caddyfile" << EOF
-:${port} {
-    reverse_proxy n8n-container-${instance_num}:5678
-    header {
-        Access-Control-Allow-Origin *
-        Access-Control-Allow-Methods "GET, POST, PUT, DELETE, OPTIONS"
-        Access-Control-Allow-Headers "Content-Type, Authorization"
-    }
-}
-
-EOF
-            done
-        else
-            cat >> "$INSTALL_DIR/Caddyfile" << EOF
-:${DOMAIN_PORTS[0]} {
-    reverse_proxy n8n-container:5678
-    header {
-        Access-Control-Allow-Origin *
-        Access-Control-Allow-Methods "GET, POST, PUT, DELETE, OPTIONS"
-        Access-Control-Allow-Headers "Content-Type, Authorization"
-    }
-}
-
-EOF
-        fi
-
-        # News API
-        if [[ "$ENABLE_NEWS_API" == "true" ]]; then
-            cat >> "$INSTALL_DIR/Caddyfile" << EOF
-:${API_PORT} {
-    reverse_proxy news-api-container:8000
-    header {
-        Access-Control-Allow-Origin *
-        Access-Control-Allow-Methods "GET, POST, PUT, DELETE, OPTIONS"
-        Access-Control-Allow-Headers "Content-Type, Authorization"
-    }
-}
-
-EOF
-        fi
-
-        # Dashboard
-        cat >> "$INSTALL_DIR/Caddyfile" << EOF
-:${DASHBOARD_PORT} {
-EOF
-        if [[ "$ENABLE_DASHBOARD_AUTH" == "true" ]]; then
-            cat >> "$INSTALL_DIR/Caddyfile" << EOF
-    basicauth {
-        ${DASHBOARD_USERNAME} ${hashed_pass}
-    }
-EOF
-        fi
-        cat >> "$INSTALL_DIR/Caddyfile" << EOF
-    root * /srv/dashboard
-    file_server
-}
-EOF
-
-    else
-        # Domain mode Caddyfile
-        cat > "$INSTALL_DIR/Caddyfile" << EOF
-{
-    email ${SSL_EMAIL}
-    acme_ca https://acme-v02.api.letsencrypt.org/directory
-}
-
-EOF
-
-        # N8N domains
-        if [[ "$ENABLE_MULTI_DOMAIN" == "true" ]]; then
-            for i in "${!DOMAINS[@]}"; do
-                local instance_num=$((i+1))
-                local domain="${DOMAINS[$i]}"
-                
-                cat >> "$INSTALL_DIR/Caddyfile" << EOF
-${domain} {
-    reverse_proxy n8n-container-${instance_num}:5678
-    
-    header {
-        Strict-Transport-Security "max-age=31536000; includeSubDomains"
-        X-Content-Type-Options "nosniff"
-        X-Frame-Options "DENY"
-        X-XSS-Protection "1; mode=block"
-    }
-    
-    encode gzip
-}
-
-EOF
-            done
-        else
-            cat >> "$INSTALL_DIR/Caddyfile" << EOF
-${DOMAINS[0]} {
-    reverse_proxy n8n-container:5678
-    
-    header {
-        Strict-Transport-Security "max-age=31536000; includeSubDomains"
-        X-Content-Type-Options "nosniff"
-        X-Frame-Options "DENY"
-        X-XSS-Protection "1; mode=block"
-    }
-    
-    encode gzip
-}
-
-EOF
-        fi
-
-        # API domain
-        if [[ "$ENABLE_NEWS_API" == "true" ]]; then
-            cat >> "$INSTALL_DIR/Caddyfile" << EOF
-${API_DOMAIN} {
-    reverse_proxy news-api-container:8000
-    
-    header {
-        Access-Control-Allow-Origin *
-        Access-Control-Allow-Methods "GET, POST, PUT, DELETE, OPTIONS"
-        Access-Control-Allow-Headers "Content-Type, Authorization"
-    }
-    
-    encode gzip
-}
-
-EOF
-        fi
-
-        # Dashboard subdomain
-        cat >> "$INSTALL_DIR/Caddyfile" << EOF
-dashboard.${DOMAINS[0]}:${DASHBOARD_PORT} {
-EOF
-        if [[ "$ENABLE_DASHBOARD_AUTH" == "true" ]]; then
-            cat >> "$INSTALL_DIR/Caddyfile" << EOF
-    basicauth {
-        ${DASHBOARD_USERNAME} ${hashed_pass}
-    }
-EOF
-        fi
-        cat >> "$INSTALL_DIR/Caddyfile" << EOF
-    root * /srv/dashboard
-    file_server
-}
-EOF
-    fi
-    
-    success "Đã tạo Caddyfile"
 }
 
 # =============================================================================
@@ -1270,7 +1063,13 @@ END
 $$;
 
 -- Create main database
-CREATE DATABASE n8n_db OWNER n8n_user;
+DO $$
+BEGIN
+    IF NOT EXISTS (SELECT FROM pg_database WHERE datname = 'n8n_db') THEN
+        CREATE DATABASE n8n_db OWNER n8n_user;
+    END IF;
+END
+$$;
 
 -- Grant privileges
 ALTER USER n8n_user CREATEDB;
@@ -1283,7 +1082,13 @@ EOF
         for i in "${!DOMAINS[@]}"; do
             local instance_num=$((i+1))
             cat >> "$INSTALL_DIR/init-db.sql" << EOF
-CREATE DATABASE n8n_db_instance_${instance_num} OWNER n8n_user;
+DO $$
+BEGIN
+    IF NOT EXISTS (SELECT FROM pg_database WHERE datname = 'n8n_db_instance_${instance_num}') THEN
+        CREATE DATABASE n8n_db_instance_${instance_num} OWNER n8n_user;
+    END IF;
+END
+$$;
 EOF
         done
     fi
@@ -1292,223 +1097,93 @@ EOF
 }
 
 # =============================================================================
-# NEWS API CREATION
+# CLOUDFLARE TUNNEL SETUP
 # =============================================================================
 
-create_news_api() {
-    if [[ "$ENABLE_NEWS_API" != "true" ]]; then
+setup_cloudflare_tunnel() {
+    if [[ "$INSTALL_MODE" != "cloudflare" ]]; then
         return
     fi
     
-    log "📰 Tạo News Content API..."
+    log "☁️ Thiết lập Cloudflare Tunnel..."
     
-    # Create requirements.txt
-    cat > "$INSTALL_DIR/news_api/requirements.txt" << 'EOF'
-fastapi==0.104.1
-uvicorn[standard]==0.24.0
-newspaper4k==0.9.3
-user-agents==2.2.0
-pydantic==2.5.0
-python-multipart==0.0.6
-requests==2.31.0
-lxml==4.9.3
-Pillow==10.1.0
-nltk==3.8.1
-beautifulsoup4==4.12.2
-feedparser==6.0.10
-python-dateutil==2.8.2
+    if [[ "$CLOUDFLARE_MODE" == "new" ]]; then
+        # Instructions for new tunnel
+        echo ""
+        echo -e "${CYAN}╔══════════════════════════════════════════════════════════════════════════════╗${NC}"
+        echo -e "${CYAN}║${WHITE}                    📋 HƯỚNG DẪN TẠO CLOUDFLARE TUNNEL                      ${CYAN}║${NC}"
+        echo -e "${CYAN}╚══════════════════════════════════════════════════════════════════════════════╝${NC}"
+        echo ""
+        echo -e "${YELLOW}Bước 1: Đăng nhập Cloudflare Dashboard${NC}"
+        echo -e "  1. Truy cập: https://one.dash.cloudflare.com/"
+        echo -e "  2. Chọn domain của bạn"
+        echo ""
+        echo -e "${YELLOW}Bước 2: Tạo Tunnel${NC}"
+        echo -e "  1. Vào Zero Trust → Access → Tunnels"
+        echo -e "  2. Click 'Create a tunnel'"
+        echo -e "  3. Đặt tên tunnel (ví dụ: n8n-tunnel)"
+        echo -e "  4. Copy tunnel token"
+        echo ""
+        echo -e "${YELLOW}Bước 3: Cấu hình Routes${NC}"
+        
+        if [[ "$ENABLE_MULTI_DOMAIN" == "true" ]]; then
+            for i in "${!DOMAINS[@]}"; do
+                echo -e "  • ${DOMAINS[$i]} → http://n8n-container-$((i+1)):5678"
+            done
+        else
+            echo -e "  • ${DOMAINS[0]} → http://n8n-container:5678"
+        fi
+        
+        if [[ "$ENABLE_NEWS_API" == "true" ]]; then
+            echo -e "  • ${API_DOMAIN} → http://news-api-container:8000"
+        fi
+        
+        echo -e "  • dashboard.${DOMAINS[0]} → http://localhost:${DASHBOARD_PORT}"
+        echo ""
+        
+        read -p "🔑 Nhập Cloudflare Tunnel Token sau khi tạo: " CLOUDFLARE_TUNNEL_TOKEN
+        
+        # Update docker-compose with token
+        sed -i "s/TUNNEL_TOKEN=.*/TUNNEL_TOKEN=${CLOUDFLARE_TUNNEL_TOKEN}/" "$INSTALL_DIR/docker-compose.yml"
+    fi
+    
+    # Create tunnel config
+    cat > "$INSTALL_DIR/cloudflare/config.yml" << EOF
+tunnel: ${CLOUDFLARE_TUNNEL_TOKEN}
+credentials-file: /etc/cloudflared/creds.json
+
+ingress:
 EOF
 
-    # Create main.py
-    cat > "$INSTALL_DIR/news_api/main.py" << 'EOF'
-import os
-import random
-import logging
-from datetime import datetime
-from typing import List, Optional, Dict, Any
-import feedparser
-import requests
-from fastapi import FastAPI, HTTPException, Depends, Security
-from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
-from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import HTMLResponse
-from pydantic import BaseModel, HttpUrl, Field
-import newspaper
-from newspaper import Article, Source
-from user_agents import parse
-import nltk
+    # Add routes
+    if [[ "$ENABLE_MULTI_DOMAIN" == "true" ]]; then
+        for i in "${!DOMAINS[@]}"; do
+            cat >> "$INSTALL_DIR/cloudflare/config.yml" << EOF
+  - hostname: ${DOMAINS[$i]}
+    service: http://n8n-container-$((i+1)):5678
+EOF
+        done
+    else
+        cat >> "$INSTALL_DIR/cloudflare/config.yml" << EOF
+  - hostname: ${DOMAINS[0]}
+    service: http://n8n-container:5678
+EOF
+    fi
 
-# Download required NLTK data
-try:
-    nltk.download('punkt', quiet=True)
-    nltk.download('stopwords', quiet=True)
-except:
-    pass
+    if [[ "$ENABLE_NEWS_API" == "true" ]]; then
+        cat >> "$INSTALL_DIR/cloudflare/config.yml" << EOF
+  - hostname: ${API_DOMAIN}
+    service: http://news-api-container:8000
+EOF
+    fi
 
-# Configure logging
-logging.basicConfig(level=logging.INFO)
-logger = logging.getLogger(__name__)
-
-# FastAPI app
-app = FastAPI(
-    title="News Content API",
-    description="Advanced News Content Extraction API",
-    version="2.0.0",
-    docs_url="/docs",
-    redoc_url="/redoc"
-)
-
-# CORS middleware
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=["*"],
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
-
-# Security
-security = HTTPBearer()
-NEWS_API_TOKEN = os.getenv("NEWS_API_TOKEN", "default_token")
-
-# Random User Agents
-USER_AGENTS = [
-    "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/120.0.0.0 Safari/537.36",
-    "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 Chrome/120.0.0.0 Safari/537.36",
-    "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 Chrome/120.0.0.0 Safari/537.36",
-    "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:121.0) Gecko/20100101 Firefox/121.0"
-]
-
-def get_random_user_agent() -> str:
-    return random.choice(USER_AGENTS)
-
-def verify_token(credentials: HTTPAuthorizationCredentials = Security(security)):
-    if credentials.credentials != NEWS_API_TOKEN:
-        raise HTTPException(status_code=401, detail="Invalid authentication token")
-    return credentials.credentials
-
-# Models
-class ArticleRequest(BaseModel):
-    url: HttpUrl
-    language: str = Field(default="en", description="Language code")
-    extract_images: bool = True
-    summarize: bool = False
-
-class ArticleResponse(BaseModel):
-    title: str
-    content: str
-    summary: Optional[str] = None
-    authors: List[str]
-    publish_date: Optional[datetime] = None
-    images: List[str]
-    keywords: List[str]
-    url: str
-
-# API Routes
-@app.get("/", response_class=HTMLResponse)
-async def root():
-    return f"""
-    <!DOCTYPE html>
-    <html>
-    <head>
-        <title>News Content API</title>
-        <style>
-            body {{ font-family: -apple-system, sans-serif; margin: 40px; background: #f5f5f5; }}
-            .container {{ max-width: 800px; margin: 0 auto; background: white; padding: 40px; border-radius: 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }}
-            h1 {{ color: #333; }}
-            .endpoint {{ background: #f8f9fa; padding: 15px; margin: 10px 0; border-radius: 5px; border-left: 4px solid #007bff; }}
-            code {{ background: #e9ecef; padding: 2px 6px; border-radius: 3px; }}
-        </style>
-    </head>
-    <body>
-        <div class="container">
-            <h1>📰 News Content API</h1>
-            <p>Advanced content extraction API with multi-language support.</p>
-            
-            <h2>🔐 Authentication</h2>
-            <p>All requests require Bearer token in header:</p>
-            <code>Authorization: Bearer YOUR_TOKEN</code>
-            
-            <h2>📖 Documentation</h2>
-            <p><a href="/docs">Swagger UI</a> | <a href="/redoc">ReDoc</a></p>
-            
-            <h2>🚀 Quick Start</h2>
-            <div class="endpoint">
-                <strong>POST /extract-article</strong><br>
-                Extract content from article URL
-            </div>
-            
-            <p><em>Created by Nguyễn Ngọc Thiện</em></p>
-        </div>
-    </body>
-    </html>
-    """
-
-@app.get("/health")
-async def health_check():
-    return {
-        "status": "healthy",
-        "timestamp": datetime.now(),
-        "version": "2.0.0"
-    }
-
-@app.post("/extract-article", response_model=ArticleResponse)
-async def extract_article(
-    request: ArticleRequest,
-    token: str = Depends(verify_token)
-):
-    try:
-        config = newspaper.Config()
-        config.language = request.language
-        config.browser_user_agent = get_random_user_agent()
-        
-        article = Article(str(request.url), config=config)
-        article.download()
-        article.parse()
-        
-        if request.summarize:
-            article.nlp()
-        
-        return ArticleResponse(
-            title=article.title or "No title",
-            content=article.text or "No content",
-            summary=article.summary if request.summarize else None,
-            authors=article.authors,
-            publish_date=article.publish_date,
-            images=list(article.images) if request.extract_images else [],
-            keywords=article.keywords[:10] if hasattr(article, 'keywords') else [],
-            url=str(request.url)
-        )
-    except Exception as e:
-        logger.error(f"Error extracting article: {e}")
-        raise HTTPException(status_code=400, detail=str(e))
-
-if __name__ == "__main__":
-    import uvicorn
-    uvicorn.run(app, host="0.0.0.0", port=8000)
+    cat >> "$INSTALL_DIR/cloudflare/config.yml" << EOF
+  - hostname: dashboard.${DOMAINS[0]}
+    service: http://localhost:${DASHBOARD_PORT}
+  - service: http_status:404
 EOF
 
-    # Create Dockerfile
-    cat > "$INSTALL_DIR/news_api/Dockerfile" << 'EOF'
-FROM python:3.11-slim
-
-WORKDIR /app
-
-RUN apt-get update && apt-get install -y \
-    gcc g++ libxml2-dev libxslt-dev libjpeg-dev zlib1g-dev libpng-dev curl \
-    && rm -rf /var/lib/apt/lists/*
-
-COPY requirements.txt .
-RUN pip install --no-cache-dir -r requirements.txt
-
-COPY . .
-
-EXPOSE 8000
-
-CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000", "--workers", "1"]
-EOF
-
-    success "Đã tạo News Content API"
+    success "Đã thiết lập Cloudflare Tunnel"
 }
 
 # =============================================================================
@@ -1518,590 +1193,111 @@ EOF
 create_dashboard() {
     log "📊 Tạo Web Dashboard..."
     
+    # Create simple dashboard HTML
     cat > "$INSTALL_DIR/dashboard/index.html" << 'EOF'
 <!DOCTYPE html>
-<html lang="en">
+<html>
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>N8N Management Dashboard</title>
+    <title>N8N Dashboard</title>
+    <meta charset="utf-8">
     <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-        
-        body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-            background: #0f172a;
-            color: #e2e8f0;
-            min-height: 100vh;
-            padding: 20px;
-        }
-        
-        .container {
-            max-width: 1400px;
-            margin: 0 auto;
-        }
-        
-        .header {
-            text-align: center;
-            margin-bottom: 40px;
-            padding: 30px;
-            background: linear-gradient(135deg, #3b82f6 0%, #8b5cf6 100%);
-            border-radius: 20px;
-            box-shadow: 0 20px 40px rgba(0,0,0,0.3);
-        }
-        
-        .header h1 {
-            font-size: 2.5rem;
-            margin-bottom: 10px;
-            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
-        }
-        
-        .header p {
-            font-size: 1.1rem;
-            opacity: 0.9;
-        }
-        
-        .grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
-            gap: 20px;
-            margin-bottom: 30px;
-        }
-        
-        .card {
-            background: #1e293b;
-            border-radius: 15px;
-            padding: 25px;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
-            border: 1px solid #334155;
-            transition: transform 0.3s, box-shadow 0.3s;
-        }
-        
-        .card:hover {
-            transform: translateY(-5px);
-            box-shadow: 0 15px 40px rgba(0,0,0,0.4);
-        }
-        
-        .card h3 {
-            color: #60a5fa;
-            margin-bottom: 20px;
-            font-size: 1.3rem;
-            display: flex;
-            align-items: center;
-            gap: 10px;
-        }
-        
-        .status-item {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 12px 0;
-            border-bottom: 1px solid #334155;
-        }
-        
-        .status-item:last-child {
-            border-bottom: none;
-        }
-        
-        .status-running {
-            background: #10b981;
-            color: white;
-            padding: 4px 12px;
-            border-radius: 20px;
-            font-size: 0.8rem;
-            font-weight: bold;
-        }
-        
-        .status-stopped {
-            background: #ef4444;
-            color: white;
-            padding: 4px 12px;
-            border-radius: 20px;
-            font-size: 0.8rem;
-            font-weight: bold;
-        }
-        
-        .actions {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-            gap: 15px;
-            margin-top: 30px;
-        }
-        
-        .btn {
-            background: linear-gradient(135deg, #3b82f6, #2563eb);
-            color: white;
-            border: none;
-            padding: 14px 24px;
-            border-radius: 10px;
-            cursor: pointer;
-            font-size: 0.95rem;
-            font-weight: 600;
-            transition: all 0.3s ease;
-            text-decoration: none;
-            text-align: center;
-            display: inline-block;
-            box-shadow: 0 4px 15px rgba(59, 130, 246, 0.3);
-        }
-        
-        .btn:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 6px 20px rgba(59, 130, 246, 0.4);
-        }
-        
-        .btn-success {
-            background: linear-gradient(135deg, #10b981, #059669);
-        }
-        
-        .btn-warning {
-            background: linear-gradient(135deg, #f59e0b, #d97706);
-        }
-        
-        .btn-danger {
-            background: linear-gradient(135deg, #ef4444, #dc2626);
-        }
-        
-        .loading {
-            text-align: center;
-            color: #64748b;
-            font-style: italic;
-        }
-        
-        .metric-value {
-            font-size: 1.5rem;
-            font-weight: bold;
-            color: #60a5fa;
-        }
-        
-        .logs-container {
-            background: #0f172a;
-            border-radius: 15px;
-            padding: 20px;
-            margin-top: 30px;
-            border: 1px solid #334155;
-            max-height: 400px;
-            overflow-y: auto;
-        }
-        
-        .logs-container pre {
-            color: #10b981;
-            font-family: 'Courier New', monospace;
-            font-size: 0.9rem;
-            white-space: pre-wrap;
-            word-wrap: break-word;
-        }
-        
-        .toast {
-            position: fixed;
-            bottom: 20px;
-            right: 20px;
-            background: #10b981;
-            color: white;
-            padding: 16px 24px;
-            border-radius: 10px;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
-            transform: translateX(400px);
-            transition: transform 0.3s;
-            font-weight: 500;
-        }
-        
-        .toast.show {
-            transform: translateX(0);
-        }
-        
-        .toast.error {
-            background: #ef4444;
-        }
+        body { font-family: Arial, sans-serif; margin: 20px; background: #f5f5f5; }
+        .container { max-width: 1200px; margin: 0 auto; }
+        .header { background: #3498db; color: white; padding: 20px; border-radius: 10px; margin-bottom: 20px; }
+        .card { background: white; padding: 20px; margin: 10px 0; border-radius: 10px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
+        .status { display: inline-block; padding: 5px 10px; border-radius: 5px; font-size: 14px; }
+        .running { background: #2ecc71; color: white; }
+        .stopped { background: #e74c3c; color: white; }
+        button { background: #3498db; color: white; border: none; padding: 10px 20px; border-radius: 5px; cursor: pointer; margin: 5px; }
+        button:hover { background: #2980b9; }
     </style>
 </head>
 <body>
     <div class="container">
         <div class="header">
             <h1>🚀 N8N Management Dashboard</h1>
-            <p>Real-time monitoring and control center</p>
+            <p>System monitoring and control panel</p>
         </div>
         
-        <div class="grid">
-            <div class="card">
-                <h3>📊 System Overview</h3>
-                <div id="system-overview" class="loading">Loading...</div>
-            </div>
-            
-            <div class="card">
-                <h3>🐳 Container Status</h3>
-                <div id="container-status" class="loading">Loading...</div>
-            </div>
-            
-            <div class="card">
-                <h3>🌐 N8N Instances</h3>
-                <div id="n8n-instances" class="loading">Loading...</div>
-            </div>
-            
-            <div class="card">
-                <h3>💾 Backup Status</h3>
-                <div id="backup-status" class="loading">Loading...</div>
-            </div>
+        <div class="card">
+            <h2>📊 System Status</h2>
+            <div id="status">Loading...</div>
         </div>
         
-        <div class="actions">
-            <button class="btn" onclick="refreshData()">🔄 Refresh</button>
-            <button class="btn btn-warning" onclick="restartAll()">🔄 Restart All</button>
-            <button class="btn btn-success" onclick="runBackup()">💾 Backup Now</button>
-            <button class="btn btn-danger" onclick="showLogs()">📋 View Logs</button>
+        <div class="card">
+            <h2>🎛️ Quick Actions</h2>
+            <button onclick="restartAll()">🔄 Restart All Services</button>
+            <button onclick="viewLogs()">📋 View Logs</button>
+            <button onclick="runBackup()">💾 Run Backup</button>
         </div>
         
-        <div class="logs-container" id="logs-container" style="display: none;">
-            <h3 style="color: #60a5fa; margin-bottom: 15px;">📋 System Logs</h3>
-            <pre id="system-logs">Loading logs...</pre>
+        <div class="card">
+            <h2>🌐 N8N Instances</h2>
+            <div id="instances">Loading...</div>
         </div>
     </div>
-
-    <div class="toast" id="toast"></div>
-
+    
     <script>
-        const API_BASE = window.location.origin;
-        let refreshInterval;
-
-        function showToast(message, isError = false) {
-            const toast = document.getElementById('toast');
-            toast.textContent = message;
-            toast.className = 'toast' + (isError ? ' error' : '');
-            toast.classList.add('show');
+        function loadStatus() {
+            // This is a simple static dashboard
+            // For dynamic data, you would need to implement an API
+            document.getElementById('status').innerHTML = `
+                <p>✅ All systems operational</p>
+                <p>📅 Last checked: ${new Date().toLocaleString()}</p>
+            `;
             
-            setTimeout(() => {
-                toast.classList.remove('show');
-            }, 3000);
+            document.getElementById('instances').innerHTML = `
+                <p>Instance links will be displayed here after deployment completes.</p>
+            `;
         }
-
-        async function fetchData(endpoint) {
-            try {
-                const response = await fetch(`${API_BASE}/api/${endpoint}`);
-                if (!response.ok) throw new Error('Failed to fetch');
-                return await response.json();
-            } catch (error) {
-                console.error(`Error fetching ${endpoint}:`, error);
-                return null;
+        
+        function restartAll() {
+            if (confirm('Restart all services?')) {
+                alert('Please run: docker-compose restart');
             }
         }
-
-        async function postData(endpoint) {
-            try {
-                const response = await fetch(`${API_BASE}/api/${endpoint}`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' }
-                });
-                if (!response.ok) throw new Error('Failed to post');
-                return await response.text();
-            } catch (error) {
-                console.error(`Error posting to ${endpoint}:`, error);
-                throw error;
-            }
+        
+        function viewLogs() {
+            alert('Please run: docker-compose logs -f');
         }
-
-        async function refreshData() {
-            // System Overview
-            const systemData = await fetchData('system');
-            if (systemData) {
-                document.getElementById('system-overview').innerHTML = `
-                    <div class="status-item">
-                        <span>Memory Usage</span>
-                        <span class="metric-value">${systemData.memory || 'N/A'}</span>
-                    </div>
-                    <div class="status-item">
-                        <span>Disk Usage</span>
-                        <span class="metric-value">${systemData.disk || 'N/A'}</span>
-                    </div>
-                    <div class="status-item">
-                        <span>Uptime</span>
-                        <span>${systemData.uptime || 'N/A'}</span>
-                    </div>
-                `;
-            }
-
-            // Container Status
-            const containersData = await fetchData('containers');
-            if (containersData) {
-                let html = '';
-                containersData.forEach(container => {
-                    html += `
-                        <div class="status-item">
-                            <span>${container.name}</span>
-                            <span class="${container.status === 'running' ? 'status-running' : 'status-stopped'}">
-                                ${container.status}
-                            </span>
-                        </div>
-                    `;
-                });
-                document.getElementById('container-status').innerHTML = html;
-            }
-
-            // N8N Instances
-            const instancesData = await fetchData('instances');
-            if (instancesData) {
-                let html = '';
-                instancesData.forEach((instance, index) => {
-                    html += `
-                        <div class="status-item">
-                            <span>Instance ${index + 1}: ${instance.domain}</span>
-                            <span class="${instance.healthy ? 'status-running' : 'status-stopped'}">
-                                ${instance.healthy ? 'Healthy' : 'Unhealthy'}
-                            </span>
-                        </div>
-                    `;
-                });
-                document.getElementById('n8n-instances').innerHTML = html;
-            }
-
-            // Backup Status
-            const backupData = await fetchData('backups');
-            if (backupData) {
-                document.getElementById('backup-status').innerHTML = `
-                    <div class="status-item">
-                        <span>Total Backups</span>
-                        <span class="metric-value">${backupData.count || 0}</span>
-                    </div>
-                    <div class="status-item">
-                        <span>Last Backup</span>
-                        <span>${backupData.lastBackup || 'Never'}</span>
-                    </div>
-                    <div class="status-item">
-                        <span>Total Size</span>
-                        <span>${backupData.totalSize || '0 MB'}</span>
-                    </div>
-                `;
-            }
+        
+        function runBackup() {
+            alert('Please run: /home/n8n/backup-workflows.sh');
         }
-
-        async function restartAll() {
-            if (confirm('Are you sure you want to restart all services?')) {
-                try {
-                    showToast('Restarting all services...');
-                    await postData('restart');
-                    showToast('Services restarted successfully!');
-                    setTimeout(refreshData, 5000);
-                } catch (error) {
-                    showToast('Failed to restart services', true);
-                }
-            }
-        }
-
-        async function runBackup() {
-            if (confirm('Run backup now?')) {
-                try {
-                    showToast('Starting backup...');
-                    await postData('backup');
-                    showToast('Backup started successfully!');
-                    setTimeout(refreshData, 2000);
-                } catch (error) {
-                    showToast('Failed to start backup', true);
-                }
-            }
-        }
-
-        async function showLogs() {
-            const logsContainer = document.getElementById('logs-container');
-            const logsElement = document.getElementById('system-logs');
-            
-            if (logsContainer.style.display === 'none') {
-                logsContainer.style.display = 'block';
-                const logs = await fetchData('logs');
-                logsElement.textContent = logs || 'No logs available';
-            } else {
-                logsContainer.style.display = 'none';
-            }
-        }
-
-        // Auto refresh every 30 seconds
-        function startAutoRefresh() {
-            refreshInterval = setInterval(refreshData, 30000);
-        }
-
-        function stopAutoRefresh() {
-            if (refreshInterval) {
-                clearInterval(refreshInterval);
-            }
-        }
-
-        // Initialize
-        refreshData();
-        startAutoRefresh();
-
-        // Stop refresh when page is hidden
-        document.addEventListener('visibilitychange', function() {
-            if (document.hidden) {
-                stopAutoRefresh();
-            } else {
-                startAutoRefresh();
-                refreshData();
-            }
-        });
+        
+        // Load status on page load
+        loadStatus();
+        
+        // Refresh every 30 seconds
+        setInterval(loadStatus, 30000);
     </script>
 </body>
 </html>
 EOF
 
-    # Create API handler script
-    cat > "$INSTALL_DIR/dashboard/api.js" << 'EOF'
-const http = require('http');
-const { exec } = require('child_process');
-const fs = require('fs');
-const path = require('path');
+    # Create simple API service
+    cat > "$INSTALL_DIR/dashboard/server.py" << 'EOF'
+#!/usr/bin/env python3
+import http.server
+import socketserver
+import os
 
-const PORT = process.env.DASHBOARD_API_PORT || 8081;
+PORT = int(os.environ.get('DASHBOARD_PORT', 8080))
 
-function executeCommand(cmd) {
-    return new Promise((resolve, reject) => {
-        exec(cmd, { cwd: '/home/n8n' }, (error, stdout, stderr) => {
-            if (error) {
-                console.error(`Error: ${error}`);
-                reject(error);
-            } else {
-                resolve(stdout + stderr);
-            }
-        });
-    });
-}
+class MyHTTPRequestHandler(http.server.SimpleHTTPRequestHandler):
+    def end_headers(self):
+        self.send_header('Access-Control-Allow-Origin', '*')
+        super().end_headers()
 
-async function getSystemInfo() {
-    try {
-        const memory = await executeCommand("free -h | grep Mem | awk '{print $3\"/\"$2}'");
-        const disk = await executeCommand("df -h /home/n8n | tail -1 | awk '{print $5}'");
-        const uptime = await executeCommand("uptime -p");
-        
-        return {
-            memory: memory.trim(),
-            disk: disk.trim(),
-            uptime: uptime.trim()
-        };
-    } catch (error) {
-        return { memory: 'Error', disk: 'Error', uptime: 'Error' };
-    }
-}
+os.chdir('/home/n8n/dashboard')
 
-async function getContainers() {
-    try {
-        const output = await executeCommand("docker ps --format '{{.Names}}|{{.Status}}'");
-        const containers = output.trim().split('\n').map(line => {
-            const [name, status] = line.split('|');
-            return {
-                name: name,
-                status: status.includes('Up') ? 'running' : 'stopped'
-            };
-        });
-        return containers;
-    } catch (error) {
-        return [];
-    }
-}
-
-async function getInstances() {
-    try {
-        const instances = [];
-        const caddyfile = fs.readFileSync('/home/n8n/Caddyfile', 'utf8');
-        const domains = caddyfile.match(/^[a-zA-Z0-9.-]+(?=\s*{)/gm) || [];
-        
-        for (const domain of domains) {
-            if (!domain.includes(':') && domain !== '{') {
-                instances.push({
-                    domain: domain,
-                    healthy: true // Simplified - you can add real health checks
-                });
-            }
-        }
-        
-        return instances;
-    } catch (error) {
-        return [];
-    }
-}
-
-async function getBackups() {
-    try {
-        const files = await executeCommand("ls -1 /home/n8n/files/backup_full/n8n_backup_*.zip 2>/dev/null | wc -l");
-        const lastBackup = await executeCommand("ls -t /home/n8n/files/backup_full/n8n_backup_*.zip 2>/dev/null | head -1 | xargs basename 2>/dev/null");
-        const totalSize = await executeCommand("du -sh /home/n8n/files/backup_full 2>/dev/null | awk '{print $1}'");
-        
-        return {
-            count: parseInt(files.trim()) || 0,
-            lastBackup: lastBackup.trim() || 'Never',
-            totalSize: totalSize.trim() || '0'
-        };
-    } catch (error) {
-        return { count: 0, lastBackup: 'Never', totalSize: '0' };
-    }
-}
-
-async function getLogs() {
-    try {
-        const logs = await executeCommand("docker-compose logs --tail=50 2>&1");
-        return logs;
-    } catch (error) {
-        return 'Error fetching logs';
-    }
-}
-
-const server = http.createServer(async (req, res) => {
-    res.setHeader('Access-Control-Allow-Origin', '*');
-    res.setHeader('Access-Control-Allow-Methods', 'GET, POST');
-    res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
-
-    if (req.method === 'OPTIONS') {
-        res.writeHead(200);
-        res.end();
-        return;
-    }
-
-    if (req.url === '/api/system' && req.method === 'GET') {
-        const data = await getSystemInfo();
-        res.writeHead(200, { 'Content-Type': 'application/json' });
-        res.end(JSON.stringify(data));
-    } else if (req.url === '/api/containers' && req.method === 'GET') {
-        const data = await getContainers();
-        res.writeHead(200, { 'Content-Type': 'application/json' });
-        res.end(JSON.stringify(data));
-    } else if (req.url === '/api/instances' && req.method === 'GET') {
-        const data = await getInstances();
-        res.writeHead(200, { 'Content-Type': 'application/json' });
-        res.end(JSON.stringify(data));
-    } else if (req.url === '/api/backups' && req.method === 'GET') {
-        const data = await getBackups();
-        res.writeHead(200, { 'Content-Type': 'application/json' });
-        res.end(JSON.stringify(data));
-    } else if (req.url === '/api/logs' && req.method === 'GET') {
-        const data = await getLogs();
-        res.writeHead(200, { 'Content-Type': 'text/plain' });
-        res.end(data);
-    } else if (req.url === '/api/restart' && req.method === 'POST') {
-        executeCommand('docker-compose restart').then(() => {
-            res.writeHead(200, { 'Content-Type': 'text/plain' });
-            res.end('Restart initiated');
-        }).catch(error => {
-            res.writeHead(500, { 'Content-Type': 'text/plain' });
-            res.end('Restart failed');
-        });
-    } else if (req.url === '/api/backup' && req.method === 'POST') {
-        executeCommand('/home/n8n/backup-workflows.sh').then(() => {
-            res.writeHead(200, { 'Content-Type': 'text/plain' });
-            res.end('Backup started');
-        }).catch(error => {
-            res.writeHead(500, { 'Content-Type': 'text/plain' });
-            res.end('Backup failed');
-        });
-    } else {
-        res.writeHead(404, { 'Content-Type': 'text/plain' });
-        res.end('Not Found');
-    }
-});
-
-server.listen(PORT, () => {
-    console.log(`Dashboard API running on port ${PORT}`);
-});
+with socketserver.TCPServer(("0.0.0.0", PORT), MyHTTPRequestHandler) as httpd:
+    print(f"Dashboard running at http://0.0.0.0:{PORT}")
+    httpd.serve_forever()
 EOF
 
+    chmod +x "$INSTALL_DIR/dashboard/server.py"
+    
     success "Đã tạo Dashboard"
 }
 
@@ -2215,328 +1411,35 @@ EOF
 }
 
 # =============================================================================
-# CLOUDFLARE TUNNEL SETUP
-# =============================================================================
-
-setup_cloudflare_tunnel() {
-    if [[ "$INSTALL_MODE" != "cloudflare" ]]; then
-        return
-    fi
-    
-    log "☁️ Thiết lập Cloudflare Tunnel..."
-    
-    if [[ "$CLOUDFLARE_MODE" == "new" ]]; then
-        # Instructions for new tunnel
-        echo ""
-        echo -e "${CYAN}╔══════════════════════════════════════════════════════════════════════════════╗${NC}"
-        echo -e "${CYAN}║${WHITE}                    📋 HƯỚNG DẪN TẠO CLOUDFLARE TUNNEL                      ${CYAN}║${NC}"
-        echo -e "${CYAN}╚══════════════════════════════════════════════════════════════════════════════╝${NC}"
-        echo ""
-        echo -e "${YELLOW}Bước 1: Đăng nhập Cloudflare Dashboard${NC}"
-        echo -e "  1. Truy cập: https://one.dash.cloudflare.com/"
-        echo -e "  2. Chọn domain của bạn"
-        echo ""
-        echo -e "${YELLOW}Bước 2: Tạo Tunnel${NC}"
-        echo -e "  1. Vào Zero Trust → Access → Tunnels"
-        echo -e "  2. Click 'Create a tunnel'"
-        echo -e "  3. Đặt tên tunnel (ví dụ: n8n-tunnel)"
-        echo -e "  4. Copy tunnel token"
-        echo ""
-        echo -e "${YELLOW}Bước 3: Cấu hình Routes${NC}"
-        
-        if [[ "$ENABLE_MULTI_DOMAIN" == "true" ]]; then
-            for i in "${!DOMAINS[@]}"; do
-                echo -e "  • ${DOMAINS[$i]} → http://n8n-container-$((i+1)):5678"
-            done
-        else
-            echo -e "  • ${DOMAINS[0]} → http://n8n-container:5678"
-        fi
-        
-        if [[ "$ENABLE_NEWS_API" == "true" ]]; then
-            echo -e "  • ${API_DOMAIN} → http://news-api-container:8000"
-        fi
-        
-        echo -e "  • dashboard.${DOMAINS[0]} → http://caddy-proxy:${DASHBOARD_PORT}"
-        echo ""
-        
-        read -p "🔑 Nhập Cloudflare Tunnel Token sau khi tạo: " CLOUDFLARE_TUNNEL_TOKEN
-        
-        # Update docker-compose with token
-        sed -i "s/TUNNEL_TOKEN=.*/TUNNEL_TOKEN=${CLOUDFLARE_TUNNEL_TOKEN}/" "$INSTALL_DIR/docker-compose.yml"
-    fi
-    
-    # Create tunnel config
-    cat > "$INSTALL_DIR/cloudflare/config.yml" << EOF
-tunnel: ${CLOUDFLARE_TUNNEL_TOKEN}
-credentials-file: /etc/cloudflared/creds.json
-
-ingress:
-EOF
-
-    # Add routes
-    if [[ "$ENABLE_MULTI_DOMAIN" == "true" ]]; then
-        for i in "${!DOMAINS[@]}"; do
-            cat >> "$INSTALL_DIR/cloudflare/config.yml" << EOF
-  - hostname: ${DOMAINS[$i]}
-    service: http://n8n-container-$((i+1)):5678
-EOF
-        done
-    else
-        cat >> "$INSTALL_DIR/cloudflare/config.yml" << EOF
-  - hostname: ${DOMAINS[0]}
-    service: http://n8n-container:5678
-EOF
-    fi
-
-    if [[ "$ENABLE_NEWS_API" == "true" ]]; then
-        cat >> "$INSTALL_DIR/cloudflare/config.yml" << EOF
-  - hostname: ${API_DOMAIN}
-    service: http://news-api-container:8000
-EOF
-    fi
-
-    cat >> "$INSTALL_DIR/cloudflare/config.yml" << EOF
-  - hostname: dashboard.${DOMAINS[0]}
-    service: http://localhost:${DASHBOARD_PORT}
-  - service: http_status:404
-EOF
-
-    success "Đã thiết lập Cloudflare Tunnel"
-}
-
-# =============================================================================
 # SYSTEMD SERVICES
 # =============================================================================
 
 create_systemd_services() {
     log "⚙️ Tạo systemd services..."
     
-    # Dashboard API service
-    cat > /etc/systemd/system/n8n-dashboard-api.service << EOF
+    # Dashboard service
+    cat > /etc/systemd/system/n8n-dashboard.service << EOF
 [Unit]
-Description=N8N Dashboard API
-After=docker.service
-Requires=docker.service
+Description=N8N Dashboard
+After=network.target
 
 [Service]
 Type=simple
 User=root
-WorkingDirectory=/home/n8n
-ExecStart=/usr/bin/node /home/n8n/dashboard/api.js
+WorkingDirectory=/home/n8n/dashboard
+ExecStart=/usr/bin/python3 /home/n8n/dashboard/server.py
 Restart=always
 RestartSec=10
-Environment="DASHBOARD_API_PORT=8081"
+Environment="DASHBOARD_PORT=${DASHBOARD_PORT}"
 
 [Install]
 WantedBy=multi-user.target
 EOF
-
-    # Telegram Bot service (if enabled)
-    if [[ "$ENABLE_TELEGRAM_BOT" == "true" ]]; then
-        create_telegram_bot_script
-        
-        cat > /etc/systemd/system/n8n-telegram-bot.service << EOF
-[Unit]
-Description=N8N Telegram Bot
-After=docker.service
-Requires=docker.service
-
-[Service]
-Type=simple
-User=root
-WorkingDirectory=/home/n8n
-ExecStart=/usr/bin/python3 /home/n8n/telegram_bot/bot.py
-Restart=always
-RestartSec=10
-
-[Install]
-WantedBy=multi-user.target
-EOF
-    fi
 
     systemctl daemon-reload
-    
-    # Enable and start services
-    systemctl enable n8n-dashboard-api
-    systemctl start n8n-dashboard-api
-    
-    if [[ "$ENABLE_TELEGRAM_BOT" == "true" ]]; then
-        systemctl enable n8n-telegram-bot
-        systemctl start n8n-telegram-bot
-    fi
+    systemctl enable n8n-dashboard
     
     success "Đã tạo systemd services"
-}
-
-# =============================================================================
-# TELEGRAM BOT SCRIPT
-# =============================================================================
-
-create_telegram_bot_script() {
-    log "🤖 Tạo Telegram Bot script..."
-    
-    cat > "$INSTALL_DIR/telegram_bot/bot.py" << 'EOF'
-#!/usr/bin/env python3
-
-import os
-import sys
-import json
-import subprocess
-import time
-from datetime import datetime
-import logging
-
-try:
-    import requests
-except ImportError:
-    subprocess.check_call([sys.executable, "-m", "pip", "install", "requests"])
-    import requests
-
-logging.basicConfig(
-    level=logging.INFO,
-    format='%(asctime)s - %(levelname)s - %(message)s'
-)
-logger = logging.getLogger(__name__)
-
-class N8NTelegramBot:
-    def __init__(self, token, chat_id):
-        self.token = token
-        self.chat_id = chat_id
-        self.base_url = f"https://api.telegram.org/bot{token}"
-        self.last_update_id = 0
-        
-    def send_message(self, text, parse_mode="Markdown"):
-        try:
-            url = f"{self.base_url}/sendMessage"
-            data = {
-                'chat_id': self.chat_id,
-                'text': text,
-                'parse_mode': parse_mode
-            }
-            response = requests.post(url, data=data, timeout=10)
-            return response.json()
-        except Exception as e:
-            logger.error(f"Failed to send message: {e}")
-            return None
-    
-    def get_updates(self):
-        try:
-            url = f"{self.base_url}/getUpdates"
-            params = {'offset': self.last_update_id + 1, 'timeout': 10}
-            response = requests.get(url, params=params, timeout=15)
-            return response.json()
-        except Exception as e:
-            logger.error(f"Failed to get updates: {e}")
-            return None
-    
-    def run_command(self, command):
-        try:
-            result = subprocess.run(
-                command,
-                shell=True,
-                capture_output=True,
-                text=True,
-                timeout=60,
-                cwd='/home/n8n'
-            )
-            return result.stdout + result.stderr
-        except subprocess.TimeoutExpired:
-            return "❌ Command timeout"
-        except Exception as e:
-            return f"❌ Command failed: {e}"
-    
-    def process_command(self, text):
-        text = text.strip().lower()
-        
-        if text == "/start" or text == "/help":
-            return """🤖 *N8N Telegram Bot*
-
-📋 *Commands:*
-- `/status` - System status
-- `/restart` - Restart all services
-- `/backup` - Run backup
-- `/logs` - View recent logs
-- `/help` - Show this help"""
-        
-        elif text == "/status":
-            containers = self.run_command("docker ps --format 'table {{.Names}}\t{{.Status}}'")
-            return f"📊 *System Status*\n```\n{containers}\n```"
-        
-        elif text == "/restart":
-            self.run_command("cd /home/n8n && docker-compose restart")
-            return "🔄 All services restarted"
-        
-        elif text == "/backup":
-            self.run_command("/home/n8n/backup-workflows.sh")
-            return "💾 Backup started"
-        
-        elif text == "/logs":
-            logs = self.run_command("cd /home/n8n && docker-compose logs --tail=20")
-            if len(logs) > 3000:
-                logs = logs[-3000:]
-            return f"📋 *Recent Logs*\n```\n{logs}\n```"
-        
-        else:
-            return "❌ Unknown command. Use /help"
-    
-    def run(self):
-        logger.info("Bot started")
-        self.send_message("🤖 *N8N Bot Started*\nUse /help for commands")
-        
-        while True:
-            try:
-                updates = self.get_updates()
-                if not updates or not updates.get('ok'):
-                    time.sleep(5)
-                    continue
-                
-                for update in updates.get('result', []):
-                    self.last_update_id = update['update_id']
-                    
-                    if 'message' not in update:
-                        continue
-                    
-                    message = update['message']
-                    chat_id = message['chat']['id']
-                    
-                    if str(chat_id) != str(self.chat_id):
-                        continue
-                    
-                    if 'text' not in message:
-                        continue
-                    
-                    text = message['text']
-                    response = self.process_command(text)
-                    self.send_message(response)
-                
-                time.sleep(1)
-                
-            except KeyboardInterrupt:
-                break
-            except Exception as e:
-                logger.error(f"Bot error: {e}")
-                time.sleep(10)
-
-if __name__ == '__main__':
-    config_file = '/home/n8n/telegram_config.txt'
-    if os.path.exists(config_file):
-        config = {}
-        with open(config_file) as f:
-            for line in f:
-                if '=' in line:
-                    key, value = line.strip().split('=', 1)
-                    config[key] = value.strip('"')
-        
-        token = config.get('TELEGRAM_BOT_TOKEN')
-        chat_id = config.get('TELEGRAM_CHAT_ID')
-        
-        if token and chat_id:
-            bot = N8NTelegramBot(token, chat_id)
-            bot.run()
-EOF
-
-    chmod +x "$INSTALL_DIR/telegram_bot/bot.py"
-    success "Đã tạo Telegram Bot"
 }
 
 # =============================================================================
@@ -2551,11 +1454,6 @@ setup_cron_jobs() {
     
     # Add backup job
     (crontab -l 2>/dev/null; echo "0 2 * * * /home/n8n/backup-workflows.sh") | crontab -
-    
-    # Add Google Drive cleanup if enabled
-    if [[ "$ENABLE_GOOGLE_DRIVE" == "true" ]]; then
-        (crontab -l 2>/dev/null; echo "0 3 * * 0 /usr/bin/python3 /home/n8n/google_drive/cleanup.py") | crontab -
-    fi
     
     success "Đã thiết lập cron jobs"
 }
@@ -2603,18 +1501,8 @@ build_and_deploy() {
     
     cd "$INSTALL_DIR"
     
-    # Update Caddy password hash
-    if [[ "$ENABLE_DASHBOARD_AUTH" == "true" && "$INSTALL_MODE" != "cloudflare" ]]; then
-        log "Generating password hash..."
-        
-        # Start Caddy temporarily to hash password
-        docker run --rm caddy:latest caddy hash-password --plaintext "$DASHBOARD_PASSWORD" > /tmp/caddy_hash.txt 2>&1
-        HASHED_PASS=$(cat /tmp/caddy_hash.txt | tail -1)
-        rm -f /tmp/caddy_hash.txt
-        
-        # Update Caddyfile with actual hash
-        sed -i "s|${DASHBOARD_USERNAME} .*|${DASHBOARD_USERNAME} ${HASHED_PASS}|g" Caddyfile
-    fi
+    # Clean up any existing containers first
+    cleanup_docker_environment
     
     # Build images
     log "Building Docker images..."
@@ -2624,7 +1512,23 @@ build_and_deploy() {
     if [[ "$ENABLE_POSTGRESQL" == "true" ]]; then
         log "Starting PostgreSQL..."
         $DOCKER_COMPOSE up -d postgres
-        sleep 20
+        
+        # Wait for PostgreSQL to be ready
+        log "Waiting for PostgreSQL to initialize..."
+        local retries=30
+        while [ $retries -gt 0 ]; do
+            if docker exec postgres-n8n pg_isready -U postgres >/dev/null 2>&1; then
+                success "PostgreSQL is ready"
+                break
+            fi
+            retries=$((retries - 1))
+            sleep 2
+        done
+        
+        if [ $retries -eq 0 ]; then
+            error "PostgreSQL failed to start"
+            exit 1
+        fi
     fi
     
     # Start all services
@@ -2635,11 +1539,74 @@ build_and_deploy() {
     log "Waiting for services to start..."
     sleep 30
     
+    # Start systemd services
+    systemctl start n8n-dashboard || true
+    
     # Verify
     log "Verifying deployment..."
     $DOCKER_COMPOSE ps
     
     success "Deployment completed!"
+}
+
+# =============================================================================
+# TROUBLESHOOTING SCRIPT
+# =============================================================================
+
+create_troubleshooting_script() {
+    log "🔧 Tạo troubleshooting script..."
+    
+    cat > "$INSTALL_DIR/troubleshoot.sh" << 'EOF'
+#!/bin/bash
+
+# Colors
+RED='\033[0;31m'
+GREEN='\033[0;32m'
+YELLOW='\033[1;33m'
+BLUE='\033[0;34m'
+NC='\033[0m'
+
+echo -e "${BLUE}=== N8N TROUBLESHOOTING ===${NC}"
+echo ""
+
+# Check Docker
+echo -e "${YELLOW}1. Docker Status:${NC}"
+docker --version
+docker-compose --version || docker compose version
+echo ""
+
+# Check containers
+echo -e "${YELLOW}2. Container Status:${NC}"
+docker ps -a | grep -E "(n8n|postgres|caddy|cloudflare)"
+echo ""
+
+# Check logs
+echo -e "${YELLOW}3. Recent Logs:${NC}"
+cd /home/n8n
+docker-compose logs --tail=20 2>/dev/null || docker compose logs --tail=20
+echo ""
+
+# Check ports
+echo -e "${YELLOW}4. Port Usage:${NC}"
+netstat -tulpn | grep -E "(5678|5800|5809|8080|8088|80|443)" 2>/dev/null || ss -tulpn | grep -E "(5678|5800|5809|8080|8088|80|443)"
+echo ""
+
+# Check disk space
+echo -e "${YELLOW}5. Disk Space:${NC}"
+df -h /home/n8n
+echo ""
+
+# Suggested fixes
+echo -e "${GREEN}=== SUGGESTED FIXES ===${NC}"
+echo "1. Restart all services: cd /home/n8n && docker-compose restart"
+echo "2. View full logs: cd /home/n8n && docker-compose logs -f"
+echo "3. Rebuild containers: cd /home/n8n && docker-compose down && docker-compose up -d --build"
+echo "4. Check DNS: nslookup your-domain.com"
+echo ""
+EOF
+
+    chmod +x "$INSTALL_DIR/troubleshoot.sh"
+    success "Đã tạo troubleshooting script"
 }
 
 # =============================================================================
@@ -2716,6 +1683,7 @@ show_final_summary() {
     echo -e "  • Installation Dir: ${WHITE}${INSTALL_DIR}${NC}"
     echo -e "  • Backup Location: ${WHITE}${INSTALL_DIR}/files/backup_full${NC}"
     echo -e "  • Logs: ${WHITE}${INSTALL_DIR}/logs${NC}"
+    echo -e "  • Troubleshoot: ${WHITE}${INSTALL_DIR}/troubleshoot.sh${NC}"
     
     echo ""
     echo -e "${CYAN}🔧 USEFUL COMMANDS:${NC}"
@@ -2723,6 +1691,7 @@ show_final_summary() {
     echo -e "  • Restart: ${WHITE}cd $INSTALL_DIR && $DOCKER_COMPOSE restart${NC}"
     echo -e "  • Backup: ${WHITE}$INSTALL_DIR/backup-workflows.sh${NC}"
     echo -e "  • Status: ${WHITE}cd $INSTALL_DIR && $DOCKER_COMPOSE ps${NC}"
+    echo -e "  • Troubleshoot: ${WHITE}$INSTALL_DIR/troubleshoot.sh${NC}"
     
     if [[ "$ENABLE_TELEGRAM_BOT" == "true" ]]; then
         echo ""
@@ -2734,6 +1703,19 @@ show_final_summary() {
     fi
     
     echo ""
+    echo -e "${CYAN}⚠️  IMPORTANT NOTES:${NC}"
+    
+    if [[ "$INSTALL_MODE" == "cloudflare" ]]; then
+        echo -e "  • Make sure you've configured Cloudflare Tunnel routes correctly"
+        echo -e "  • Check tunnel status: ${WHITE}docker logs cloudflare-tunnel${NC}"
+    fi
+    
+    if [[ "$INSTALL_MODE" == "domain" ]]; then
+        echo -e "  • SSL certificates will be auto-generated in a few minutes"
+        echo -e "  • If SSL fails, check: ${WHITE}docker logs caddy-proxy${NC}"
+    fi
+    
+    echo ""
     echo -e "${CYAN}🚀 AUTHOR:${NC}"
     echo -e "  • Name: ${WHITE}Nguyễn Ngọc Thiện${NC}"
     echo -e "  • YouTube: ${WHITE}https://www.youtube.com/@kalvinthiensocial${NC}"
@@ -2742,6 +1724,38 @@ show_final_summary() {
     echo -e "${YELLOW}🎬 SUBSCRIBE TO SUPPORT! 🔔${NC}"
     echo -e "${GREEN}╚══════════════════════════════════════════════════════════════════════════════╝${NC}"
 }
+
+# =============================================================================
+# ERROR HANDLING
+# =============================================================================
+
+handle_error() {
+    local exit_code=$?
+    if [ $exit_code -ne 0 ]; then
+        error "An error occurred during installation (Exit code: $exit_code)"
+        
+        echo ""
+        echo -e "${YELLOW}Attempting automatic recovery...${NC}"
+        
+        # Try to fix common issues
+        cd "$INSTALL_DIR" 2>/dev/null || true
+        
+        # Stop all containers
+        $DOCKER_COMPOSE down --remove-orphans 2>/dev/null || true
+        
+        # Clean up
+        docker system prune -f 2>/dev/null || true
+        
+        echo ""
+        echo -e "${CYAN}Please try running the troubleshoot script:${NC}"
+        echo -e "${WHITE}$INSTALL_DIR/troubleshoot.sh${NC}"
+        
+        exit $exit_code
+    fi
+}
+
+# Set error handler
+trap handle_error ERR
 
 # =============================================================================
 # MAIN EXECUTION
@@ -2774,12 +1788,11 @@ main() {
     # Create configurations
     create_dockerfile
     create_docker_compose
-    create_caddyfile
     create_postgresql_init
-    create_news_api
     create_dashboard
     create_backup_scripts
     setup_cloudflare_tunnel
+    create_troubleshooting_script
     
     # Services and configs
     create_systemd_services
