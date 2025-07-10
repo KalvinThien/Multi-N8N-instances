@@ -6,7 +6,7 @@
 # Tác giả: Nguyễn Ngọc Thiện
 # YouTube: https://www.youtube.com/@kalvinthiensocial
 # Zalo: 08.8888.4749
-# Cập nhật: 01/07/2025
+# Cập nhật: 10/07/2025
 # Features: Multi-Mode + Auto-Fix + Health Check + Cloudflare Tunnel + Custom Ports
 # =============================================================================
 
