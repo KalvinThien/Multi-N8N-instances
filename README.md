@@ -1,68 +1,127 @@
-# 🚀 Script Cài Đặt N8N Multi-Domain Tự Động 2025 - Enhanced Version 4.0
+# 🚀 Script Cài Đặt N8N Multi-Mode Enhanced Version 4.0
 
-![N8N](https://img.shields.io/badge/N8N-Automation-blue) ![Docker](https://img.shields.io/badge/Docker-Containerized-blue) ![SSL](https://img.shields.io/badge/SSL-Auto-green) ![Multi-Domain](https://img.shields.io/badge/Multi--Domain-Support-orange) ![PostgreSQL](https://img.shields.io/badge/PostgreSQL-Database-blue) ![API](https://img.shields.io/badge/News%20API-FastAPI-red) ![Telegram](https://img.shields.io/badge/Telegram-Bot-blue) ![Google Drive](https://img.shields.io/badge/Google%20Drive-Backup-green)
+![N8N](https://img.shields.io/badge/N8N-Automation-blue) ![Docker](https://img.shields.io/badge/Docker-Containerized-blue) ![SSL](https://img.shields.io/badge/SSL-Auto-green) ![Multi-Domain](https://img.shields.io/badge/Multi--Domain-Support-orange) ![PostgreSQL](https://img.shields.io/badge/PostgreSQL-Database-blue) ![API](https://img.shields.io/badge/News%20API-FastAPI-red) ![Telegram](https://img.shields.io/badge/Telegram-Bot-blue) ![Google Drive](https://img.shields.io/badge/Google%20Drive-Backup-green) ![Cloudflare](https://img.shields.io/badge/Cloudflare-Tunnel-purple) ![Auto-Fix](https://img.shields.io/badge/Auto--Fix-Enabled-green)
+
+**🎬 HÃY ĐĂNG KÝ KÊNH YOUTUBE ĐỂ ỦNG HỘ MÌNH NHÉ! 🔔**
+👉 [ĐĂNG KÝ NGAY TẠI ĐÂY](https://www.youtube.com/@kalvinthiensocial?sub_confirmation=1) để nhận những video hướng dẫn mới nhất về N8N, Automation và nhiều công nghệ thú vị khác! 
 
 Script tự động cài đặt N8N với đầy đủ tính năng mở rộng và quản lý từ xa, bao gồm:
 
-## ✨ Tính Năng Mới Version 4.0 - Multi-Mode + Auto-Fix + Health Check + Cloudflare Tunnel + Custom Ports
+## ✨ Tính Năng Mới Version 4.0
 
-### 🤖 Telegram Bot Management
+### 🌐 Multi-Mode Installation Support
+- **Localhost Mode** - Không cần domain, truy cập qua IP
+- **Domain Mode** - Cần domain và DNS với SSL tự động
+- **Cloudflare Tunnel Mode** - Không cần public IP, hoàn toàn bảo mật
+- **Smart Mode Detection** - Tự động chọn mode phù hợp nhất
+
+### 🔧 Auto-Fix Integration System
+- **No more 503 errors!** - Tự động fix tất cả lỗi phổ biến
+- **Permission Auto-Fix** - Tự động sửa quyền thư mục (1000:1000)
+- **Docker Network Recovery** - Tự động recreate networks bị lỗi
+- **Service Health Recovery** - Tự động restart services không ổn định
+- **PostgreSQL Connection Fix** - Tự động fix database connection issues
+- **SSL Certificate Recovery** - Tự động fix SSL problems
+
+### ☁️ Cloudflare Tunnel Support
+- **No Public IP Required** - Hoạt động ngay cả khi không có public IP
+- **Automatic SSL** - SSL certificates tự động từ Cloudflare
+- **DDoS Protection** - Bảo vệ khỏi DDoS attacks
+- **Zero Trust Security** - Bảo mật cao cấp
+- **Easy Setup** - Chỉ cần tunnel token từ Cloudflare dashboard
+
+### 🔌 Custom Port Configuration
+- **Dynamic Port Assignment** - Tự động tìm port khả dụng
+- **Multi-Instance Ports** - Mỗi N8N instance có port riêng
+- **Port Conflict Resolution** - Tự động tránh xung đột port
+- **Custom Base Ports** - Có thể thay đổi base port mặc định
+
+### 📊 Enhanced Health Monitoring & Auto-Recovery
+- **Real-time Health Checks** - Kiểm tra sức khỏe hệ thống liên tục
+- **Auto-Recovery System** - Tự động khôi phục khi có lỗi
+- **Performance Metrics** - Theo dõi hiệu suất realtime
+- **Telegram Alerts** - Thông báo lỗi qua Telegram
+- **Retry Mechanism** - Tự động thử lại khi thất bại
+
+### 🔒 Enhanced Dashboard Security
+- **Basic Authentication** - Bảo vệ dashboard với username/password
+- **Secure Credentials** - Lưu trữ thông tin đăng nhập an toàn
+- **IP Filtering** - Chỉ cho phép IP được ủy quyền
+- **Session Management** - Quản lý phiên đăng nhập
+
+### 🤖 Telegram Bot Management (Enhanced)
 - **Quản lý từ xa hoàn toàn** qua Telegram
 - **Real-time monitoring** và alerts
 - **Quick actions**: restart, backup, logs, health check
 - **Performance metrics** realtime
 - **Security**: Chỉ Chat ID được ủy quyền
+- **Auto-Fix Commands** - Lệnh fix lỗi từ Telegram
 
-### ☁️ Google Drive Auto Backup
+### ☁️ Google Drive Auto Backup (Enhanced)
 - **Tự động upload** backup lên Google Drive
 - **Folder structure** theo năm/tháng/domain
 - **Easy restore** từ Google Drive
 - **OAuth2 authentication** bảo mật
 - **Cross-platform** access
+- **Auto-Fix Integration** - Tự động fix backup issues
 
-### 📊 Web Dashboard
+### 📊 Web Dashboard (Enhanced)
 - **Browser-based** management interface
 - **Real-time charts** và metrics
 - **Mobile responsive** design
 - **Quick actions** và troubleshooting
 - **Multi-user** support ready
+- **Auto-Fix Dashboard** - Giao diện quản lý auto-fix
 
-### 🔒 Enhanced Security
+### 🔒 Enhanced Security (Version 4.0)
 - **Basic Authentication** cho N8N instances
 - **IP filtering** và whitelist
 - **Fail2ban** protection
 - **SSL security headers**
 - **Rate limiting** advanced
+- **Cloudflare Zero Trust** integration
 
-### 🌐 Multi-Domain Support
+### 🌐 Multi-Domain Support (Enhanced)
 - **Nhiều N8N instances** trên cùng một server
 - **Chia sẻ tài nguyên** hiệu quả (News API, PostgreSQL)
 - **Quản lý tập trung** backup và monitoring
 - **SSL tự động** cho tất cả domains
+- **Auto-Fix Multi-Domain** - Tự động fix tất cả instances
 
-### 🐘 PostgreSQL Database Support
+### 🐘 PostgreSQL Database Support (Enhanced)
 - **Hiệu suất cao** hơn SQLite
-- **Concurrent connections** tốt hơp
+- **Concurrent connections** tốt hơn
 - **Backup và restore** dễ dàng
 - **Chia sẻ database** giữa các instances
 - **Hoàn toàn miễn phí**
+- **Auto-Fix Database** - Tự động fix connection issues
 
 ## 👨‍💻 Thông Tin Tác Giả
 
-**Nguyễn Ngọc Thiện**
-- 📺 **YouTube**: [Kalvin Thien Social](https://www.youtube.com/@kalvinthiensocial?sub_confirmation=1) - **HẢY ĐĂNG KÝ ĐỂ ỦNG HỘ!**
-- 📘 **Facebook**: [Ban Thien Handsome](https://www.facebook.com/Ban.Thien.Handsome/)
+**🌟 Nguyễn Ngọc Thiện 🌟**
+- 📺 **YouTube**: [Kalvin Thien Social](https://www.youtube.com/@kalvinthiensocial?sub_confirmation=1) - **🔥 HÃY ĐĂNG KÝ ĐỂ ỦNG HỘ! 🔥**
+- 📘 **Facebook**: [@Ban.Thien.Handsome](https://www.facebook.com/Ban.Thien.Handsome/)
 - 📱 **Zalo/Phone**: 08.8888.4749
-- 🎬 **N8N Playlist**: [N8N Tutorials](https://www.youtube.com/@kalvinthiensocial/playlists)
-- 🚀 **Ngày cập nhật**: 28/06/2025
-- 🆕 **Phiên bản**: 4.0 Enhanced - Telegram Bot + Google Drive + Web Dashboard
+- 🎬 **N8N Playlist**: [Danh sách video N8N](https://www.youtube.com/@kalvinthiensocial/playlists)
+- 🚀 **Ngày cập nhật**: 01/07/2025  
+- 🆕 **Phiên bản**: 4.0 Enhanced - Multi-Mode + Auto-Fix + Cloudflare Tunnel + Health Monitoring + Custom Ports
+
+> 💡 **Đừng quên nhấn SUBSCRIBE và 🔔 để không bỏ lỡ những video hữu ích mới nhất!**
+> 
+> 🎯 Kênh của mình chia sẻ kiến thức về:
+> - 🤖 N8N Automation workflows
+> - 🐳 Docker & DevOps
+> - 💻 Server management  
+> - 🚀 Latest tech tutorials
+> - 📱 Social media automation
 
 ## 🖥️ Hỗ Trợ Môi Trường
 
 ✅ **Ubuntu VPS/Server** (Recommend)  
 ✅ **Ubuntu on Windows WSL**  
 ✅ **Ubuntu Docker Environment**  
-✅ **Tự động detect** và xử lý môi trường
+✅ **Tự động detect** và xử lý môi trường  
+✅ **Cloudflare Tunnel** - Không cần public IP
 
 ## 📋 Yêu Cầu Hệ Thống
 
@@ -70,77 +129,198 @@ Script tự động cài đặt N8N với đầy đủ tính năng mở rộng v
 - **OS**: Ubuntu 20.04+ (VPS hoặc WSL)
 - **RAM**: Tối thiểu 2GB (khuyến nghị 4GB+ cho multi-domain)
 - **Disk**: 20GB+ free space
-- **Network**: Domains đã trỏ về server
+- **Network**: Domains đã trỏ về server (cho Domain Mode)
 - **Permission**: Root access
 
-### Enhanced Features
+### Enhanced Features (Version 4.0)
 - **RAM**: Khuyến nghị 4GB+ (mỗi N8N instance ~512MB)
 - **CPU**: 2+ cores cho hiệu suất tốt
 - **Disk**: 30GB+ cho nhiều instances + backups
 - **Google Account**: Cho Google Drive backup (optional)
 - **Telegram Bot**: Cho remote management (optional)
+- **Cloudflare Account**: Cho Cloudflare Tunnel (optional)
 
 ## 🚀 Cài Đặt Nhanh
 
-### 1️⃣ Cài Đặt Cơ Bản (Single Domain)
+### 1️⃣ Cài Đặt Localhost Mode (Không cần domain)
 
 ```bash
-cd /tmp && curl -sSL https://raw.githubusercontent.com/KalvinThien/Multi-N8N-instances/refs/heads/main/auto_cai_dat_n8n.shh | tr -d '\r' > install_n8n.sh && chmod +x install_n8n.sh && sudo bash install_n8n.sh
+cd /tmp && curl -sSL https://raw.githubusercontent.com/KalvinThien/install-n8n-ffmpeg/main/auto_cai_dat_n8n.sh | tr -d '\r' > install_n8n.sh && chmod +x install_n8n.sh && sudo bash install_n8n.sh -l
 ```
 
-### 2️⃣ Cài Đặt Multi-Domain + PostgreSQL
+### 2️⃣ Cài Đặt Cloudflare Tunnel Mode (Không cần public IP)
 
 ```bash
-cd /tmp && curl -sSL https://raw.githubusercontent.com/KalvinThien/Multi-N8N-instances/refs/heads/main/auto_cai_dat_n8n.sh | tr -d '\r' > install_n8n.sh && chmod +x install_n8n.sh && sudo bash install_n8n.sh --multi-domain --postgresql
+cd /tmp && curl -sSL https://raw.githubusercontent.com/KalvinThien/install-n8n-ffmpeg/main/auto_cai_dat_n8n.sh | tr -d '\r' > install_n8n.sh && chmod +x install_n8n.sh && sudo bash install_n8n.sh -f
 ```
 
-### 3️⃣ Cài Đặt Full Features
+### 3️⃣ Cài Đặt Multi-Domain + PostgreSQL
 
 ```bash
-cd /tmp && curl -sSL https://raw.githubusercontent.com/KalvinThien/Multi-N8N-instances/refs/heads/main/auto_cai_dat_n8n.sh | tr -d '\r' > install_n8n.sh && chmod +x install_n8n.sh && sudo bash install_n8n.sh --multi-domain --postgresql --google-drive --telegram-bot
+cd /tmp && curl -sSL https://raw.githubusercontent.com/KalvinThien/install-n8n-ffmpeg/main/auto_cai_dat_n8n.sh | tr -d '\r' > install_n8n.sh && chmod +x install_n8n.sh && sudo bash install_n8n.sh -m -p
 ```
 
-### 4️⃣ Options Nâng Cao
+### 4️⃣ Cài Đặt Full Features với Auto-Fix
 
 ```bash
-# Multi-domain với PostgreSQL
-sudo ./auto_install_multi_n8n.sh -m -p
+cd /tmp && curl -sSL https://raw.githubusercontent.com/KalvinThien/install-n8n-ffmpeg/main/auto_cai_dat_n8n.sh | tr -d '\r' > install_n8n.sh && chmod +x install_n8n.sh && sudo bash install_n8n.sh -m -p -g -t
+```
 
-# Full features với Google Drive và Telegram Bot
-sudo ./auto_install_multi_n8n.sh -m -p -g -t
+### 5️⃣ Options Nâng Cao Version 4.0
+
+```bash
+# Localhost mode với auto-fix
+sudo ./auto_cai_dat_n8n.sh -l
+
+# Cloudflare Tunnel mode
+sudo ./auto_cai_dat_n8n.sh -f
+
+# Multi-domain với PostgreSQL và auto-fix
+sudo ./auto_cai_dat_n8n.sh -m -p
+
+# Full features với tất cả tính năng
+sudo ./auto_cai_dat_n8n.sh -m -p -g -t
 
 # Clean install với full features
-sudo ./auto_install_multi_n8n.sh --clean --multi-domain --postgresql --google-drive --telegram-bot
+sudo ./auto_cai_dat_n8n.sh -c -m -p -g -t
+
+# Tắt auto-fix (không khuyến nghị)
+sudo ./auto_cai_dat_n8n.sh --no-auto-fix
 
 # Xem trợ giúp
-./auto_install_multi_n8n.sh -h
+./auto_cai_dat_n8n.sh -h
 ```
 
-## 🔧 Quá Trình Cài Đặt
+## 🔧 Quá Trình Cài Đặt Version 4.0
 
 Script sẽ hướng dẫn bạn qua các bước:
 
-### Installation Modes
-1. **Single Domain** (Cơ bản)
-2. **Multi-Domain** (Nâng cao)
-3. **Multi-Domain + PostgreSQL** (Khuyến nghị)
-4. **Full Features** (Multi-Domain + PostgreSQL + Google Drive + Telegram Bot)
+### Installation Modes (Mới)
+1. **Localhost Mode** - Không cần domain, truy cập qua IP
+2. **Domain Mode** - Cần domain và DNS với SSL tự động
+3. **Cloudflare Tunnel Mode** - Không cần public IP, hoàn toàn bảo mật
 
-### Setup Process
-1. **Setup Swap** tự động (tăng cường cho multi-domain)
-2. **Nhập domains** (single hoặc multiple)
-3. **Cấu hình PostgreSQL** (nếu được chọn)
-4. **Cấu hình News API** (tùy chọn)
-5. **Cấu hình Telegram** (tùy chọn)
-6. **Cấu hình Google Drive** (nếu được chọn)
-7. **Cấu hình Telegram Bot** (nếu được chọn)
-8. **Kiểm tra DNS** cho tất cả domains
-9. **Cài đặt Docker** & dependencies
-10. **Build & start** tất cả containers
-11. **Setup SSL** cho tất cả domains
-12. **Thiết lập services** (Dashboard, Telegram Bot)
+### Setup Process (Enhanced)
+1. **Chọn Installation Mode** - Localhost/Domain/Cloudflare
+2. **Setup Swap** tự động (tăng cường cho multi-domain)
+3. **Nhập domains** (single hoặc multiple)
+4. **Custom Port Configuration** - Tự động phân bổ ports
+5. **Dashboard Security** - Basic Auth setup
+6. **Cấu hình PostgreSQL** (nếu được chọn)
+7. **Cấu hình News API** (tùy chọn)
+8. **Cấu hình Telegram** (tùy chọn)
+9. **Cấu hình Google Drive** (nếu được chọn)
+10. **Cấu hình Cloudflare Tunnel** (nếu được chọn)
+11. **Kiểm tra DNS** cho tất cả domains (Domain Mode)
+12. **Cài đặt Docker** & dependencies
+13. **Build & start** tất cả containers với auto-fix
+14. **Setup SSL** cho tất cả domains
+15. **Thiết lập services** (Dashboard, Telegram Bot, Health Monitor)
+16. **Auto-Fix Integration** - Kiểm tra và fix lỗi tự động
 
-## 🤖 Telegram Bot Management
+## 🔧 Auto-Fix System (Version 4.0)
+
+### 🛠️ Tự Động Fix Các Lỗi Phổ Biến
+- **Permission Issues** - Tự động fix quyền thư mục (1000:1000)
+- **Docker Network Problems** - Tự động recreate networks
+- **Container Health Issues** - Tự động restart containers không ổn định
+- **PostgreSQL Connection** - Tự động fix database connection
+- **SSL Certificate Problems** - Tự động fix SSL issues
+- **Port Conflicts** - Tự động tìm port khả dụng
+
+### 🔄 Auto-Recovery Features
+- **Health Monitoring** - Kiểm tra sức khỏe hệ thống liên tục
+- **Retry Mechanism** - Tự động thử lại khi thất bại
+- **Graceful Degradation** - Hệ thống vẫn hoạt động khi có lỗi
+- **Telegram Alerts** - Thông báo lỗi và fix status
+
+### 📊 Auto-Fix Commands
+```bash
+# Tự động fix tất cả lỗi
+/home/n8n/auto-fix.sh
+
+# Fix permissions
+/home/n8n/auto-fix.sh permissions
+
+# Fix Docker networks
+/home/n8n/auto-fix.sh networks
+
+# Fix PostgreSQL
+/home/n8n/auto-fix.sh database
+
+# Fix SSL certificates
+/home/n8n/auto-fix.sh ssl
+```
+
+## ☁️ Cloudflare Tunnel Mode (Version 4.0)
+
+### 🌐 Tính Năng Cloudflare Tunnel
+- **No Public IP Required** - Hoạt động ngay cả khi không có public IP
+- **Automatic SSL** - SSL certificates tự động từ Cloudflare
+- **DDoS Protection** - Bảo vệ khỏi DDoS attacks
+- **Zero Trust Security** - Bảo mật cao cấp
+- **Easy Setup** - Chỉ cần tunnel token từ Cloudflare dashboard
+
+### 🔧 Thiết Lập Cloudflare Tunnel
+1. Truy cập [Cloudflare Zero Trust](https://one.dash.cloudflare.com/)
+2. Vào Zero Trust → Access → Tunnels
+3. Create a tunnel → Cloudflared
+4. Đặt tên tunnel (vd: n8n-tunnel)
+5. Copy tunnel token
+6. Nhập token vào script
+
+### 📁 Cấu Trúc Cloudflare
+```
+/home/n8n/cloudflare/
+├── config.yml              # Tunnel configuration
+├── credentials.json        # Cloudflare credentials
+└── tunnel.log             # Tunnel logs
+```
+
+## 🔌 Custom Port Configuration (Version 4.0)
+
+### 🌐 Dynamic Port Assignment
+- **Auto Port Detection** - Tự động tìm port khả dụng
+- **Port Conflict Resolution** - Tránh xung đột port
+- **Custom Base Ports** - Có thể thay đổi base port mặc định
+- **Multi-Instance Ports** - Mỗi N8N instance có port riêng
+
+### 📊 Port Management
+```bash
+# Default ports
+N8N Base Port: 5678
+API Base Port: 8000
+Dashboard Port: 8080
+
+# Multi-domain ports
+Instance 1: 5678
+Instance 2: 5800
+Instance 3: 5801
+...
+```
+
+## 📊 Enhanced Health Monitoring (Version 4.0)
+
+### 🏥 Health Check System
+- **Real-time Monitoring** - Kiểm tra sức khỏe hệ thống liên tục
+- **Auto-Recovery** - Tự động khôi phục khi có lỗi
+- **Performance Metrics** - Theo dõi hiệu suất realtime
+- **Telegram Alerts** - Thông báo lỗi qua Telegram
+
+### 🔄 Health Check Features
+```bash
+# Health check endpoints
+N8N: /healthz
+News API: /health
+PostgreSQL: pg_isready
+Caddy: Built-in health checks
+
+# Health check interval: 30s
+# Retry attempts: 3
+# Auto-recovery: Enabled
+```
+
+## 🤖 Telegram Bot Management (Enhanced Version 4.0)
 
 ### 🔧 Lệnh Bot Cơ Bản
 ```
@@ -151,44 +331,60 @@ Script sẽ hướng dẫn bạn qua các bước:
 /help           - Danh sách lệnh
 ```
 
-### 🛠️ Quản Lý Services
+### 🛠️ Quản Lý Services (Enhanced)
 ```
 /restart all              - Restart tất cả services
 /restart n8n              - Restart N8N container
 /restart caddy            - Restart Caddy proxy
 /restart postgres         - Restart PostgreSQL
+/auto-fix                 - Chạy auto-fix system
+/auto-fix permissions     - Fix permissions
+/auto-fix networks        - Fix Docker networks
+/auto-fix database        - Fix PostgreSQL
+/auto-fix ssl             - Fix SSL certificates
 ```
 
-### 📋 Logs & Monitoring
+### 📋 Logs & Monitoring (Enhanced)
 ```
 /logs all                 - Logs tất cả services
 /logs n8n 50              - 50 dòng logs cuối của N8N
 /backup                   - Chạy backup manual
 /troubleshoot             - Chạy diagnostic
+/health-monitor           - Health monitor status
 ```
 
-### 📊 Ví Dụ Output
+### 📊 Ví Dụ Output (Enhanced)
 ```
-🚀 N8N System Status
+🚀 N8N System Status v4.0
 
 📊 System Info:
 • Uptime: up 2 days, 14 hours, 32 minutes
 • Memory: 2.1G/4.0G
 • Disk Usage: 45%
+• Auto-Fix: ✅ Enabled
+• Health Monitor: ✅ Active
 
+🌐 Installation Mode: Cloudflare Tunnel
 🌐 Domains (3):
-• Instance 1: n8n1.example.com
-• Instance 2: n8n2.example.com  
-• Instance 3: n8n3.example.com
+• Instance 1: n8n1.example.com (Port: 5678)
+• Instance 2: n8n2.example.com (Port: 5800)
+• Instance 3: n8n3.example.com (Port: 5801)
 
-🐳 Containers (5):
-✅ n8n-container-1: running
-✅ n8n-container-2: running
-✅ caddy-proxy: running
-✅ postgres-n8n: running
+🐳 Containers (6):
+✅ n8n-container-1: running (healthy)
+✅ n8n-container-2: running (healthy)
+✅ caddy-proxy: running (healthy)
+✅ postgres-n8n: running (healthy)
+✅ cloudflared: running (healthy)
+✅ news-api-container: running (healthy)
+
+🔧 Auto-Fix Status:
+• Last Check: 2 minutes ago
+• Issues Fixed: 0
+• System Health: ✅ Excellent
 ```
 
-## ☁️ Google Drive Backup System
+## ☁️ Google Drive Backup System (Enhanced Version 4.0)
 
 ### 🔧 Thiết Lập Google Drive API
 1. Truy cập [Google Cloud Console](https://console.developers.google.com/)
@@ -198,7 +394,7 @@ Script sẽ hướng dẫn bạn qua các bước:
 5. Download JSON credentials file
 6. Share Google Drive folder với service account
 
-### 📁 Cấu Trúc Backup
+### 📁 Cấu Trúc Backup (Enhanced)
 ```
 N8N-Backups/
 ├── 2025/
@@ -212,21 +408,22 @@ N8N-Backups/
 └── 2024/
 ```
 
-### 🔄 Auto Backup Features
+### 🔄 Auto Backup Features (Enhanced)
 - **Daily upload** lên Google Drive
 - **Organized by** year/month/domain
 - **Automatic cleanup** old backups
 - **Telegram notifications** với status
 - **Fallback local** nếu upload thất bại
+- **Auto-Fix Integration** - Tự động fix backup issues
 
-## 📊 Web Dashboard
+## 📊 Web Dashboard (Enhanced Version 4.0)
 
 ### 🌐 Truy Cập Dashboard
 ```
 http://YOUR_SERVER_IP:8080
 ```
 
-### 📈 Tính Năng Dashboard
+### 📈 Tính Năng Dashboard (Enhanced)
 - **Real-time monitoring** tất cả instances
 - **System metrics** (CPU, Memory, Disk, Network)
 - **Container status** với health checks
@@ -235,16 +432,20 @@ http://YOUR_SERVER_IP:8080
 - **Quick actions** (restart, backup, logs)
 - **Mobile responsive** design
 - **Auto-refresh** every 30 seconds
+- **Auto-Fix Dashboard** - Giao diện quản lý auto-fix
+- **Health Monitor Status** - Trạng thái health monitoring
 
-### 🔧 Quick Actions
+### 🔧 Quick Actions (Enhanced)
 - 🔄 **Refresh Data** - Cập nhật realtime
 - 🔄 **Restart All** - Restart tất cả services
 - 💾 **Manual Backup** - Chạy backup manual
 - 📋 **View Logs** - Xem logs trong tab mới
 - ⬆️ **Update System** - Update hệ thống
 - 🔧 **Troubleshoot** - Chạy diagnostic script
+- 🛠️ **Auto-Fix** - Chạy auto-fix system
+- 🏥 **Health Check** - Chạy health check manual
 
-## 📰 News Content API
+## 📰 News Content API (Enhanced Version 4.0)
 
 ### 🔑 Authentication
 Tất cả API calls yêu cầu Bearer Token:
@@ -272,29 +473,32 @@ curl -X POST "https://api.yourdomain.com/extract-article" \
      }'
 ```
 
-## 💾 Enhanced Backup & Restore System
+## 💾 Enhanced Backup & Restore System (Version 4.0)
 
-### 🔄 Multi-Domain Backup Features
+### 🔄 Multi-Domain Backup Features (Enhanced)
 - **ZIP compression** tối ưu dung lượng
 - **Multi-domain backup** tất cả instances cùng lúc
 - **PostgreSQL databases** backup riêng từng instance
 - **SSL certificates** backup và restore
 - **Configuration files** backup
 - **Metadata** chi tiết cho mỗi backup
+- **Auto-Fix Integration** - Tự động fix backup issues
 
-### 📱 Telegram Integration
+### 📱 Telegram Integration (Enhanced)
 - **Detailed reports** về tất cả instances
 - **File upload** nếu <50MB
 - **Status notifications** success/failure
 - **Fallback**: Giữ backup local nếu Telegram thất bại
+- **Auto-Fix Notifications** - Thông báo auto-fix status
 
-### ☁️ Google Drive Integration
+### ☁️ Google Drive Integration (Enhanced)
 - **Auto-upload** sau mỗi backup
 - **Organized folders** theo domain và ngày
 - **Easy restore** từ Google Drive
 - **Cross-platform** access
+- **Auto-Fix Integration** - Tự động fix upload issues
 
-### 🔄 Restore System
+### 🔄 Restore System (Enhanced)
 ```bash
 # Restore từ backup file
 /home/n8n/restore-from-backup.sh /path/to/backup.zip
@@ -310,34 +514,39 @@ curl -X POST "https://api.yourdomain.com/extract-article" \
 # 5. Restore N8N instances data
 # 6. Import workflows và credentials
 # 7. Start tất cả services
+# 8. Run auto-fix để đảm bảo stability
 ```
 
-## 🔒 Enhanced Security Features
+## 🔒 Enhanced Security Features (Version 4.0)
 
-### 🔐 Basic Authentication
+### 🔐 Basic Authentication (Enhanced)
 - **Auto-generated** username/password cho N8N
 - **Secure storage** credentials
 - **Easy rotation** passwords
+- **Dashboard Security** - Basic Auth cho dashboard
 
-### 🛡️ IP Filtering
+### 🛡️ IP Filtering (Enhanced)
 - **Whitelist** allowed IP addresses
 - **CIDR block** support
 - **Easy configuration** via file
+- **Cloudflare Integration** - IP filtering với Cloudflare
 
-### 🚫 Fail2ban Protection
+### 🚫 Fail2ban Protection (Enhanced)
 - **Auto-ban** malicious IPs
 - **Custom rules** cho N8N
 - **Configurable** ban times
+- **Cloudflare Integration** - Fail2ban với Cloudflare
 
-### 🔒 SSL Security Headers
+### 🔒 SSL Security Headers (Enhanced)
 - **HSTS** enforcement
 - **XSS protection**
 - **Content Security Policy**
 - **Frame protection**
+- **Cloudflare Zero Trust** integration
 
-## 🛠️ Quản Lý Hệ Thống
+## 🛠️ Quản Lý Hệ Thống (Version 4.0)
 
-### 🔧 Lệnh Cơ Bản
+### 🔧 Lệnh Cơ Bản (Enhanced)
 ```bash
 # Xem trạng thái tất cả containers
 cd /home/n8n && docker-compose ps
@@ -351,11 +560,17 @@ cd /home/n8n && docker-compose restart
 # Web Dashboard
 http://YOUR_SERVER_IP:8080
 
+# Auto-Fix System
+/home/n8n/auto-fix.sh
+
+# Health Monitor
+systemctl status n8n-health-monitor
+
 # Troubleshoot script
 /home/n8n/troubleshoot.sh
 ```
 
-### 📊 Management Tools
+### 📊 Management Tools (Enhanced)
 ```bash
 # Enhanced backup
 /home/n8n/backup-workflows-enhanced.sh
@@ -365,9 +580,15 @@ http://YOUR_SERVER_IP:8080
 
 # Manual backup test
 /home/n8n/backup-manual.sh
+
+# Auto-Fix System
+/home/n8n/auto-fix.sh
+
+# Health Monitor
+/home/n8n/health_checks/health_monitor.sh
 ```
 
-## 📂 Cấu Trúc Thư Mục Enhanced
+## 📂 Cấu Trúc Thư Mục Enhanced (Version 4.0)
 
 ```
 /home/n8n/
@@ -378,10 +599,11 @@ http://YOUR_SERVER_IP:8080
 ├── backup-workflows-enhanced.sh    # Enhanced backup script
 ├── restore-from-backup.sh          # Enhanced restore script
 ├── troubleshoot.sh                 # Multi-domain diagnostic script
+├── auto-fix.sh                     # Auto-Fix system script
 ├── telegram_config.txt             # Telegram settings
 ├── dashboard/                      # Web Dashboard
 │   ├── index.html                 # Dashboard UI
-│   ├── server.py                  # Dashboard API server
+│   ├── api_server.py              # Dashboard API server
 │   └── assets/                    # Static assets
 ├── telegram_bot/                   # Telegram Bot Management
 │   ├── bot.py                     # Main bot script
@@ -390,6 +612,14 @@ http://YOUR_SERVER_IP:8080
 │   ├── gdrive_backup.py           # Google Drive backup script
 │   ├── credentials.json           # Service account credentials
 │   └── cleanup_old_backups.py     # Cleanup script
+├── cloudflare/                     # Cloudflare Tunnel
+│   ├── config.yml                 # Tunnel configuration
+│   ├── credentials.json           # Cloudflare credentials
+│   └── tunnel.log                 # Tunnel logs
+├── health_checks/                  # Health Monitoring
+│   ├── health_monitor.sh          # Health monitor script
+│   ├── health_check.sh            # Health check script
+│   └── auto_recovery.sh           # Auto recovery script
 ├── security/                       # Security configurations
 │   ├── setup_security.sh          # Security setup script
 │   ├── auth_credentials.txt        # Basic auth credentials
@@ -412,16 +642,19 @@ http://YOUR_SERVER_IP:8080
     └── main.py
 ```
 
-## ⚡ Performance Tips
+## ⚡ Performance Tips (Version 4.0)
 
-### 🚀 Multi-Domain Optimization
-1. **Memory**: Script tự động tăng swap cho multi-domain
-2. **CPU**: Mỗi N8N instance sử dụng optimized workers
-3. **Database**: PostgreSQL shared connection pooling
-4. **Disk**: Auto cleanup old backups và logs
-5. **Network**: Caddy auto-compression cho tất cả domains
+### 🚀 Multi-Mode Optimization
+1. **Localhost Mode**: Tối ưu cho development và testing
+2. **Domain Mode**: Tối ưu cho production với SSL
+3. **Cloudflare Mode**: Tối ưu cho bảo mật cao và không có public IP
+4. **Memory**: Script tự động tăng swap cho multi-domain
+5. **CPU**: Mỗi N8N instance sử dụng optimized workers
+6. **Database**: PostgreSQL shared connection pooling
+7. **Disk**: Auto cleanup old backups và logs
+8. **Network**: Caddy auto-compression cho tất cả domains
 
-### 📊 Monitoring Multi-Domain
+### 📊 Monitoring Multi-Mode (Enhanced)
 ```bash
 # Resource usage tất cả containers
 docker stats --no-stream
@@ -434,56 +667,84 @@ http://YOUR_SERVER_IP:8080
 
 # Performance metrics
 /performance trong Telegram Bot
+
+# Health monitor
+systemctl status n8n-health-monitor
+
+# Auto-fix status
+/home/n8n/auto-fix.sh status
 ```
 
-## 🐛 Troubleshooting
+## 🐛 Troubleshooting (Version 4.0)
 
 ### ❌ Lỗi Thường Gặp Enhanced
 
-**1. Telegram Bot không phản hồi**
+**1. Auto-Fix System không hoạt động**
 ```bash
-# Kiểm tra service
-systemctl status n8n-telegram-bot
+# Kiểm tra auto-fix service
+systemctl status n8n-auto-fix
 
-# Xem logs
-journalctl -u n8n-telegram-bot -f
+# Chạy auto-fix manual
+/home/n8n/auto-fix.sh
 
-# Restart bot
-systemctl restart n8n-telegram-bot
+# Xem auto-fix logs
+tail -f /var/log/n8n-auto-fix.log
 ```
 
-**2. Google Drive upload thất bại**
+**2. Cloudflare Tunnel không kết nối**
 ```bash
-# Kiểm tra credentials
-cat /home/n8n/google_drive/credentials.json
+# Kiểm tra tunnel status
+systemctl status cloudflared
 
-# Test connection
-python3 /home/n8n/google_drive/gdrive_backup.py list all
+# Xem tunnel logs
+journalctl -u cloudflared -f
+
+# Test tunnel connection
+cloudflared tunnel info
 ```
 
-**3. Web Dashboard không load**
+**3. Health Monitor không hoạt động**
 ```bash
-# Kiểm tra service
-systemctl status n8n-dashboard
+# Kiểm tra health monitor
+systemctl status n8n-health-monitor
 
-# Kiểm tra port
-netstat -tulpn | grep 8080
+# Xem health monitor logs
+journalctl -u n8n-health-monitor -f
 
-# Restart dashboard
-systemctl restart n8n-dashboard
+# Restart health monitor
+systemctl restart n8n-health-monitor
 ```
 
-**4. Multi-domain SSL issues**
+**4. Custom Ports không hoạt động**
 ```bash
-# Kiểm tra Caddy logs cho domain cụ thể
-cd /home/n8n && docker-compose logs caddy | grep domain.com
+# Kiểm tra port usage
+netstat -tulpn | grep :5678
 
-# Reset SSL cho tất cả domains
-docker-compose restart caddy
+# Check port conflicts
+/home/n8n/auto-fix.sh ports
+
+# Fix port issues
+/home/n8n/auto-fix.sh networks
 ```
 
-## 🌟 Features Roadmap
+**5. Multi-Mode issues**
+```bash
+# Kiểm tra installation mode
+cat /home/n8n/installation_mode.txt
 
+# Switch mode
+/home/n8n/switch-mode.sh localhost
+/home/n8n/switch-mode.sh domain
+/home/n8n/switch-mode.sh cloudflare
+```
+
+## 🌟 Features Roadmap (Version 4.0)
+
+- [x] **Multi-Mode** support (Localhost/Domain/Cloudflare) ✅
+- [x] **Auto-Fix Integration** system ✅
+- [x] **Health Monitoring** & Auto-Recovery ✅
+- [x] **Custom Port Configuration** ✅
+- [x] **Cloudflare Tunnel** support ✅
 - [x] **Multi-domain** support ✅
 - [x] **PostgreSQL** external database ✅
 - [x] **Telegram Bot** management ✅
@@ -492,10 +753,11 @@ docker-compose restart caddy
 - [x] **Enhanced Security** ✅
 - [ ] **Load balancing** between instances
 - [ ] **Kubernetes** deployment
-- [ ] **Monitoring** dashboard with metrics
+- [ ] **Advanced monitoring** dashboard with metrics
 - [ ] **Auto-scaling** based on load
 - [ ] **Plugin** marketplace integration
 - [ ] **Cross-instance** workflow sharing
+- [ ] **Multi-cloud** deployment support
 
 ## 🤝 Contributing
 
@@ -524,5 +786,128 @@ Nếu script này hữu ích, hãy cho một ⭐ star để ủng hộ!
 
 ---
 
-**🚀 Made with ❤️ by Nguyễn Ngọc Thiện - 28/06/2025**  
-**🆕 Enhanced Version 4.0 - Telegram Bot + Google Drive + Web Dashboard + Advanced Security**
+**🚀 Made with ❤️ by Nguyễn Ngọc Thiện - 01/07/2025**  
+**🆕 Enhanced Version 4.0 - Multi-Mode + Auto-Fix + Cloudflare Tunnel + Health Monitoring + Custom Ports**
+
+## 🔧 Troubleshooting & Fix Issues (Version 4.0)
+
+### 🚨 Khi gặp lỗi HTTP 502 hoặc N8N không hoạt động
+
+Nếu gặp các vấn đề sau:
+- ❌ HTTP ERROR 502 khi truy cập domains
+- ❌ N8N containers liên tục restart
+- ❌ Permission denied errors
+- ❌ PostgreSQL connection issues
+- ❌ SSL certificate problems
+- ❌ Cloudflare Tunnel connection issues
+- ❌ Health monitor not working
+
+### 🛠️ Auto-Fix System Toàn Diện (Version 4.0)
+
+**Script `auto-fix.sh` sẽ tự động fix tất cả vấn đề:**
+
+```bash
+# 1. Auto-Fix System đã được tích hợp sẵn
+# Chạy auto-fix toàn diện
+sudo /home/n8n/auto-fix.sh
+
+# 2. Fix từng phần cụ thể
+sudo /home/n8n/auto-fix.sh permissions    # Fix permissions
+sudo /home/n8n/auto-fix.sh networks       # Fix Docker networks
+sudo /home/n8n/auto-fix.sh database       # Fix PostgreSQL
+sudo /home/n8n/auto-fix.sh ssl            # Fix SSL certificates
+sudo /home/n8n/auto-fix.sh ports          # Fix port conflicts
+sudo /home/n8n/auto-fix.sh health         # Fix health monitor
+```
+
+### 🔍 Auto-Fix System sẽ fix các vấn đề:
+
+1. **✅ Fix Permission Issues (1000:1000)**
+   - Chỉnh sửa quyền thư mục N8N
+   - Fix user/group ownership
+   - Tạo missing directories
+
+2. **🌐 Fix Docker Network & Service Names**
+   - Recreate Docker networks
+   - Fix container name resolution
+   - Clean up old networks
+
+3. **🐘 Fix PostgreSQL Database Issues**
+   - Tạo lại users và databases
+   - Fix connection issues
+   - Test database connectivity
+
+4. **🔒 Fix SSL Certificate Problems**
+   - Update Caddyfile với container names đúng
+   - Add health checks
+   - Fix reverse proxy configuration
+
+5. **☁️ Fix Cloudflare Tunnel Issues**
+   - Recreate tunnel configuration
+   - Fix tunnel credentials
+   - Restart tunnel service
+
+6. **🔌 Fix Custom Port Issues**
+   - Resolve port conflicts
+   - Reassign available ports
+   - Update configuration files
+
+7. **🏥 Fix Health Monitor Issues**
+   - Restart health monitor service
+   - Fix health check scripts
+   - Update monitoring configuration
+
+8. **🚀 Restart Services in Correct Order**
+   - PostgreSQL → N8N → API → Caddy → Cloudflare
+   - Verify service health
+   - Clean up old containers
+
+9. **📊 Health Check All Components**
+   - Test container connectivity
+   - Verify domain accessibility
+   - Check SSL certificates
+   - Test Cloudflare tunnel
+
+### 📋 Log và Monitoring (Enhanced)
+
+Auto-Fix System sẽ tạo log file chi tiết tại `/var/log/n8n-auto-fix.log`
+
+```bash
+# Xem log auto-fix
+tail -f /var/log/n8n-auto-fix.log
+
+# Monitor containers sau khi fix
+cd /home/n8n && docker-compose logs -f
+
+# Check status
+cd /home/n8n && docker-compose ps
+
+# Health monitor status
+systemctl status n8n-health-monitor
+```
+
+### 🎯 Kết quả mong đợi sau khi auto-fix:
+
+✅ Tất cả domains hoạt động bình thường  
+✅ SSL certificates được cấp tự động  
+✅ N8N instances khởi động ổn định  
+✅ PostgreSQL kết nối thành công  
+✅ Cloudflare Tunnel hoạt động  
+✅ Health Monitor active  
+✅ No more HTTP 502 errors  
+✅ Auto-Fix System ready  
+
+**⏰ Lưu ý**: Cần đợi 2-3 phút sau khi fix để SSL certificates được cấp hoàn toàn và Cloudflare Tunnel kết nối.
+
+### 🔄 Auto-Fix Integration với Telegram Bot
+
+```bash
+# Lệnh Telegram Bot cho auto-fix
+/auto-fix                 # Chạy auto-fix toàn diện
+/auto-fix permissions     # Fix permissions
+/auto-fix networks        # Fix Docker networks
+/auto-fix database        # Fix PostgreSQL
+/auto-fix ssl             # Fix SSL certificates
+/auto-fix health          # Fix health monitor
+/auto-fix status          # Xem auto-fix status
+```
