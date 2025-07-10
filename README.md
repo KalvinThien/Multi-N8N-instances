@@ -1,10 +1,10 @@
-# 🚀 Script Cài Đặt N8N Multi-Domain Tự Động 2025 - Enhanced Version 3.0
+# 🚀 Script Cài Đặt N8N Multi-Domain Tự Động 2025 - Enhanced Version 4.0
 
 ![N8N](https://img.shields.io/badge/N8N-Automation-blue) ![Docker](https://img.shields.io/badge/Docker-Containerized-blue) ![SSL](https://img.shields.io/badge/SSL-Auto-green) ![Multi-Domain](https://img.shields.io/badge/Multi--Domain-Support-orange) ![PostgreSQL](https://img.shields.io/badge/PostgreSQL-Database-blue) ![API](https://img.shields.io/badge/News%20API-FastAPI-red) ![Telegram](https://img.shields.io/badge/Telegram-Bot-blue) ![Google Drive](https://img.shields.io/badge/Google%20Drive-Backup-green)
 
 Script tự động cài đặt N8N với đầy đủ tính năng mở rộng và quản lý từ xa, bao gồm:
 
-## ✨ Tính Năng Mới Version 3.0
+## ✨ Tính Năng Mới Version 4.0 - Multi-Mode + Auto-Fix + Health Check + Cloudflare Tunnel + Custom Ports
 
 ### 🤖 Telegram Bot Management
 - **Quản lý từ xa hoàn toàn** qua Telegram
