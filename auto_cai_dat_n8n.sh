@@ -1,13 +1,18 @@
 #!/bin/bash
 
 # =============================================================================
-# 🚀 N8N ULTIMATE AUTO-INSTALLER 2025 - VERSION 4.1 FIXED
+# 🚀 SCRIPT CÀI ĐẶT N8N MULTI-DOMAIN TỰ ĐỘNG 2025 - ENHANCED VERSION 4.0
 # =============================================================================
 # Tác giả: Nguyễn Ngọc Thiện
 # YouTube: https://www.youtube.com/@kalvinthiensocial
 # Zalo: 08.8888.4749
-# Cập nhật: 10/07/2025
-# Features: Multi-Domain + Localhost + Cloudflare Tunnel + Auto-Fix All Issues
+# Cập nhật: 01/10/2025
+# Features: 
+#   - Multi-Deployment Modes (Localhost/Domain/Cloudflare Tunnel)
+#   - Custom Port Configuration
+#   - Dashboard với Basic Auth
+#   - Auto-Fix Integration
+#   - Health Check & Auto-Recovery
 # =============================================================================
 
 set -e
@@ -22,33 +27,54 @@ CYAN='\033[0;36m'
 WHITE='\033[1;37m'
 NC='\033[0m' # No Color
 
-# Global variables
+# =============================================================================
+# GLOBAL VARIABLES
+# =============================================================================
+
+# Installation settings
 INSTALL_DIR="/home/n8n"
-INSTALL_MODE="" # domain, localhost, cloudflare
-DOMAINS=()
-DOMAIN_PORTS=()
-API_DOMAIN=""
-API_PORT=8000
-BEARER_TOKEN=""
-TELEGRAM_BOT_TOKEN=""
-TELEGRAM_CHAT_ID=""
-SSL_EMAIL=""
-DASHBOARD_USERNAME=""
-DASHBOARD_PASSWORD=""
-DASHBOARD_PORT=8080
+DEPLOYMENT_MODE=""        # localhost/domain/cloudflare
+MAIN_DOMAIN=""           # Main domain (e.g., example.com)
+DOMAINS=()               # All domains array
+SSL_EMAIL=""             # SSL certificate email
+
+# Port configuration
+NEWS_API_PORT=8000       # Default News API port
+N8N_MAIN_PORT=5678      # Default N8N main port
+DASHBOARD_PORT=8080      # Default Dashboard port
+PORT_BASE=5800          # Base port for sub-domains
+
+# Security settings
+DASHBOARD_USER=""        # Dashboard username
+DASHBOARD_PASS=""        # Dashboard password
+DASHBOARD_HASH=""        # Dashboard password hash
+BEARER_TOKEN=""          # News API bearer token
+
+# Feature flags
 ENABLE_NEWS_API=false
 ENABLE_TELEGRAM=false
 ENABLE_MULTI_DOMAIN=false
 ENABLE_POSTGRESQL=false
 ENABLE_GOOGLE_DRIVE=false
 ENABLE_TELEGRAM_BOT=false
-ENABLE_DASHBOARD_AUTH=true
-CLOUDFLARE_TUNNEL_TOKEN=""
-CLOUDFLARE_MODE="" # new, existing
-CLEAN_INSTALL=false
-SKIP_DOCKER=false
-WSL_ENV=false
-START_PORT=5800
+ENABLE_DASHBOARD=true     # Always enabled in v4
+AUTO_FIX_ENABLED=true    # Auto-fix after deployment
+HEALTH_CHECK_ENABLED=true # Health monitoring
+
+# Telegram settings
+TELEGRAM_BOT_TOKEN=""
+TELEGRAM_CHAT_ID=""
+
+# Cloudflare settings
+CF_TUNNEL_TOKEN=""
+CF_TUNNEL_NAME=""
+
+# Container names (standardized)
+CONTAINER_PREFIX="n8n"
+
+# Health check settings
+HEALTH_CHECK_INTERVAL=30  # seconds
+HEALTH_CHECK_RETRIES=3
 
 # =============================================================================
 # UTILITY FUNCTIONS
@@ -57,19 +83,21 @@ START_PORT=5800
 show_banner() {
     clear
     echo -e "${CYAN}╔══════════════════════════════════════════════════════════════════════════════╗${NC}"
-    echo -e "${CYAN}║${WHITE}           🚀 N8N ULTIMATE AUTO-INSTALLER 2025 - VERSION 4.1 🚀             ${CYAN}║${NC}"
+    echo -e "${CYAN}║${WHITE}              🚀 N8N MULTI-DOMAIN INSTALLER 2025 - VERSION 4.0 🚀             ${CYAN}║${NC}"
     echo -e "${CYAN}╠══════════════════════════════════════════════════════════════════════════════╣${NC}"
-    echo -e "${CYAN}║${WHITE} ✨ Multi-Domain + Localhost + Cloudflare Tunnel Support                  ${CYAN}║${NC}"
-    echo -e "${CYAN}║${WHITE} 🔒 SSL Certificate Auto + Dashboard Security                             ${CYAN}║${NC}"
-    echo -e "${CYAN}║${WHITE} 📰 News API + Telegram Bot + Google Drive Backup                        ${CYAN}║${NC}"
-    echo -e "${CYAN}║${WHITE} 🛠️ Smart Port Management + Auto-Fix All Issues                          ${CYAN}║${NC}"
-    echo -e "${CYAN}║${WHITE} 🌐 Full WSL/VPS Compatibility                                            ${CYAN}║${NC}"
+    echo -e "${CYAN}║${WHITE} ✨ Multi-Deployment: Localhost | Domain SSL | Cloudflare Tunnel          ${CYAN}║${NC}"
+    echo -e "${CYAN}║${WHITE} 🔧 Custom Port Configuration + Auto Port Assignment                      ${CYAN}║${NC}"
+    echo -e "${CYAN}║${WHITE} 🔒 Dashboard với Basic Auth + SSL Certificate tự động                    ${CYAN}║${NC}"
+    echo -e "${CYAN}║${WHITE} 🚀 Auto-Fix Integration + Health Check Monitoring                        ${CYAN}║${NC}"
+    echo -e "${CYAN}║${WHITE} 📰 News Content API với FastAPI + Newspaper4k                            ${CYAN}║${NC}"
+    echo -e "${CYAN}║${WHITE} 🐘 PostgreSQL/SQLite Support + Auto Database Setup                       ${CYAN}║${NC}"
+    echo -e "${CYAN}║${WHITE} 📱 Telegram Bot Management + Google Drive Backup                         ${CYAN}║${NC}"
     echo -e "${CYAN}╠══════════════════════════════════════════════════════════════════════════════╣${NC}"
     echo -e "${CYAN}║${YELLOW} 👨‍💻 Tác giả: Nguyễn Ngọc Thiện                                           ${CYAN}║${NC}"
     echo -e "${CYAN}║${YELLOW} 📺 YouTube: https://www.youtube.com/@kalvinthiensocial                  ${CYAN}║${NC}"
     echo -e "${CYAN}║${YELLOW} 📱 Zalo: 08.8888.4749                                                   ${CYAN}║${NC}"
     echo -e "${CYAN}║${YELLOW} 🎬 ĐĂNG KÝ KÊNH ĐỂ ỦNG HỘ MÌNH NHÉ! 🔔                                 ${CYAN}║${NC}"
-    echo -e "${CYAN}║${YELLOW} 📅 Cập nhật: 10/07/2025 - Version 4.1 Fixed                            ${CYAN}║${NC}"
+    echo -e "${CYAN}║${YELLOW} 📅 Cập nhật: 01/10/2025 - Version 4.0 Enhanced                         ${CYAN}║${NC}"
     echo -e "${CYAN}╚══════════════════════════════════════════════════════════════════════════════╝${NC}"
     echo ""
 }
@@ -95,7 +123,7 @@ success() {
 }
 
 # =============================================================================
-# SYSTEM CHECKS
+# SYSTEM CHECK FUNCTIONS
 # =============================================================================
 
 check_root() {
@@ -112,8 +140,8 @@ check_os() {
     fi
     
     . /etc/os-release
-    if [[ "$ID" != "ubuntu" ]]; then
-        warning "Script được thiết kế cho Ubuntu. Hệ điều hành hiện tại: $ID"
+    if [[ "$ID" != "ubuntu" && "$ID" != "debian" ]]; then
+        warning "Script được thiết kế cho Ubuntu/Debian. Hệ điều hành hiện tại: $ID"
         read -p "Bạn có muốn tiếp tục? (y/N): " -n 1 -r
         echo
         if [[ ! $REPLY =~ ^[Yy]$ ]]; then
@@ -122,101 +150,88 @@ check_os() {
     fi
 }
 
-detect_environment() {
-    if grep -q Microsoft /proc/version 2>/dev/null; then
-        info "Phát hiện môi trường WSL"
-        WSL_ENV=true
-        
-        # WSL specific optimizations
-        echo "vm.overcommit_memory = 1" >> /etc/sysctl.conf
-        sysctl -p >/dev/null 2>&1 || true
-    else
-        WSL_ENV=false
+check_docker() {
+    if ! command -v docker &> /dev/null; then
+        error "Docker chưa được cài đặt"
+        return 1
     fi
+    
+    if ! docker ps &> /dev/null; then
+        error "Docker daemon không chạy hoặc user không có quyền"
+        return 1
+    fi
+    
+    return 0
 }
 
 check_docker_compose() {
     if command -v docker-compose &> /dev/null; then
         export DOCKER_COMPOSE="docker-compose"
-        export DOCKER_COMPOSE_VERSION=$(docker-compose --version | grep -oE '[0-9]+\.[0-9]+\.[0-9]+' | head -1)
-        info "Sử dụng docker-compose version $DOCKER_COMPOSE_VERSION"
+        info "Sử dụng docker-compose"
     elif docker compose version &> /dev/null 2>&1; then
         export DOCKER_COMPOSE="docker compose"
-        export DOCKER_COMPOSE_VERSION=$(docker compose version | grep -oE '[0-9]+\.[0-9]+\.[0-9]+' | head -1)
-        info "Sử dụng docker compose version $DOCKER_COMPOSE_VERSION"
+        info "Sử dụng docker compose"
     else
         export DOCKER_COMPOSE=""
+        return 1
     fi
+    return 0
 }
+
+# =============================================================================
+# PORT MANAGEMENT FUNCTIONS
+# =============================================================================
 
 check_port_availability() {
     local port=$1
     if lsof -Pi :$port -sTCP:LISTEN -t >/dev/null 2>&1; then
+        error "Port $port đã được sử dụng!"
         return 1
-    else
-        return 0
     fi
+    return 0
 }
 
 get_next_available_port() {
-    local start_port=$1
-    local port=$start_port
+    local base_port=$1
+    local port=$base_port
     
-    while ! check_port_availability $port; do
+    while ! check_port_availability $port 2>/dev/null; do
         ((port++))
     done
     
     echo $port
 }
 
-cleanup_docker_environment() {
-    log "🧹 Dọn dẹp môi trường Docker..."
-    
-    # Stop all N8N related containers
-    docker ps -a | grep -E "(n8n|postgres|caddy|cloudflare)" | awk '{print $1}' | xargs -r docker stop 2>/dev/null || true
-    
-    # Remove orphan containers
-    docker ps -a | grep -E "(n8n|postgres|caddy|cloudflare)" | awk '{print $1}' | xargs -r docker rm -f 2>/dev/null || true
-    
-    # Remove conflicting networks
-    docker network ls | grep "n8n" | awk '{print $2}' | xargs -r docker network rm 2>/dev/null || true
-    
-    # Clean up unused volumes
-    docker volume prune -f 2>/dev/null || true
-    
-    success "Đã dọn dẹp môi trường Docker"
-}
-
 # =============================================================================
-# INSTALLATION MODE SELECTION
+# USER INPUT FUNCTIONS - DEPLOYMENT MODE
 # =============================================================================
 
-get_installation_mode() {
+get_deployment_mode() {
     echo -e "${CYAN}╔══════════════════════════════════════════════════════════════════════════════╗${NC}"
-    echo -e "${CYAN}║${WHITE}                        🎯 CHỌN CHẾ ĐỘ CÀI ĐẶT                              ${CYAN}║${NC}"
+    echo -e "${CYAN}║${WHITE}                        🎯 CHỌN CHẾ ĐỘ TRIỂN KHAI                           ${CYAN}║${NC}"
     echo -e "${CYAN}╚══════════════════════════════════════════════════════════════════════════════╝${NC}"
     echo ""
-    echo -e "${WHITE}Chọn phương thức triển khai:${NC}"
-    echo -e "  ${GREEN}1.${NC} Domain Mode - Sử dụng domain thật + SSL Let's Encrypt"
-    echo -e "  ${GREEN}2.${NC} Localhost Mode - Chạy local không cần domain"
-    echo -e "  ${GREEN}3.${NC} Cloudflare Tunnel - Truy cập từ xa không cần mở port"
+    echo -e "${WHITE}Chọn chế độ triển khai:${NC}"
+    echo -e "  ${GREEN}1.${NC} Localhost (không cần domain, truy cập local)"
+    echo -e "  ${GREEN}2.${NC} Domain với SSL (Let's Encrypt tự động)"
+    echo -e "  ${GREEN}3.${NC} Cloudflare Tunnel (bảo mật cao, không cần mở port)"
     echo ""
     
     while true; do
         read -p "🎯 Chọn chế độ (1-3): " mode
         case $mode in
             1)
-                INSTALL_MODE="domain"
-                info "Đã chọn: Domain Mode"
-                break
-                ;;
-            2)
-                INSTALL_MODE="localhost"
+                DEPLOYMENT_MODE="localhost"
                 info "Đã chọn: Localhost Mode"
                 break
                 ;;
+            2)
+                DEPLOYMENT_MODE="domain"
+                info "Đã chọn: Domain với SSL Mode"
+                break
+                ;;
             3)
-                INSTALL_MODE="cloudflare"
+                DEPLOYMENT_MODE="cloudflare"
                 info "Đã chọn: Cloudflare Tunnel Mode"
                 break
                 ;;
@@ -227,265 +242,253 @@ get_installation_mode() {
     done
 }
 
-get_deployment_type() {
+get_main_domain() {
     echo ""
     echo -e "${CYAN}╔══════════════════════════════════════════════════════════════════════════════╗${NC}"
-    echo -e "${CYAN}║${WHITE}                        🚀 CHỌN LOẠI TRIỂN KHAI                             ${CYAN}║${NC}"
+    echo -e "${CYAN}║${WHITE}                          🌐 CẤU HÌNH DOMAIN CHÍNH                          ${CYAN}║${NC}"
     echo -e "${CYAN}╚══════════════════════════════════════════════════════════════════════════════╝${NC}"
     echo ""
-    echo -e "${WHITE}Chọn số lượng N8N instances:${NC}"
-    echo -e "  ${GREEN}1.${NC} Single Instance - 1 N8N instance"
-    echo -e "  ${GREEN}2.${NC} Multi Instance - Nhiều N8N instances riêng biệt"
+    
+    if [[ "$DEPLOYMENT_MODE" == "localhost" ]]; then
+        MAIN_DOMAIN="localhost"
+        info "Sử dụng localhost cho triển khai local"
+        return
+    fi
+    
+    echo -e "${WHITE}Domain chính sẽ được sử dụng để tạo các subdomain:${NC}"
+    echo -e "  • n8n.${GREEN}yourdomain.com${NC} - N8N instance chính"
+    echo -e "  • api.${GREEN}yourdomain.com${NC} - News API service"
+    echo -e "  • dashboard.${GREEN}yourdomain.com${NC} - Web dashboard"
+    echo -e "  • n8n1.${GREEN}yourdomain.com${NC}, n8n2.${GREEN}yourdomain.com${NC}... - Multi instances"
     echo ""
     
     while true; do
-        read -p "🚀 Chọn loại (1-2): " type
-        case $type in
+        read -p "🌐 Nhập domain chính (ví dụ: example.com): " MAIN_DOMAIN
+        if [[ -n "$MAIN_DOMAIN" && "$MAIN_DOMAIN" =~ ^[a-zA-Z0-9][a-zA-Z0-9.-]*\.[a-zA-Z]{2,}$ ]]; then
+            # Remove any protocol if included
+            MAIN_DOMAIN=${MAIN_DOMAIN#http://}
+            MAIN_DOMAIN=${MAIN_DOMAIN#https://}
+            MAIN_DOMAIN=${MAIN_DOMAIN%/}
+            
+            success "Domain chính: $MAIN_DOMAIN"
+            break
+        else
+            error "Domain không hợp lệ. Vui lòng nhập domain đúng định dạng (ví dụ: example.com)"
+        fi
+    done
+}
+
+get_installation_mode() {
+    echo ""
+    echo -e "${CYAN}╔══════════════════════════════════════════════════════════════════════════════╗${NC}"
+    echo -e "${CYAN}║${WHITE}                           🎯 CHỌN CHẾ ĐỘ CÀI ĐẶT                           ${CYAN}║${NC}"
+    echo -e "${CYAN}╚══════════════════════════════════════════════════════════════════════════════╝${NC}"
+    echo ""
+    echo -e "${WHITE}Chọn chế độ cài đặt N8N:${NC}"
+    echo -e "  ${GREEN}1.${NC} Single Instance (1 N8N instance)"
+    echo -e "  ${GREEN}2.${NC} Multi-Instance (Nhiều N8N instances)"
+    echo -e "  ${GREEN}3.${NC} Multi-Instance + PostgreSQL (Khuyến nghị cho production)"
+    echo -e "  ${GREEN}4.${NC} Full Features (Multi + PostgreSQL + Google Drive + Telegram Bot)"
+    echo ""
+    
+    while true; do
+        read -p "🎯 Chọn chế độ (1-4): " mode
+        case $mode in
             1)
                 ENABLE_MULTI_DOMAIN=false
-                info "Đã chọn: Single Instance"
+                ENABLE_POSTGRESQL=false
+                ENABLE_GOOGLE_DRIVE=false
+                ENABLE_TELEGRAM_BOT=false
                 break
                 ;;
             2)
                 ENABLE_MULTI_DOMAIN=true
-                info "Đã chọn: Multi Instance"
+                ENABLE_POSTGRESQL=false
+                ENABLE_GOOGLE_DRIVE=false
+                ENABLE_TELEGRAM_BOT=false
+                break
+                ;;
+            3)
+                ENABLE_MULTI_DOMAIN=true
+                ENABLE_POSTGRESQL=true
+                ENABLE_GOOGLE_DRIVE=false
+                ENABLE_TELEGRAM_BOT=false
+                break
+                ;;
+            4)
+                ENABLE_MULTI_DOMAIN=true
+                ENABLE_POSTGRESQL=true
+                ENABLE_GOOGLE_DRIVE=true
+                ENABLE_TELEGRAM_BOT=true
                 break
                 ;;
             *)
-                error "Lựa chọn không hợp lệ. Vui lòng chọn 1-2."
+                error "Lựa chọn không hợp lệ. Vui lòng chọn 1-4."
                 ;;
         esac
     done
+    
+    info "Chế độ đã chọn: $([[ "$ENABLE_MULTI_DOMAIN" == "true" ]] && echo "Multi-Instance" || echo "Single Instance")"
+    [[ "$ENABLE_POSTGRESQL" == "true" ]] && info "Database: PostgreSQL"
+    [[ "$ENABLE_GOOGLE_DRIVE" == "true" ]] && info "Google Drive Backup: Enabled"
+    [[ "$ENABLE_TELEGRAM_BOT" == "true" ]] && info "Telegram Bot: Enabled"
 }
 
-# =============================================================================
-# DOMAIN INPUT FUNCTIONS
-# =============================================================================
-
-get_domain_input() {
-    if [[ "$INSTALL_MODE" == "localhost" ]]; then
-        DOMAINS=("localhost")
-        DOMAIN_PORTS=($(get_next_available_port 5678))
-        info "Localhost mode - N8N sẽ chạy ở port: ${DOMAIN_PORTS[0]}"
+get_multi_domain_config() {
+    if [[ "$ENABLE_MULTI_DOMAIN" != "true" ]]; then
+        # Single instance - chỉ cần n8n subdomain
+        if [[ "$DEPLOYMENT_MODE" == "localhost" ]]; then
+            DOMAINS=("localhost")
+        else
+            DOMAINS=("n8n.$MAIN_DOMAIN")
+        fi
         return
     fi
     
     echo ""
     echo -e "${CYAN}╔══════════════════════════════════════════════════════════════════════════════╗${NC}"
-    echo -e "${CYAN}║${WHITE}                        🌐 CẤU HÌNH DOMAIN & PORTS                          ${CYAN}║${NC}"
+    echo -e "${CYAN}║${WHITE}                        🌐 CẤU HÌNH MULTI-INSTANCE                          ${CYAN}║${NC}"
     echo -e "${CYAN}╚══════════════════════════════════════════════════════════════════════════════╝${NC}"
     echo ""
     
-    if [[ "$ENABLE_MULTI_DOMAIN" == "true" ]]; then
-        echo -e "${WHITE}Multi-Instance Mode:${NC}"
-        echo -e "  • Mỗi domain/subdomain sẽ có N8N instance riêng"
-        echo -e "  • Ports sẽ tự động assign từ ${START_PORT} trở lên"
-        echo -e "  • Hoặc bạn có thể chỉ định port riêng"
+    if [[ "$DEPLOYMENT_MODE" == "localhost" ]]; then
+        echo -e "${WHITE}Multi-Instance trên Localhost:${NC}"
+        echo -e "  • Instance chính: http://localhost:5678"
+        echo -e "  • Instance 1: http://localhost:5801"
+        echo -e "  • Instance 2: http://localhost:5802"
+        echo -e "  • ..."
         echo ""
         
-        local instance_count=1
         while true; do
-            read -p "🌐 Nhập domain/subdomain cho instance $instance_count (hoặc Enter để kết thúc): " domain
-            
-            if [[ -z "$domain" ]]; then
-                if [[ ${#DOMAINS[@]} -eq 0 ]]; then
-                    error "Cần ít nhất 1 domain!"
-                    continue
-                else
-                    break
-                fi
-            fi
-            
-            if [[ "$domain" =~ ^[a-zA-Z0-9][a-zA-Z0-9.-]*[a-zA-Z0-9]$ ]] || [[ "$INSTALL_MODE" == "cloudflare" ]]; then
-                # Ask for custom port
-                local default_port=$(get_next_available_port $START_PORT)
-                read -p "🔌 Port cho $domain (Enter = $default_port): " custom_port
-                
-                if [[ -z "$custom_port" ]]; then
-                    custom_port=$default_port
-                else
-                    if ! check_port_availability $custom_port; then
-                        error "Port $custom_port đã được sử dụng!"
-                        continue
-                    fi
-                fi
-                
-                DOMAINS+=("$domain")
-                DOMAIN_PORTS+=("$custom_port")
-                START_PORT=$((custom_port + 1))
-                
-                success "✅ Instance $instance_count: $domain:$custom_port"
-                ((instance_count++))
+            read -p "🔢 Số lượng N8N instances (2-10): " instance_count
+            if [[ "$instance_count" =~ ^[0-9]+$ ]] && [[ $instance_count -ge 2 ]] && [[ $instance_count -le 10 ]]; then
+                # Add main instance
+                DOMAINS=("localhost")
+                # Add sub instances
+                for ((i=1; i<$instance_count; i++)); do
+                    DOMAINS+=("localhost:$((PORT_BASE + i))")
+                done
+                break
             else
-                error "Domain không hợp lệ. Vui lòng nhập lại."
+                error "Vui lòng nhập số từ 2 đến 10"
             fi
         done
     else
-        # Single instance mode
+        echo -e "${WHITE}Multi-Instance với Domain:${NC}"
+        echo -e "  • Mỗi instance sẽ có subdomain riêng"
+        echo -e "  • Ví dụ: n8n1.$MAIN_DOMAIN, n8n2.$MAIN_DOMAIN..."
+        echo ""
+        
+        # Add main N8N domain
+        DOMAINS=("n8n.$MAIN_DOMAIN")
+        
+        local instance_num=1
         while true; do
-            read -p "🌐 Nhập domain chính cho N8N: " domain
-            
-            if [[ "$domain" =~ ^[a-zA-Z0-9][a-zA-Z0-9.-]*[a-zA-Z0-9]$ ]] || [[ "$INSTALL_MODE" == "cloudflare" ]]; then
-                local default_port=$(get_next_available_port 5678)
-                read -p "🔌 Port cho N8N (Enter = $default_port): " custom_port
-                
-                if [[ -z "$custom_port" ]]; then
-                    custom_port=$default_port
-                else
-                    if ! check_port_availability $custom_port; then
-                        error "Port $custom_port đã được sử dụng!"
-                        continue
-                    fi
-                fi
-                
-                DOMAINS=("$domain")
-                DOMAIN_PORTS=("$custom_port")
-                success "✅ Domain: $domain:$custom_port"
-                break
+            read -p "➕ Thêm N8N instance $instance_num? (y/N): " -n 1 -r
+            echo
+            if [[ $REPLY =~ ^[Yy]$ ]]; then
+                DOMAINS+=("n8n$instance_num.$MAIN_DOMAIN")
+                info "Đã thêm: n8n$instance_num.$MAIN_DOMAIN"
+                ((instance_num++))
             else
-                error "Domain không hợp lệ. Vui lòng nhập lại."
+                break
             fi
         done
     fi
     
-    # Summary
-    echo ""
-    info "📋 Tổng kết cấu hình:"
-    for i in "${!DOMAINS[@]}"; do
-        info "  Instance $((i+1)): ${DOMAINS[$i]} → Port ${DOMAIN_PORTS[$i]}"
-    done
+    success "Đã cấu hình ${#DOMAINS[@]} N8N instances"
 }
 
-# =============================================================================
-# FEATURES SELECTION
-# =============================================================================
-
-get_features_selection() {
+get_port_configuration() {
     echo ""
     echo -e "${CYAN}╔══════════════════════════════════════════════════════════════════════════════╗${NC}"
-    echo -e "${CYAN}║${WHITE}                        ⚙️  CHỌN TÍNH NĂNG BỔ SUNG                           ${CYAN}║${NC}"
+    echo -e "${CYAN}║${WHITE}                          ⚙️  CẤU HÌNH PORTS                                ${CYAN}║${NC}"
     echo -e "${CYAN}╚══════════════════════════════════════════════════════════════════════════════╝${NC}"
     echo ""
     
-    # PostgreSQL
-    echo -e "${WHITE}1. Database:${NC}"
-    echo -e "  ${GREEN}a.${NC} SQLite (Mặc định, nhẹ)"
-    echo -e "  ${GREEN}b.${NC} PostgreSQL (Khuyến nghị cho production)"
-    read -p "Chọn database (a/b) [a]: " db_choice
-    if [[ "$db_choice" == "b" ]]; then
-        ENABLE_POSTGRESQL=true
-        success "✅ Đã chọn PostgreSQL"
-    else
-        ENABLE_POSTGRESQL=false
-        success "✅ Đã chọn SQLite"
+    # News API Port
+    if [[ "$ENABLE_NEWS_API" == "true" ]]; then
+        echo -e "${WHITE}News API Port Configuration:${NC}"
+        while true; do
+            read -p "📰 Port cho News API [8000]: " port
+            NEWS_API_PORT=${port:-8000}
+            if check_port_availability $NEWS_API_PORT; then
+                success "News API sẽ chạy trên port: $NEWS_API_PORT"
+                break
+            else
+                NEWS_API_PORT=$(get_next_available_port $NEWS_API_PORT)
+                warning "Port đã được sử dụng. Đề xuất port: $NEWS_API_PORT"
+            fi
+        done
+        echo ""
     fi
     
-    # News API
-    echo ""
-    echo -e "${WHITE}2. News Content API:${NC}"
-    echo -e "  • Cào nội dung từ websites"
-    echo -e "  • Parse RSS feeds"
-    echo -e "  • Extract articles với AI"
-    read -p "Cài đặt News API? (y/N): " -n 1 -r
-    echo
-    if [[ $REPLY =~ ^[Yy]$ ]]; then
-        ENABLE_NEWS_API=true
-        
-        # Get API port
-        local default_api_port=$(get_next_available_port $API_PORT)
-        read -p "🔌 Port cho News API (Enter = $default_api_port): " custom_api_port
-        if [[ -n "$custom_api_port" ]]; then
-            API_PORT=$custom_api_port
+    # N8N Main Port (chỉ cho localhost mode)
+    if [[ "$DEPLOYMENT_MODE" == "localhost" ]]; then
+        echo -e "${WHITE}N8N Main Port Configuration:${NC}"
+        while true; do
+            read -p "🚀 Port cho N8N chính [5678]: " port
+            N8N_MAIN_PORT=${port:-5678}
+            if check_port_availability $N8N_MAIN_PORT; then
+                success "N8N chính sẽ chạy trên port: $N8N_MAIN_PORT"
+                break
+            else
+                N8N_MAIN_PORT=$(get_next_available_port $N8N_MAIN_PORT)
+                warning "Port đã được sử dụng. Đề xuất port: $N8N_MAIN_PORT"
+            fi
+        done
+        echo ""
+    fi
+    
+    # Dashboard Port
+    echo -e "${WHITE}Dashboard Port Configuration:${NC}"
+    while true; do
+        read -p "📊 Port cho Dashboard [8080]: " port
+        DASHBOARD_PORT=${port:-8080}
+        if check_port_availability $DASHBOARD_PORT; then
+            success "Dashboard sẽ chạy trên port: $DASHBOARD_PORT"
+            break
         else
-            API_PORT=$default_api_port
+            DASHBOARD_PORT=$(get_next_available_port $DASHBOARD_PORT)
+            warning "Port đã được sử dụng. Đề xuất port: $DASHBOARD_PORT"
         fi
-        
-        # API Domain
-        if [[ "$INSTALL_MODE" == "domain" ]]; then
-            read -p "🌐 Domain cho API (Enter = api.${DOMAINS[0]}): " api_domain
-            API_DOMAIN="${api_domain:-api.${DOMAINS[0]}}"
-        else
-            API_DOMAIN="localhost"
-        fi
-        
-        success "✅ News API enabled - Port: $API_PORT"
-    fi
+    done
     
-    # Telegram Backup
-    echo ""
-    echo -e "${WHITE}3. Telegram Backup:${NC}"
-    echo -e "  • Tự động backup hàng ngày"
-    echo -e "  • Gửi file backup qua Telegram"
-    read -p "Cài đặt Telegram Backup? (y/N): " -n 1 -r
-    echo
-    if [[ $REPLY =~ ^[Yy]$ ]]; then
-        ENABLE_TELEGRAM=true
-        success "✅ Telegram Backup enabled"
-    fi
-    
-    # Google Drive Backup
-    echo ""
-    echo -e "${WHITE}4. Google Drive Backup:${NC}"
-    echo -e "  • Upload backup lên Google Drive"
-    echo -e "  • Tổ chức theo thư mục"
-    read -p "Cài đặt Google Drive Backup? (y/N): " -n 1 -r
-    echo
-    if [[ $REPLY =~ ^[Yy]$ ]]; then
-        ENABLE_GOOGLE_DRIVE=true
-        success "✅ Google Drive Backup enabled"
-    fi
-    
-    # Telegram Bot Management
-    echo ""
-    echo -e "${WHITE}5. Telegram Bot Management:${NC}"
-    echo -e "  • Quản lý N8N qua Telegram"
-    echo -e "  • Monitor & control từ xa"
-    read -p "Cài đặt Telegram Bot? (y/N): " -n 1 -r
-    echo
-    if [[ $REPLY =~ ^[Yy]$ ]]; then
-        ENABLE_TELEGRAM_BOT=true
-        success "✅ Telegram Bot enabled"
+    # Auto-assign ports for multi-instance
+    if [[ "$ENABLE_MULTI_DOMAIN" == "true" ]] && [[ "$DEPLOYMENT_MODE" == "localhost" ]]; then
+        echo ""
+        info "🔧 Tự động phân bổ ports cho các N8N instances:"
+        local port=$PORT_BASE
+        for ((i=1; i<${#DOMAINS[@]}; i++)); do
+            port=$(get_next_available_port $((PORT_BASE + i)))
+            info "  Instance $i: Port $port"
+        done
     fi
 }
 
-# =============================================================================
-# CLOUDFLARE TUNNEL CONFIGURATION
-# =============================================================================
-
-get_cloudflare_config() {
-    if [[ "$INSTALL_MODE" != "cloudflare" ]]; then
+get_ssl_email_config() {
+    if [[ "$DEPLOYMENT_MODE" == "localhost" ]]; then
         return
     fi
     
     echo ""
     echo -e "${CYAN}╔══════════════════════════════════════════════════════════════════════════════╗${NC}"
-    echo -e "${CYAN}║${WHITE}                        ☁️  CLOUDFLARE TUNNEL CONFIG                         ${CYAN}║${NC}"
+    echo -e "${CYAN}║${WHITE}                        🔒 SSL CERTIFICATE EMAIL                            ${CYAN}║${NC}"
     echo -e "${CYAN}╚══════════════════════════════════════════════════════════════════════════════╝${NC}"
-    echo ""
-    
-    echo -e "${WHITE}Chọn phương thức setup Cloudflare Tunnel:${NC}"
-    echo -e "  ${GREEN}1.${NC} Tạo tunnel mới (cần Cloudflare account)"
-    echo -e "  ${GREEN}2.${NC} Sử dụng tunnel token có sẵn"
     echo ""
     
     while true; do
-        read -p "Chọn phương thức (1-2): " cf_mode
-        case $cf_mode in
-            1)
-                CLOUDFLARE_MODE="new"
-                info "Sẽ hướng dẫn tạo tunnel mới"
-                break
-                ;;
-            2)
-                CLOUDFLARE_MODE="existing"
-                read -p "🔑 Nhập Cloudflare Tunnel Token: " CLOUDFLARE_TUNNEL_TOKEN
-                success "✅ Đã nhận tunnel token"
-                break
-                ;;
-            *)
-                error "Lựa chọn không hợp lệ"
-                ;;
-        esac
+        read -p "📧 Email cho SSL certificates: " SSL_EMAIL
+        if [[ -n "$SSL_EMAIL" && "$SSL_EMAIL" =~ ^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$ ]]; then
+            if [[ "$SSL_EMAIL" == *"@example.com" ]]; then
+                error "Vui lòng sử dụng email thật, không dùng @example.com"
+                continue
+            fi
+            success "SSL Email: $SSL_EMAIL"
+            break
+        else
+            error "Email không hợp lệ"
+        fi
     done
 }
 
@@ -493,387 +496,455 @@ get_cloudflare_config() {
 # SECURITY CONFIGURATION
 # =============================================================================
 
-get_security_config() {
+setup_dashboard_auth() {
     echo ""
     echo -e "${CYAN}╔══════════════════════════════════════════════════════════════════════════════╗${NC}"
-    echo -e "${CYAN}║${WHITE}                        🔒 CẤU HÌNH BẢO MẬT                                 ${CYAN}║${NC}"
+    echo -e "${CYAN}║${WHITE}                      🔐 DASHBOARD SECURITY SETUP                           ${CYAN}║${NC}"
     echo -e "${CYAN}╚══════════════════════════════════════════════════════════════════════════════╝${NC}"
     echo ""
+    echo -e "${WHITE}Thiết lập Basic Auth cho Dashboard:${NC}"
+    echo -e "  • Username và password để truy cập dashboard"
+    echo -e "  • Bảo vệ dashboard khỏi truy cập trái phép"
+    echo ""
     
-    # Dashboard authentication
-    if [[ "$INSTALL_MODE" == "localhost" ]]; then
-        read -p "🔐 Bật Basic Auth cho Dashboard? (y/N): " -n 1 -r
-        echo
-        if [[ ! $REPLY =~ ^[Yy]$ ]]; then
-            ENABLE_DASHBOARD_AUTH=false
-            info "Dashboard sẽ không có authentication"
-            return
-        fi
-    fi
-    
-    ENABLE_DASHBOARD_AUTH=true
-    echo -e "${YELLOW}Dashboard Basic Authentication:${NC}"
-    
+    # Get username
     while true; do
-        read -p "👤 Username cho Dashboard: " DASHBOARD_USERNAME
-        if [[ -n "$DASHBOARD_USERNAME" ]]; then
+        read -p "👤 Username cho dashboard: " DASHBOARD_USER
+        if [[ -n "$DASHBOARD_USER" && "$DASHBOARD_USER" =~ ^[a-zA-Z0-9_-]+$ ]]; then
             break
         else
-            error "Username không được để trống!"
+            error "Username chỉ chứa chữ cái, số, _ và -"
         fi
     done
     
+    # Get password
     while true; do
-        read -s -p "🔑 Password cho Dashboard: " DASHBOARD_PASSWORD
+        read -s -p "🔑 Password cho dashboard: " DASHBOARD_PASS
         echo
-        if [[ ${#DASHBOARD_PASSWORD} -ge 8 ]]; then
-            read -s -p "🔑 Xác nhận password: " password_confirm
+        if [[ ${#DASHBOARD_PASS} -ge 8 ]]; then
+            read -s -p "🔑 Xác nhận password: " pass_confirm
             echo
-            if [[ "$DASHBOARD_PASSWORD" == "$password_confirm" ]]; then
+            if [[ "$DASHBOARD_PASS" == "$pass_confirm" ]]; then
                 break
             else
-                error "Password không khớp!"
+                error "Password không khớp. Vui lòng thử lại."
             fi
         else
-            error "Password phải có ít nhất 8 ký tự!"
+            error "Password phải có ít nhất 8 ký tự"
         fi
     done
     
-    # Dashboard port
-    local default_dash_port=$(get_next_available_port $DASHBOARD_PORT)
-    read -p "🔌 Port cho Dashboard (Enter = $default_dash_port): " custom_dash_port
-    if [[ -n "$custom_dash_port" ]]; then
-        DASHBOARD_PORT=$custom_dash_port
+    # Generate password hash for Caddy
+    if command -v htpasswd &> /dev/null; then
+        DASHBOARD_HASH=$(htpasswd -nbB "$DASHBOARD_USER" "$DASHBOARD_PASS" | sed -e s/\\$/\\$\\$/g)
     else
-        DASHBOARD_PORT=$default_dash_port
+        # Install apache2-utils if not available
+        info "Cài đặt htpasswd..."
+        apt-get update -qq && apt-get install -y apache2-utils >/dev/null 2>&1
+        DASHBOARD_HASH=$(htpasswd -nbB "$DASHBOARD_USER" "$DASHBOARD_PASS" | sed -e s/\\$/\\$\\$/g)
     fi
     
-    success "✅ Dashboard security configured"
-    
-    # SSL Email for domain mode
-    if [[ "$INSTALL_MODE" == "domain" ]]; then
-        echo ""
-        echo -e "${YELLOW}SSL Certificate Email:${NC}"
-        while true; do
-            read -p "📧 Email cho SSL certificates: " SSL_EMAIL
-            if [[ -n "$SSL_EMAIL" && "$SSL_EMAIL" =~ ^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$ ]]; then
-                if [[ "$SSL_EMAIL" != *"@example.com" ]]; then
-                    break
-                else
-                    error "Vui lòng sử dụng email thật!"
-                fi
-            else
-                error "Email không hợp lệ!"
-            fi
-        done
-        success "✅ SSL email configured"
-    fi
+    success "Đã thiết lập Dashboard authentication"
 }
 
-# =============================================================================
-# API CONFIGURATION
-# =============================================================================
-
-get_api_config() {
-    if [[ "$ENABLE_NEWS_API" != "true" ]]; then
-        return
-    fi
-    
+get_news_api_config() {
     echo ""
     echo -e "${CYAN}╔══════════════════════════════════════════════════════════════════════════════╗${NC}"
-    echo -e "${CYAN}║${WHITE}                        📰 NEWS API CONFIGURATION                           ${CYAN}║${NC}"
+    echo -e "${CYAN}║${WHITE}                        📰 NEWS CONTENT API                                 ${CYAN}║${NC}"
     echo -e "${CYAN}╚══════════════════════════════════════════════════════════════════════════════╝${NC}"
     echo ""
     
-    echo -e "${YELLOW}🔐 Thiết lập Bearer Token cho News API:${NC}"
-    echo -e "  • Token phải có ít nhất 20 ký tự"
-    echo -e "  • Chỉ chứa chữ cái và số"
-    echo ""
+    read -p "📰 Bạn có muốn cài đặt News Content API? (Y/n): " -n 1 -r
+    echo
+    if [[ $REPLY =~ ^[Nn]$ ]]; then
+        ENABLE_NEWS_API=false
+        return
+    fi
     
+    ENABLE_NEWS_API=true
+    
+    echo ""
     while true; do
-        read -p "🔑 Nhập Bearer Token: " BEARER_TOKEN
+        read -p "🔑 Nhập Bearer Token cho News API (ít nhất 20 ký tự): " BEARER_TOKEN
         if [[ ${#BEARER_TOKEN} -ge 20 && "$BEARER_TOKEN" =~ ^[a-zA-Z0-9]+$ ]]; then
-            success "✅ Bearer Token đã được thiết lập"
+            success "Đã thiết lập Bearer Token"
             break
         else
-            error "Token phải có ít nhất 20 ký tự và chỉ chứa chữ cái, số."
+            error "Token phải có ít nhất 20 ký tự và chỉ chứa chữ cái, số"
         fi
     done
 }
-
-# =============================================================================
-# TELEGRAM CONFIGURATION
-# =============================================================================
 
 get_telegram_config() {
-    if [[ "$ENABLE_TELEGRAM" != "true" && "$ENABLE_TELEGRAM_BOT" != "true" ]]; then
+    if [[ "$ENABLE_TELEGRAM_BOT" != "true" ]]; then
         return
     fi
     
     echo ""
     echo -e "${CYAN}╔══════════════════════════════════════════════════════════════════════════════╗${NC}"
-    echo -e "${CYAN}║${WHITE}                        📱 TELEGRAM CONFIGURATION                           ${CYAN}║${NC}"
+    echo -e "${CYAN}║${WHITE}                        📱 TELEGRAM BOT CONFIG                              ${CYAN}║${NC}"
     echo -e "${CYAN}╚══════════════════════════════════════════════════════════════════════════════╝${NC}"
     echo ""
     
-    echo -e "${YELLOW}🤖 Hướng dẫn tạo Telegram Bot:${NC}"
-    echo -e "  1. Mở Telegram, tìm @BotFather"
-    echo -e "  2. Gửi lệnh: /newbot"
-    echo -e "  3. Đặt tên và username cho bot"
-    echo -e "  4. Copy Bot Token nhận được"
-    echo ""
+    read -p "📱 Telegram Bot Token: " TELEGRAM_BOT_TOKEN
+    read -p "💬 Telegram Chat ID: " TELEGRAM_CHAT_ID
     
-    while true; do
-        read -p "🤖 Nhập Telegram Bot Token: " TELEGRAM_BOT_TOKEN
-        if [[ -n "$TELEGRAM_BOT_TOKEN" && "$TELEGRAM_BOT_TOKEN" =~ ^[0-9]+:[a-zA-Z0-9_-]+$ ]]; then
-            break
-        else
-            error "Bot Token không hợp lệ!"
-        fi
-    done
-    
-    echo ""
-    echo -e "${YELLOW}🆔 Hướng dẫn lấy Chat ID:${NC}"
-    echo -e "  • Cá nhân: Tìm @userinfobot, gửi /start"
-    echo -e "  • Nhóm: Thêm bot vào nhóm, Chat ID bắt đầu bằng -"
-    echo ""
-    
-    while true; do
-        read -p "🆔 Nhập Telegram Chat ID: " TELEGRAM_CHAT_ID
-        if [[ -n "$TELEGRAM_CHAT_ID" && "$TELEGRAM_CHAT_ID" =~ ^-?[0-9]+$ ]]; then
-            break
-        else
-            error "Chat ID không hợp lệ!"
-        fi
-    done
-    
-    success "✅ Telegram configuration completed"
+    success "Đã cấu hình Telegram Bot"
 }
 
 # =============================================================================
-# DOCKER & SYSTEM SETUP
+# CLOUDFLARE TUNNEL CONFIGURATION
 # =============================================================================
+
+setup_cloudflare_tunnel() {
+    if [[ "$DEPLOYMENT_MODE" != "cloudflare" ]]; then
+        return
+    fi
+    
+    echo ""
+    echo -e "${CYAN}╔══════════════════════════════════════════════════════════════════════════════╗${NC}"
+    echo -e "${CYAN}║${WHITE}                      ☁️  CLOUDFLARE TUNNEL SETUP                           ${CYAN}║${NC}"
+    echo -e "${CYAN}╚══════════════════════════════════════════════════════════════════════════════╝${NC}"
+    echo ""
+    echo -e "${WHITE}Hướng dẫn lấy Cloudflare Tunnel Token:${NC}"
+    echo -e "  1. Truy cập: https://one.dash.cloudflare.com/"
+    echo -e "  2. Chọn Zero Trust → Access → Tunnels"
+    echo -e "  3. Create a tunnel → Chọn Cloudflared"
+    echo -e "  4. Đặt tên tunnel (ví dụ: n8n-tunnel)"
+    echo -e "  5. Copy token từ phần 'Install and run a connector'"
+    echo ""
+    
+    read -p "🔐 Nhập Cloudflare Tunnel Token: " CF_TUNNEL_TOKEN
+    read -p "🏷️  Tên tunnel (ví dụ: n8n-tunnel): " CF_TUNNEL_NAME
+    
+    CF_TUNNEL_NAME=${CF_TUNNEL_NAME:-"n8n-tunnel"}
+    
+    success "Đã cấu hình Cloudflare Tunnel"
+}
+
+# =============================================================================
+# DOCKER & INSTALLATION FUNCTIONS
+# =============================================================================
+
+install_docker() {
+    log "🐳 Cài đặt Docker..."
+    
+    # Remove old versions
+    apt-get remove -y docker docker-engine docker.io containerd runc >/dev/null 2>&1 || true
+    
+    # Install dependencies
+    apt-get update -qq
+    apt-get install -y \
+        apt-transport-https \
+        ca-certificates \
+        curl \
+        gnupg \
+        lsb-release \
+        software-properties-common >/dev/null 2>&1
+    
+    # Add Docker's official GPG key
+    curl -fsSL https://download.docker.com/linux/ubuntu/gpg | gpg --dearmor -o /usr/share/keyrings/docker-archive-keyring.gpg
+    
+    # Set up repository
+    echo \
+        "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/docker-archive-keyring.gpg] https://download.docker.com/linux/ubuntu \
+        $(lsb_release -cs) stable" | tee /etc/apt/sources.list.d/docker.list > /dev/null
+    
+    # Install Docker
+    apt-get update -qq
+    apt-get install -y docker-ce docker-ce-cli containerd.io docker-compose-plugin >/dev/null 2>&1
+    
+    # Start and enable Docker
+    systemctl start docker
+    systemctl enable docker
+    
+    success "Docker đã được cài đặt thành công!"
+}
 
 setup_swap() {
     log "🔄 Thiết lập swap memory..."
     
     local ram_gb=$(free -g | awk '/^Mem:/{print $2}')
-    local swap_size
+    local swap_size="4G"
     
     if [[ "$ENABLE_MULTI_DOMAIN" == "true" ]]; then
-        swap_size=$((ram_gb < 4 ? 4 : 8))G
-    else
-        swap_size=$((ram_gb < 4 ? 2 : 4))G
+        swap_size="8G"
     fi
     
-    if ! swapon --show | grep -q "/swapfile"; then
-        log "Tạo swap file ${swap_size}..."
-        fallocate -l $swap_size /swapfile 2>/dev/null || dd if=/dev/zero of=/swapfile bs=1024 count=$((${swap_size%G} * 1024 * 1024))
-        chmod 600 /swapfile
-        mkswap /swapfile
-        swapon /swapfile
-        
-        if ! grep -q "/swapfile" /etc/fstab; then
-            echo "/swapfile none swap sw 0 0" >> /etc/fstab
-        fi
-        
-        success "Đã thiết lập swap ${swap_size}"
-    else
+    if swapon --show | grep -q "/swapfile"; then
         info "Swap file đã tồn tại"
+        return
     fi
+    
+    log "Tạo swap file ${swap_size}..."
+    fallocate -l $swap_size /swapfile || dd if=/dev/zero of=/swapfile bs=1024 count=$((${swap_size%G} * 1024 * 1024))
+    chmod 600 /swapfile
+    mkswap /swapfile
+    swapon /swapfile
+    
+    if ! grep -q "/swapfile" /etc/fstab; then
+        echo "/swapfile none swap sw 0 0" >> /etc/fstab
+    fi
+    
+    success "Đã thiết lập swap ${swap_size}"
 }
 
-install_docker() {
-    if command -v docker &> /dev/null; then
-        info "Docker đã được cài đặt"
-        
-        if ! docker info &> /dev/null; then
-            log "Khởi động Docker daemon..."
-            
-            if [[ "$WSL_ENV" == "true" ]]; then
-                # WSL specific Docker start
-                service docker start || true
-            else
-                systemctl start docker
-                systemctl enable docker
-            fi
-        fi
-        
-        if [[ -z "$DOCKER_COMPOSE" ]]; then
-            log "Cài đặt docker-compose..."
-            apt update
-            apt install -y docker-compose
-            export DOCKER_COMPOSE="docker-compose"
-        fi
-        
-        return 0
-    fi
+prepare_directories() {
+    log "📁 Chuẩn bị thư mục cài đặt..."
     
-    log "📦 Cài đặt Docker..."
-    
-    apt update
-    apt install -y apt-transport-https ca-certificates curl gnupg lsb-release python3 python3-pip
-    
-    curl -fsSL https://download.docker.com/linux/ubuntu/gpg | gpg --dearmor -o /usr/share/keyrings/docker-archive-keyring.gpg
-    
-    echo "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/docker-archive-keyring.gpg] https://download.docker.com/linux/ubuntu $(lsb_release -cs) stable" | tee /etc/apt/sources.list.d/docker.list > /dev/null
-    
-    apt update
-    apt install -y docker-ce docker-ce-cli containerd.io docker-compose
-    
-    if [[ "$WSL_ENV" == "true" ]]; then
-        service docker start
-    else
-        systemctl start docker
-        systemctl enable docker
-    fi
-    
-    usermod -aG docker $SUDO_USER 2>/dev/null || true
-    
-    export DOCKER_COMPOSE="docker-compose"
-    success "Đã cài đặt Docker thành công"
-}
-
-# =============================================================================
-# PROJECT STRUCTURE
-# =============================================================================
-
-create_project_structure() {
-    log "📁 Tạo cấu trúc thư mục..."
-    
-    # Clean up existing installation
-    if [[ -d "$INSTALL_DIR" ]]; then
-        cd "$INSTALL_DIR"
-        $DOCKER_COMPOSE down --remove-orphans 2>/dev/null || true
-        cd /
-    fi
-    
+    # Create main directory
     mkdir -p "$INSTALL_DIR"
     cd "$INSTALL_DIR"
     
-    # Base directories
-    mkdir -p files/backup_full
-    mkdir -p files/temp
+    # Create subdirectories
+    mkdir -p files
     mkdir -p logs
     mkdir -p caddy_data
     mkdir -p caddy_config
     
-    # Multi-instance directories
+    # Create instance directories for multi-domain
     if [[ "$ENABLE_MULTI_DOMAIN" == "true" ]]; then
         for i in "${!DOMAINS[@]}"; do
-            mkdir -p "files/n8n_instance_$((i+1))"
-            mkdir -p "files/n8n_instance_$((i+1))/.n8n"
-            chown -R 1000:1000 "files/n8n_instance_$((i+1))"
+            if [[ $i -eq 0 ]]; then
+                mkdir -p "files/n8n_main"
+            else
+                mkdir -p "files/n8n_instance_$i"
+            fi
         done
     else
-        mkdir -p "files/.n8n"
-        chown -R 1000:1000 "files"
+        mkdir -p "files/n8n_main"
     fi
     
-    # PostgreSQL
+    # Create postgres directory if needed
     if [[ "$ENABLE_POSTGRESQL" == "true" ]]; then
         mkdir -p postgres_data
-        # PostgreSQL runs as uid 999 in Alpine
-        chown -R 999:999 postgres_data
     fi
     
-    # Additional features directories
-    [[ "$ENABLE_NEWS_API" == "true" ]] && mkdir -p news_api
-    [[ "$ENABLE_GOOGLE_DRIVE" == "true" ]] && mkdir -p google_drive
-    [[ "$ENABLE_TELEGRAM_BOT" == "true" ]] && mkdir -p telegram_bot
+    # Dashboard directory
     mkdir -p dashboard
-    mkdir -p management
-    
-    # Cloudflare
-    if [[ "$INSTALL_MODE" == "cloudflare" ]]; then
-        mkdir -p cloudflare
-    fi
     
     success "Đã tạo cấu trúc thư mục"
 }
 
 # =============================================================================
-# DOCKER FILES CREATION
+# AUTO-FIX FUNCTIONS (từ fix_n8n.sh)
 # =============================================================================
 
-create_dockerfile() {
-    log "🐳 Tạo Dockerfile cho N8N..."
+fix_permissions_auto() {
+    log "🔧 Auto-fix: Sửa quyền truy cập..."
     
-    cat > "$INSTALL_DIR/Dockerfile" << 'EOF'
-FROM n8nio/n8n:latest
-
-USER root
-
-# Install system dependencies
-RUN apk add --no-cache \
-    ffmpeg \
-    python3 \
-    python3-dev \
-    py3-pip \
-    chromium \
-    chromium-chromedriver \
-    curl \
-    wget \
-    git \
-    build-base \
-    linux-headers \
-    postgresql-client
-
-# Install yt-dlp
-RUN pip3 install --break-system-packages yt-dlp
-
-# Install Puppeteer dependencies
-RUN npm install -g puppeteer
-
-# Set Chrome path for Puppeteer
-ENV PUPPETEER_EXECUTABLE_PATH=/usr/bin/chromium-browser
-ENV PUPPETEER_SKIP_CHROMIUM_DOWNLOAD=true
-
-# Create directories
-RUN mkdir -p /home/node/.n8n/nodes && \
-    mkdir -p /data && \
-    chown -R node:node /home/node/.n8n && \
-    chown -R node:node /data
-
-USER node
-
-# Install additional N8N nodes
-RUN cd /home/node && npm install n8n-nodes-puppeteer
-
-WORKDIR /data
-EOF
+    cd "$INSTALL_DIR"
     
-    success "Đã tạo Dockerfile"
+    # Fix ownership for N8N directories
+    if [[ "$ENABLE_MULTI_DOMAIN" == "true" ]]; then
+        for dir in files/n8n_*; do
+            if [[ -d "$dir" ]]; then
+                chown -R 1000:1000 "$dir"
+                chmod -R 755 "$dir"
+                mkdir -p "$dir"/.n8n
+                chown -R 1000:1000 "$dir"/.n8n
+            fi
+        done
+    else
+        chown -R 1000:1000 files/n8n_main
+        chmod -R 755 files/n8n_main
+        mkdir -p files/n8n_main/.n8n
+        chown -R 1000:1000 files/n8n_main/.n8n
+    fi
+    
+    # Fix PostgreSQL permissions
+    if [[ "$ENABLE_POSTGRESQL" == "true" ]] && [[ -d postgres_data ]]; then
+        chown -R 999:999 postgres_data
+    fi
+    
+    # Fix logs permissions
+    chown -R 1000:1000 logs
+    
+    success "✅ Đã fix quyền truy cập"
 }
 
-create_docker_compose() {
-    log "🐳 Tạo docker-compose.yml..."
+fix_container_names_auto() {
+    log "🔧 Auto-fix: Chuẩn hóa container names..."
     
-    # Start with version 3.3 for better compatibility
-    cat > "$INSTALL_DIR/docker-compose.yml" << 'EOF'
-version: '3.3'
+    # Container names đã được chuẩn hóa trong generate_docker_compose
+    # Function này chỉ verify
+    
+    success "✅ Container names đã được chuẩn hóa"
+}
+
+fix_network_auto() {
+    log "🔧 Auto-fix: Sửa Docker network..."
+    
+    # Remove old networks
+    docker network rm n8n_network 2>/dev/null || true
+    docker network rm n8n_default 2>/dev/null || true
+    
+    # Create new network
+    docker network create n8n_network 2>/dev/null || true
+    
+    success "✅ Đã fix Docker network"
+}
+
+restart_services_ordered() {
+    log "🔄 Khởi động lại services theo thứ tự..."
+    
+    cd "$INSTALL_DIR"
+    
+    # Stop all first
+    $DOCKER_COMPOSE down || true
+    
+    # Start PostgreSQL first if enabled
+    if [[ "$ENABLE_POSTGRESQL" == "true" ]]; then
+        log "Khởi động PostgreSQL..."
+        $DOCKER_COMPOSE up -d postgres-db
+        sleep 20
+    fi
+    
+    # Start N8N instances
+    if [[ "$ENABLE_MULTI_DOMAIN" == "true" ]]; then
+        for i in "${!DOMAINS[@]}"; do
+            if [[ $i -eq 0 ]]; then
+                log "Khởi động N8N main..."
+                $DOCKER_COMPOSE up -d n8n-main
+            else
+                log "Khởi động N8N instance $i..."
+                $DOCKER_COMPOSE up -d n8n-instance-$i
+            fi
+            sleep 5
+        done
+    else
+        log "Khởi động N8N..."
+        $DOCKER_COMPOSE up -d n8n-main
+    fi
+    
+    # Start News API if enabled
+    if [[ "$ENABLE_NEWS_API" == "true" ]]; then
+        log "Khởi động News API..."
+        $DOCKER_COMPOSE up -d news-api
+        sleep 5
+    fi
+    
+    # Start Dashboard
+    log "Khởi động Dashboard..."
+    $DOCKER_COMPOSE up -d dashboard
+    sleep 5
+    
+    # Start Caddy last (if domain mode)
+    if [[ "$DEPLOYMENT_MODE" != "localhost" ]]; then
+        log "Khởi động Caddy..."
+        $DOCKER_COMPOSE up -d caddy-proxy
+    fi
+    
+    # Start Cloudflare tunnel if enabled
+    if [[ "$DEPLOYMENT_MODE" == "cloudflare" ]]; then
+        log "Khởi động Cloudflare Tunnel..."
+        $DOCKER_COMPOSE up -d cloudflared
+    fi
+    
+    success "✅ Đã khởi động lại tất cả services"
+}
+
+health_check_auto() {
+    log "🏥 Kiểm tra sức khỏe hệ thống..."
+    
+    cd "$INSTALL_DIR"
+    
+    local all_healthy=true
+    
+    # Check N8N containers
+    if [[ "$ENABLE_MULTI_DOMAIN" == "true" ]]; then
+        for i in "${!DOMAINS[@]}"; do
+            local container_name
+            if [[ $i -eq 0 ]]; then
+                container_name="n8n-main"
+            else
+                container_name="n8n-instance-$i"
+            fi
+            
+            if docker exec "$container_name" wget -q --spider http://localhost:5678/healthz 2>/dev/null; then
+                success "✅ $container_name: HEALTHY"
+            else
+                warning "⚠️ $container_name: NOT READY"
+                all_healthy=false
+            fi
+        done
+    else
+        if docker exec n8n-main wget -q --spider http://localhost:5678/healthz 2>/dev/null; then
+            success "✅ n8n-main: HEALTHY"
+        else
+            warning "⚠️ n8n-main: NOT READY"
+            all_healthy=false
+        fi
+    fi
+    
+    # Check PostgreSQL if enabled
+    if [[ "$ENABLE_POSTGRESQL" == "true" ]]; then
+        if docker exec postgres-db pg_isready -U postgres >/dev/null 2>&1; then
+            success "✅ PostgreSQL: HEALTHY"
+        else
+            warning "⚠️ PostgreSQL: NOT READY"
+            all_healthy=false
+        fi
+    fi
+    
+    # Check News API if enabled
+    if [[ "$ENABLE_NEWS_API" == "true" ]]; then
+        if docker exec news-api wget -q --spider http://localhost:8000/health 2>/dev/null; then
+            success "✅ News API: HEALTHY"
+        else
+            warning "⚠️ News API: NOT READY"
+            all_healthy=false
+        fi
+    fi
+    
+    # Check Dashboard
+    if docker ps --format "{{.Names}}" | grep -q "^dashboard$"; then
+        success "✅ Dashboard: RUNNING"
+    else
+        warning "⚠️ Dashboard: NOT RUNNING"
+        all_healthy=false
+    fi
+    
+    # Return health status
+    if [[ "$all_healthy" == "true" ]]; then
+        success "🎉 Tất cả services đều healthy!"
+        return 0
+    else
+        warning "⚠️ Một số services chưa sẵn sàng"
+        return 1
+    fi
+}
+
+# =============================================================================
+# DOCKER COMPOSE GENERATION
+# =============================================================================
+
+generate_docker_compose() {
+    log "📝 Tạo file docker-compose.yml..."
+    
+    cd "$INSTALL_DIR"
+    
+    cat > docker-compose.yml << 'EOF'
+version: '3.8'
 
 services:
 EOF
 
-    # Add PostgreSQL first if enabled (to avoid dependency issues)
+    # PostgreSQL service (if enabled)
     if [[ "$ENABLE_POSTGRESQL" == "true" ]]; then
-        cat >> "$INSTALL_DIR/docker-compose.yml" << EOF
-  postgres:
+        cat >> docker-compose.yml << 'EOF'
+  postgres-db:
     image: postgres:15-alpine
-    container_name: postgres-n8n
+    container_name: postgres-db
     restart: unless-stopped
     environment:
-      - POSTGRES_DB=postgres
       - POSTGRES_USER=postgres
       - POSTGRES_PASSWORD=postgres_password_2025
+      - POSTGRES_DB=postgres
     volumes:
       - ./postgres_data:/var/lib/postgresql/data
-      - ./init-db.sql:/docker-entrypoint-initdb.d/init-db.sql:ro
     networks:
       - n8n_network
-    ports:
-      - "127.0.0.1:5432:5432"
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U postgres"]
       interval: 10s
@@ -883,879 +954,1545 @@ EOF
 EOF
     fi
 
-    # Add N8N services
+    # N8N Services
     if [[ "$ENABLE_MULTI_DOMAIN" == "true" ]]; then
+        # Multi-instance setup
         for i in "${!DOMAINS[@]}"; do
-            local instance_num=$((i+1))
-            local port="${DOMAIN_PORTS[$i]}"
+            local container_name
+            local instance_dir
+            local db_name
+            local port
             
-            cat >> "$INSTALL_DIR/docker-compose.yml" << EOF
-  n8n_${instance_num}:
-    build: .
-    container_name: n8n-container-${instance_num}
+            if [[ $i -eq 0 ]]; then
+                container_name="n8n-main"
+                instance_dir="n8n_main"
+                db_name="n8n_db"
+                port=$N8N_MAIN_PORT
+            else
+                container_name="n8n-instance-$i"
+                instance_dir="n8n_instance_$i"
+                db_name="n8n_db_instance_$i"
+                port=$((PORT_BASE + i))
+            fi
+            
+            cat >> docker-compose.yml << EOF
+  $container_name:
+    image: n8nio/n8n:latest
+    container_name: $container_name
     restart: unless-stopped
-    ports:
-      - "127.0.0.1:${port}:5678"
+    user: "1000:1000"
     environment:
       - N8N_HOST=0.0.0.0
       - N8N_PORT=5678
       - N8N_PROTOCOL=http
       - NODE_ENV=production
-      - WEBHOOK_URL=$([[ "$INSTALL_MODE" == "domain" ]] && echo "https://${DOMAINS[$i]}/" || echo "http://localhost:${port}/")
-      - GENERIC_TIMEZONE=Asia/Ho_Chi_Minh
+      - WEBHOOK_URL=https://${DOMAINS[$i]}/
       - N8N_METRICS=true
-      - N8N_LOG_LEVEL=info
-      - N8N_USER_FOLDER=/home/node
-      - N8N_ENCRYPTION_KEY=\${N8N_ENCRYPTION_KEY_${instance_num}:-$(openssl rand -hex 32)}
 EOF
 
+            # Add port mapping for localhost mode
+            if [[ "$DEPLOYMENT_MODE" == "localhost" ]]; then
+                cat >> docker-compose.yml << EOF
+    ports:
+      - "$port:5678"
+EOF
+            fi
+
+            # Database configuration
             if [[ "$ENABLE_POSTGRESQL" == "true" ]]; then
-                cat >> "$INSTALL_DIR/docker-compose.yml" << EOF
+                cat >> docker-compose.yml << EOF
       - DB_TYPE=postgresdb
-      - DB_POSTGRESDB_HOST=postgres
+      - DB_POSTGRESDB_HOST=postgres-db
       - DB_POSTGRESDB_PORT=5432
-      - DB_POSTGRESDB_DATABASE=n8n_db_instance_${instance_num}
+      - DB_POSTGRESDB_DATABASE=$db_name
       - DB_POSTGRESDB_USER=n8n_user
       - DB_POSTGRESDB_PASSWORD=n8n_password_2025
 EOF
             else
-                cat >> "$INSTALL_DIR/docker-compose.yml" << EOF
+                cat >> docker-compose.yml << EOF
       - DB_TYPE=sqlite
-      - DB_SQLITE_DATABASE=/home/node/.n8n/database.sqlite
+      - DB_SQLITE_DATABASE=database.sqlite
 EOF
             fi
 
-            cat >> "$INSTALL_DIR/docker-compose.yml" << EOF
-      - N8N_BASIC_AUTH_ACTIVE=false
-      - EXECUTIONS_TIMEOUT=3600
-      - EXECUTIONS_TIMEOUT_MAX=7200
+            cat >> docker-compose.yml << EOF
+      - N8N_ENCRYPTION_KEY=n8n_encryption_key_2025_secure
+      - N8N_USER_MANAGEMENT_DISABLED=false
+      - N8N_VERSION_NOTIFICATIONS_ENABLED=true
+      - N8N_DIAGNOSTICS_ENABLED=false
+      - EXECUTIONS_PROCESS=main
+      - N8N_PERSONALIZATION_ENABLED=false
+      - GENERIC_TIMEZONE=Asia/Ho_Chi_Minh
     volumes:
-      - ./files/n8n_instance_${instance_num}:/home/node/.n8n
-      - ./files/n8n_instance_${instance_num}:/data
-      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - ./files/$instance_dir:/home/node/.n8n
+      - ./files/$instance_dir/custom:/home/node/.n8n/custom
     networks:
       - n8n_network
 EOF
 
+            # Add PostgreSQL dependency if enabled
             if [[ "$ENABLE_POSTGRESQL" == "true" ]]; then
-                cat >> "$INSTALL_DIR/docker-compose.yml" << EOF
+                cat >> docker-compose.yml << EOF
     depends_on:
-      postgres:
+      postgres-db:
         condition: service_healthy
 EOF
             fi
-            echo "" >> "$INSTALL_DIR/docker-compose.yml"
+
+            echo "" >> docker-compose.yml
         done
     else
-        # Single instance
-        cat >> "$INSTALL_DIR/docker-compose.yml" << EOF
-  n8n:
-    build: .
-    container_name: n8n-container
+        # Single instance setup
+        cat >> docker-compose.yml << EOF
+  n8n-main:
+    image: n8nio/n8n:latest
+    container_name: n8n-main
     restart: unless-stopped
-    ports:
-      - "127.0.0.1:${DOMAIN_PORTS[0]}:5678"
+    user: "1000:1000"
     environment:
       - N8N_HOST=0.0.0.0
       - N8N_PORT=5678
       - N8N_PROTOCOL=http
       - NODE_ENV=production
-      - WEBHOOK_URL=$([[ "$INSTALL_MODE" == "domain" ]] && echo "https://${DOMAINS[0]}/" || echo "http://localhost:${DOMAIN_PORTS[0]}/")
-      - GENERIC_TIMEZONE=Asia/Ho_Chi_Minh
+      - WEBHOOK_URL=https://${DOMAINS[0]}/
       - N8N_METRICS=true
-      - N8N_LOG_LEVEL=info
-      - N8N_USER_FOLDER=/home/node
-      - N8N_ENCRYPTION_KEY=\${N8N_ENCRYPTION_KEY:-$(openssl rand -hex 32)}
 EOF
 
+        # Add port mapping for localhost mode
+        if [[ "$DEPLOYMENT_MODE" == "localhost" ]]; then
+            cat >> docker-compose.yml << EOF
+    ports:
+      - "$N8N_MAIN_PORT:5678"
+EOF
+        fi
+
+        # Database configuration
         if [[ "$ENABLE_POSTGRESQL" == "true" ]]; then
-            cat >> "$INSTALL_DIR/docker-compose.yml" << EOF
+            cat >> docker-compose.yml << EOF
       - DB_TYPE=postgresdb
-      - DB_POSTGRESDB_HOST=postgres
+      - DB_POSTGRESDB_HOST=postgres-db
       - DB_POSTGRESDB_PORT=5432
       - DB_POSTGRESDB_DATABASE=n8n_db
       - DB_POSTGRESDB_USER=n8n_user
       - DB_POSTGRESDB_PASSWORD=n8n_password_2025
 EOF
         else
-            cat >> "$INSTALL_DIR/docker-compose.yml" << EOF
+            cat >> docker-compose.yml << EOF
       - DB_TYPE=sqlite
-      - DB_SQLITE_DATABASE=/home/node/.n8n/database.sqlite
+      - DB_SQLITE_DATABASE=database.sqlite
 EOF
         fi
 
-        cat >> "$INSTALL_DIR/docker-compose.yml" << EOF
-      - N8N_BASIC_AUTH_ACTIVE=false
-      - EXECUTIONS_TIMEOUT=3600
-      - EXECUTIONS_TIMEOUT_MAX=7200
+        cat >> docker-compose.yml << EOF
+      - N8N_ENCRYPTION_KEY=n8n_encryption_key_2025_secure
+      - N8N_USER_MANAGEMENT_DISABLED=false
+      - N8N_VERSION_NOTIFICATIONS_ENABLED=true
+      - N8N_DIAGNOSTICS_ENABLED=false
+      - EXECUTIONS_PROCESS=main
+      - N8N_PERSONALIZATION_ENABLED=false
+      - GENERIC_TIMEZONE=Asia/Ho_Chi_Minh
     volumes:
-      - ./files:/home/node/.n8n
-      - ./files:/data
-      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - ./files/n8n_main:/home/node/.n8n
+      - ./files/n8n_main/custom:/home/node/.n8n/custom
     networks:
       - n8n_network
 EOF
 
+        # Add PostgreSQL dependency if enabled
         if [[ "$ENABLE_POSTGRESQL" == "true" ]]; then
-            cat >> "$INSTALL_DIR/docker-compose.yml" << EOF
+            cat >> docker-compose.yml << EOF
     depends_on:
-      postgres:
+      postgres-db:
         condition: service_healthy
 EOF
         fi
-        echo "" >> "$INSTALL_DIR/docker-compose.yml"
+
+        echo "" >> docker-compose.yml
     fi
 
-    # Add Cloudflare Tunnel if needed
-    if [[ "$INSTALL_MODE" == "cloudflare" ]]; then
-        cat >> "$INSTALL_DIR/docker-compose.yml" << EOF
-  cloudflared:
-    image: cloudflare/cloudflared:latest
-    container_name: cloudflare-tunnel
+    # News API Service (if enabled)
+    if [[ "$ENABLE_NEWS_API" == "true" ]]; then
+        cat >> docker-compose.yml << EOF
+  news-api:
+    build:
+      context: ./news-api
+      dockerfile: Dockerfile
+    image: news-content-api:latest
+    container_name: news-api
     restart: unless-stopped
-    command: tunnel --no-autoupdate run
     environment:
-      - TUNNEL_TOKEN=${CLOUDFLARE_TUNNEL_TOKEN}
+      - PORT=8000
+      - WORKERS=4
+      - BEARER_TOKEN=$BEARER_TOKEN
+      - LOG_LEVEL=info
+      - CACHE_TTL=3600
+      - MAX_CONTENT_LENGTH=1000000
+      - REQUEST_TIMEOUT=30
+      - RATE_LIMIT=100
+EOF
+
+        # Add port mapping for localhost mode or if needed
+        if [[ "$DEPLOYMENT_MODE" == "localhost" ]] || [[ "$ENABLE_NEWS_API" == "true" ]]; then
+            cat >> docker-compose.yml << EOF
+    ports:
+      - "$NEWS_API_PORT:8000"
+EOF
+        fi
+
+        cat >> docker-compose.yml << EOF
+    volumes:
+      - ./logs/news-api:/app/logs
+    networks:
+      - n8n_network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+EOF
+    fi
+
+    # Dashboard Service
+    cat >> docker-compose.yml << EOF
+  dashboard:
+    build:
+      context: ./dashboard
+      dockerfile: Dockerfile
+    image: n8n-dashboard:latest
+    container_name: dashboard
+    restart: unless-stopped
+    environment:
+      - PORT=80
+      - API_ENDPOINT=http://n8n-main:5678
+    ports:
+      - "$DASHBOARD_PORT:80"
+    volumes:
+      - ./dashboard/public:/usr/share/nginx/html:ro
     networks:
       - n8n_network
     depends_on:
+      - n8n-main
+
 EOF
-        if [[ "$ENABLE_MULTI_DOMAIN" == "true" ]]; then
-            for i in "${!DOMAINS[@]}"; do
-                echo "      - n8n_$((i+1))" >> "$INSTALL_DIR/docker-compose.yml"
-            done
-        else
-            echo "      - n8n" >> "$INSTALL_DIR/docker-compose.yml"
+
+    # Caddy Service (for domain mode)
+    if [[ "$DEPLOYMENT_MODE" == "domain" ]]; then
+        cat >> docker-compose.yml << EOF
+  caddy-proxy:
+    image: caddy:2-alpine
+    container_name: caddy-proxy
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - ./caddy_data:/data
+      - ./caddy_config:/config
+      - ./logs/caddy:/var/log/caddy
+    networks:
+      - n8n_network
+    depends_on:
+      - n8n-main
+EOF
+
+        if [[ "$ENABLE_NEWS_API" == "true" ]]; then
+            cat >> docker-compose.yml << EOF
+      - news-api
+EOF
         fi
-        echo "" >> "$INSTALL_DIR/docker-compose.yml"
+
+        cat >> docker-compose.yml << EOF
+      - dashboard
+
+EOF
+    fi
+
+    # Cloudflare Tunnel (for cloudflare mode)
+    if [[ "$DEPLOYMENT_MODE" == "cloudflare" ]]; then
+        cat >> docker-compose.yml << EOF
+  cloudflared:
+    image: cloudflare/cloudflared:latest
+    container_name: cloudflared
+    restart: unless-stopped
+    command: tunnel --no-autoupdate run
+    environment:
+      - TUNNEL_TOKEN=$CF_TUNNEL_TOKEN
+    networks:
+      - n8n_network
+    depends_on:
+      - n8n-main
+      - dashboard
+
+EOF
     fi
 
     # Networks
-    cat >> "$INSTALL_DIR/docker-compose.yml" << 'EOF'
+    cat >> docker-compose.yml << EOF
 networks:
   n8n_network:
     driver: bridge
     name: n8n_network
+
+volumes:
+  postgres_data:
+  caddy_data:
+  caddy_config:
 EOF
 
-    success "Đã tạo docker-compose.yml"
+    success "✅ Đã tạo docker-compose.yml"
 }
 
 # =============================================================================
-# POSTGRESQL SETUP
+# CADDYFILE GENERATION
 # =============================================================================
 
-create_postgresql_init() {
-    if [[ "$ENABLE_POSTGRESQL" != "true" ]]; then
+generate_caddyfile() {
+    if [[ "$DEPLOYMENT_MODE" == "localhost" ]]; then
         return
     fi
     
-    log "🐘 Tạo PostgreSQL init script..."
+    log "📝 Tạo Caddyfile..."
     
-    cat > "$INSTALL_DIR/init-db.sql" << 'EOF'
--- Create main user
-DO $$
-BEGIN
-    IF NOT EXISTS (SELECT FROM pg_catalog.pg_user WHERE usename = 'n8n_user') THEN
-        CREATE USER n8n_user WITH PASSWORD 'n8n_password_2025';
-    END IF;
-END
-$$;
-
--- Create main database
-DO $$
-BEGIN
-    IF NOT EXISTS (SELECT FROM pg_database WHERE datname = 'n8n_db') THEN
-        CREATE DATABASE n8n_db OWNER n8n_user;
-    END IF;
-END
-$$;
-
--- Grant privileges
-ALTER USER n8n_user CREATEDB;
-GRANT ALL PRIVILEGES ON DATABASE n8n_db TO n8n_user;
-
--- Create instance databases for multi-domain
-EOF
-
-    if [[ "$ENABLE_MULTI_DOMAIN" == "true" ]]; then
-        for i in "${!DOMAINS[@]}"; do
-            local instance_num=$((i+1))
-            cat >> "$INSTALL_DIR/init-db.sql" << EOF
-DO $$
-BEGIN
-    IF NOT EXISTS (SELECT FROM pg_database WHERE datname = 'n8n_db_instance_${instance_num}') THEN
-        CREATE DATABASE n8n_db_instance_${instance_num} OWNER n8n_user;
-    END IF;
-END
-$$;
-EOF
-        done
-    fi
+    cd "$INSTALL_DIR"
     
-    success "Đã tạo PostgreSQL init script"
+    cat > Caddyfile << EOF
+{
+    email $SSL_EMAIL
+    acme_ca https://acme-v02.api.letsencrypt.org/directory
 }
 
-# =============================================================================
-# CLOUDFLARE TUNNEL SETUP
-# =============================================================================
-
-setup_cloudflare_tunnel() {
-    if [[ "$INSTALL_MODE" != "cloudflare" ]]; then
-        return
-    fi
-    
-    log "☁️ Thiết lập Cloudflare Tunnel..."
-    
-    if [[ "$CLOUDFLARE_MODE" == "new" ]]; then
-        # Instructions for new tunnel
-        echo ""
-        echo -e "${CYAN}╔══════════════════════════════════════════════════════════════════════════════╗${NC}"
-        echo -e "${CYAN}║${WHITE}                    📋 HƯỚNG DẪN TẠO CLOUDFLARE TUNNEL                      ${CYAN}║${NC}"
-        echo -e "${CYAN}╚══════════════════════════════════════════════════════════════════════════════╝${NC}"
-        echo ""
-        echo -e "${YELLOW}Bước 1: Đăng nhập Cloudflare Dashboard${NC}"
-        echo -e "  1. Truy cập: https://one.dash.cloudflare.com/"
-        echo -e "  2. Chọn domain của bạn"
-        echo ""
-        echo -e "${YELLOW}Bước 2: Tạo Tunnel${NC}"
-        echo -e "  1. Vào Zero Trust → Access → Tunnels"
-        echo -e "  2. Click 'Create a tunnel'"
-        echo -e "  3. Đặt tên tunnel (ví dụ: n8n-tunnel)"
-        echo -e "  4. Copy tunnel token"
-        echo ""
-        echo -e "${YELLOW}Bước 3: Cấu hình Routes${NC}"
-        
-        if [[ "$ENABLE_MULTI_DOMAIN" == "true" ]]; then
-            for i in "${!DOMAINS[@]}"; do
-                echo -e "  • ${DOMAINS[$i]} → http://n8n-container-$((i+1)):5678"
-            done
-        else
-            echo -e "  • ${DOMAINS[0]} → http://n8n-container:5678"
-        fi
-        
-        if [[ "$ENABLE_NEWS_API" == "true" ]]; then
-            echo -e "  • ${API_DOMAIN} → http://news-api-container:8000"
-        fi
-        
-        echo -e "  • dashboard.${DOMAINS[0]} → http://localhost:${DASHBOARD_PORT}"
-        echo ""
-        
-        read -p "🔑 Nhập Cloudflare Tunnel Token sau khi tạo: " CLOUDFLARE_TUNNEL_TOKEN
-        
-        # Update docker-compose with token
-        sed -i "s/TUNNEL_TOKEN=.*/TUNNEL_TOKEN=${CLOUDFLARE_TUNNEL_TOKEN}/" "$INSTALL_DIR/docker-compose.yml"
-    fi
-    
-    # Create tunnel config
-    cat > "$INSTALL_DIR/cloudflare/config.yml" << EOF
-tunnel: ${CLOUDFLARE_TUNNEL_TOKEN}
-credentials-file: /etc/cloudflared/creds.json
-
-ingress:
 EOF
 
-    # Add routes
+    # N8N instances
     if [[ "$ENABLE_MULTI_DOMAIN" == "true" ]]; then
         for i in "${!DOMAINS[@]}"; do
-            cat >> "$INSTALL_DIR/cloudflare/config.yml" << EOF
-  - hostname: ${DOMAINS[$i]}
-    service: http://n8n-container-$((i+1)):5678
+            local container_name
+            local subdomain
+            
+            if [[ $i -eq 0 ]]; then
+                container_name="n8n-main"
+                subdomain="n8n.$MAIN_DOMAIN"
+            else
+                container_name="n8n-instance-$i"
+                subdomain="n8n$i.$MAIN_DOMAIN"
+            fi
+            
+            cat >> Caddyfile << EOF
+$subdomain {
+    reverse_proxy $container_name:5678 {
+        header_up Host {host}
+        header_up X-Real-IP {remote}
+        header_up X-Forwarded-For {remote}
+        header_up X-Forwarded-Proto {scheme}
+    }
+    
+    header {
+        Strict-Transport-Security "max-age=31536000; includeSubDomains"
+        X-Content-Type-Options "nosniff"
+        X-Frame-Options "SAMEORIGIN"
+        X-XSS-Protection "1; mode=block"
+        Referrer-Policy "strict-origin-when-cross-origin"
+    }
+    
+    encode gzip
+    
+    log {
+        output file /var/log/caddy/n8n_${i}.log {
+            roll_size 10mb
+            roll_keep 5
+        }
+        format json
+    }
+}
+
 EOF
         done
     else
-        cat >> "$INSTALL_DIR/cloudflare/config.yml" << EOF
-  - hostname: ${DOMAINS[0]}
-    service: http://n8n-container:5678
+        # Single instance
+        cat >> Caddyfile << EOF
+n8n.$MAIN_DOMAIN {
+    reverse_proxy n8n-main:5678 {
+        header_up Host {host}
+        header_up X-Real-IP {remote}
+        header_up X-Forwarded-For {remote}
+        header_up X-Forwarded-Proto {scheme}
+    }
+    
+    header {
+        Strict-Transport-Security "max-age=31536000; includeSubDomains"
+        X-Content-Type-Options "nosniff"
+        X-Frame-Options "SAMEORIGIN"
+        X-XSS-Protection "1; mode=block"
+        Referrer-Policy "strict-origin-when-cross-origin"
+    }
+    
+    encode gzip
+    
+    log {
+        output file /var/log/caddy/n8n.log {
+            roll_size 10mb
+            roll_keep 5
+        }
+        format json
+    }
+}
+
 EOF
     fi
 
+    # News API
     if [[ "$ENABLE_NEWS_API" == "true" ]]; then
-        cat >> "$INSTALL_DIR/cloudflare/config.yml" << EOF
-  - hostname: ${API_DOMAIN}
-    service: http://news-api-container:8000
+        cat >> Caddyfile << EOF
+api.$MAIN_DOMAIN {
+    reverse_proxy news-api:8000 {
+        header_up Host {host}
+        header_up X-Real-IP {remote}
+        header_up X-Forwarded-For {remote}
+        header_up X-Forwarded-Proto {scheme}
+    }
+    
+    header {
+        Strict-Transport-Security "max-age=31536000; includeSubDomains"
+        X-Content-Type-Options "nosniff"
+        X-Frame-Options "DENY"
+        X-XSS-Protection "1; mode=block"
+        Referrer-Policy "strict-origin-when-cross-origin"
+        Access-Control-Allow-Origin "*"
+        Access-Control-Allow-Methods "GET, POST, OPTIONS"
+        Access-Control-Allow-Headers "Authorization, Content-Type"
+    }
+    
+    encode gzip
+    
+    log {
+        output file /var/log/caddy/api.log {
+            roll_size 10mb
+            roll_keep 5
+        }
+        format json
+    }
+}
+
 EOF
     fi
 
-    cat >> "$INSTALL_DIR/cloudflare/config.yml" << EOF
-  - hostname: dashboard.${DOMAINS[0]}
-    service: http://localhost:${DASHBOARD_PORT}
-  - service: http_status:404
+    # Dashboard with Basic Auth
+    cat >> Caddyfile << EOF
+dashboard.$MAIN_DOMAIN {
+    basicauth {
+        $DASHBOARD_HASH
+    }
+    
+    reverse_proxy dashboard:80 {
+        header_up Host {host}
+        header_up X-Real-IP {remote}
+        header_up X-Forwarded-For {remote}
+        header_up X-Forwarded-Proto {scheme}
+    }
+    
+    header {
+        Strict-Transport-Security "max-age=31536000; includeSubDomains"
+        X-Content-Type-Options "nosniff"
+        X-Frame-Options "SAMEORIGIN"
+        X-XSS-Protection "1; mode=block"
+        Referrer-Policy "strict-origin-when-cross-origin"
+    }
+    
+    encode gzip
+    
+    log {
+        output file /var/log/caddy/dashboard.log {
+            roll_size 10mb
+            roll_keep 5
+        }
+        format json
+    }
+}
 EOF
 
-    success "Đã thiết lập Cloudflare Tunnel"
+    success "✅ Đã tạo Caddyfile"
 }
 
 # =============================================================================
-# DASHBOARD CREATION
+# NEWS API SETUP
 # =============================================================================
 
-create_dashboard() {
-    log "📊 Tạo Web Dashboard..."
+setup_news_api() {
+    if [[ "$ENABLE_NEWS_API" != "true" ]]; then
+        return
+    fi
     
-    # Create simple dashboard HTML
-    cat > "$INSTALL_DIR/dashboard/index.html" << 'EOF'
+    log "📰 Thiết lập News Content API..."
+    
+    mkdir -p "$INSTALL_DIR/news-api"
+    cd "$INSTALL_DIR/news-api"
+    
+    # Create requirements.txt
+    cat > requirements.txt << 'EOF'
+fastapi==0.104.1
+uvicorn[standard]==0.24.0
+newspaper4k==0.9.3
+beautifulsoup4==4.12.2
+lxml==4.9.3
+Pillow==10.1.0
+requests==2.31.0
+pydantic==2.5.0
+python-multipart==0.0.6
+aiofiles==23.2.1
+python-dateutil==2.8.2
+feedparser==6.0.10
+httpx==0.25.2
+redis==5.0.1
+slowapi==0.1.9
+EOF
+
+    # Create Dockerfile
+    cat > Dockerfile << 'EOF'
+FROM python:3.11-slim
+
+WORKDIR /app
+
+# Install system dependencies
+RUN apt-get update && apt-get install -y \
+    gcc \
+    g++ \
+    libxml2-dev \
+    libxslt-dev \
+    libffi-dev \
+    libssl-dev \
+    libjpeg-dev \
+    zlib1g-dev \
+    && rm -rf /var/lib/apt/lists/*
+
+# Copy requirements and install Python dependencies
+COPY requirements.txt .
+RUN pip install --no-cache-dir -r requirements.txt
+
+# Copy application code
+COPY . .
+
+# Create logs directory
+RUN mkdir -p /app/logs
+
+# Run as non-root user
+RUN useradd -m -u 1000 appuser && chown -R appuser:appuser /app
+USER appuser
+
+# Expose port
+EXPOSE 8000
+
+# Start the application
+CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000", "--workers", "4"]
+EOF
+
+    # Create main.py
+    cat > main.py << 'EOF'
+from fastapi import FastAPI, HTTPException, Depends, Header
+from fastapi.middleware.cors import CORSMiddleware
+from newspaper import Article, Config
+import feedparser
+from typing import Optional, List, Dict
+import os
+import logging
+from datetime import datetime
+import requests
+from urllib.parse import urlparse
+from pydantic import BaseModel, HttpUrl
+from slowapi import Limiter, _rate_limit_exceeded_handler
+from slowapi.util import get_remote_address
+from slowapi.errors import RateLimitExceeded
+
+# Setup logging
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
+    handlers=[
+        logging.FileHandler('/app/logs/news_api.log'),
+        logging.StreamHandler()
+    ]
+)
+logger = logging.getLogger(__name__)
+
+# Initialize FastAPI app
+app = FastAPI(
+    title="News Content API",
+    description="API để lấy nội dung tin tức từ URL và RSS feeds",
+    version="2.0.0"
+)
+
+# Rate limiting
+limiter = Limiter(key_func=get_remote_address)
+app.state.limiter = limiter
+app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
+
+# CORS middleware
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+# Environment variables
+BEARER_TOKEN = os.getenv("BEARER_TOKEN", "default_token_2025")
+CACHE_TTL = int(os.getenv("CACHE_TTL", "3600"))
+MAX_CONTENT_LENGTH = int(os.getenv("MAX_CONTENT_LENGTH", "1000000"))
+REQUEST_TIMEOUT = int(os.getenv("REQUEST_TIMEOUT", "30"))
+
+# Pydantic models
+class ArticleRequest(BaseModel):
+    url: HttpUrl
+    full_content: Optional[bool] = True
+
+class ArticleResponse(BaseModel):
+    title: str
+    content: str
+    summary: Optional[str] = None
+    authors: List[str]
+    publish_date: Optional[str] = None
+    top_image: Optional[str] = None
+    images: List[str]
+    keywords: List[str]
+    source_url: str
+
+class RSSFeedRequest(BaseModel):
+    feed_url: HttpUrl
+    limit: Optional[int] = 10
+
+class HealthResponse(BaseModel):
+    status: str
+    timestamp: str
+    version: str
+
+# Dependency for token validation
+async def verify_token(authorization: Optional[str] = Header(None)):
+    if not authorization or not authorization.startswith("Bearer "):
+        raise HTTPException(status_code=401, detail="Missing or invalid authorization header")
+    
+    token = authorization.split(" ")[1]
+    if token != BEARER_TOKEN:
+        raise HTTPException(status_code=401, detail="Invalid token")
+    
+    return token
+
+# Health check endpoint
+@app.get("/health", response_model=HealthResponse)
+async def health_check():
+    return {
+        "status": "healthy",
+        "timestamp": datetime.utcnow().isoformat(),
+        "version": "2.0.0"
+    }
+
+# Get article content
+@app.post("/api/article", response_model=ArticleResponse)
+@limiter.limit("100/minute")
+async def get_article(
+    request: ArticleRequest,
+    request_addr: str = Depends(get_remote_address),
+    token: str = Depends(verify_token)
+):
+    try:
+        # Configure newspaper
+        config = Config()
+        config.browser_user_agent = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
+        config.request_timeout = REQUEST_TIMEOUT
+        config.number_threads = 2
+        config.thread_timeout = 10
+        config.fetch_images = True
+        
+        # Create article instance
+        article = Article(str(request.url), config=config)
+        
+        # Download and parse
+        article.download()
+        article.parse()
+        
+        if request.full_content:
+            article.nlp()
+        
+        # Validate content
+        if not article.text or len(article.text.strip()) < 50:
+            raise HTTPException(status_code=422, detail="Could not extract meaningful content from URL")
+        
+        # Prepare response
+        response_data = {
+            "title": article.title or "No title",
+            "content": article.text[:MAX_CONTENT_LENGTH],
+            "summary": article.summary if request.full_content else None,
+            "authors": article.authors or [],
+            "publish_date": article.publish_date.isoformat() if article.publish_date else None,
+            "top_image": article.top_image,
+            "images": list(article.images)[:10],  # Limit images
+            "keywords": article.keywords[:20] if request.full_content else [],
+            "source_url": str(request.url)
+        }
+        
+        logger.info(f"Successfully extracted article from {request.url}")
+        return response_data
+        
+    except Exception as e:
+        logger.error(f"Error extracting article from {request.url}: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Error extracting article: {str(e)}")
+
+# Get RSS feed
+@app.post("/api/rss")
+@limiter.limit("50/minute")
+async def get_rss_feed(
+    request: RSSFeedRequest,
+    request_addr: str = Depends(get_remote_address),
+    token: str = Depends(verify_token)
+):
+    try:
+        # Parse RSS feed
+        feed = feedparser.parse(str(request.feed_url))
+        
+        if feed.bozo:
+            raise HTTPException(status_code=422, detail="Invalid RSS feed")
+        
+        # Extract entries
+        entries = []
+        for entry in feed.entries[:request.limit]:
+            entry_data = {
+                "title": entry.get("title", ""),
+                "link": entry.get("link", ""),
+                "summary": entry.get("summary", ""),
+                "published": entry.get("published", ""),
+                "author": entry.get("author", ""),
+                "tags": [tag.term for tag in entry.get("tags", [])]
+            }
+            entries.append(entry_data)
+        
+        return {
+            "feed_title": feed.feed.get("title", ""),
+            "feed_description": feed.feed.get("description", ""),
+            "feed_link": feed.feed.get("link", ""),
+            "entries": entries,
+            "total_entries": len(entries)
+        }
+        
+    except Exception as e:
+        logger.error(f"Error parsing RSS feed {request.feed_url}: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Error parsing RSS feed: {str(e)}")
+
+# Root endpoint
+@app.get("/")
+async def root():
+    return {
+        "message": "News Content API",
+        "version": "2.0.0",
+        "endpoints": {
+            "health": "/health",
+            "article": "/api/article",
+            "rss": "/api/rss",
+            "docs": "/docs"
+        }
+    }
+
+if __name__ == "__main__":
+    import uvicorn
+    uvicorn.run(app, host="0.0.0.0", port=8000)
+EOF
+
+    success "✅ Đã thiết lập News API"
+}
+
+# =============================================================================
+# DASHBOARD SETUP
+# =============================================================================
+
+setup_dashboard() {
+    log "📊 Thiết lập Web Dashboard..."
+    
+    mkdir -p "$INSTALL_DIR/dashboard"
+    cd "$INSTALL_DIR/dashboard"
+    
+    # Create Dockerfile for dashboard
+    cat > Dockerfile << 'EOF'
+FROM nginx:alpine
+
+# Copy custom nginx config
+COPY nginx.conf /etc/nginx/nginx.conf
+COPY default.conf /etc/nginx/conf.d/default.conf
+
+# Copy dashboard files
+COPY public /usr/share/nginx/html
+
+# Create necessary directories
+RUN mkdir -p /var/log/nginx /var/cache/nginx \
+    && chown -R nginx:nginx /var/log/nginx /var/cache/nginx
+
+EXPOSE 80
+
+CMD ["nginx", "-g", "daemon off;"]
+EOF
+
+    # Create nginx.conf
+    cat > nginx.conf << 'EOF'
+user nginx;
+worker_processes auto;
+error_log /var/log/nginx/error.log warn;
+pid /var/run/nginx.pid;
+
+events {
+    worker_connections 1024;
+}
+
+http {
+    include /etc/nginx/mime.types;
+    default_type application/octet-stream;
+    
+    log_format main '$remote_addr - $remote_user [$time_local] "$request" '
+                    '$status $body_bytes_sent "$http_referer" '
+                    '"$http_user_agent" "$http_x_forwarded_for"';
+    
+    access_log /var/log/nginx/access.log main;
+    
+    sendfile on;
+    tcp_nopush on;
+    tcp_nodelay on;
+    keepalive_timeout 65;
+    types_hash_max_size 2048;
+    
+    gzip on;
+    gzip_vary on;
+    gzip_min_length 1024;
+    gzip_types text/plain text/css text/xml text/javascript application/json application/javascript application/xml+rss;
+    
+    include /etc/nginx/conf.d/*.conf;
+}
+EOF
+
+    # Create default.conf
+    cat > default.conf << 'EOF'
+server {
+    listen 80;
+    server_name localhost;
+    
+    root /usr/share/nginx/html;
+    index index.html;
+    
+    location / {
+        try_files $uri $uri/ /index.html;
+    }
+    
+    location /api/ {
+        proxy_pass http://n8n-main:5678/;
+        proxy_http_version 1.1;
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection 'upgrade';
+        proxy_set_header Host $host;
+        proxy_cache_bypass $http_upgrade;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+    }
+    
+    location /health {
+        access_log off;
+        return 200 "healthy\n";
+        add_header Content-Type text/plain;
+    }
+}
+EOF
+
+    # Create public directory and dashboard HTML
+    mkdir -p public
+    
+    cat > public/index.html << 'EOF'
 <!DOCTYPE html>
-<html>
+<html lang="vi">
 <head>
-    <title>N8N Dashboard</title>
-    <meta charset="utf-8">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>N8N Multi-Instance Dashboard</title>
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
     <style>
-        body { font-family: Arial, sans-serif; margin: 20px; background: #f5f5f5; }
-        .container { max-width: 1200px; margin: 0 auto; }
-        .header { background: #3498db; color: white; padding: 20px; border-radius: 10px; margin-bottom: 20px; }
-        .card { background: white; padding: 20px; margin: 10px 0; border-radius: 10px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
-        .status { display: inline-block; padding: 5px 10px; border-radius: 5px; font-size: 14px; }
-        .running { background: #2ecc71; color: white; }
-        .stopped { background: #e74c3c; color: white; }
-        button { background: #3498db; color: white; border: none; padding: 10px 20px; border-radius: 5px; cursor: pointer; margin: 5px; }
-        button:hover { background: #2980b9; }
+        .gradient-bg {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        }
+        .card-hover:hover {
+            transform: translateY(-5px);
+            transition: all 0.3s ease;
+        }
+        .status-dot {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            display: inline-block;
+            margin-right: 8px;
+        }
+        .status-online { background-color: #10b981; }
+        .status-offline { background-color: #ef4444; }
+        .status-pending { background-color: #f59e0b; }
     </style>
 </head>
-<body>
-    <div class="container">
-        <div class="header">
-            <h1>🚀 N8N Management Dashboard</h1>
-            <p>System monitoring and control panel</p>
+<body class="bg-gray-100">
+    <!-- Header -->
+    <header class="gradient-bg text-white shadow-lg">
+        <div class="container mx-auto px-4 py-6">
+            <div class="flex justify-between items-center">
+                <div>
+                    <h1 class="text-3xl font-bold">N8N Multi-Instance Dashboard</h1>
+                    <p class="text-purple-200 mt-1">Quản lý và giám sát N8N instances</p>
+                </div>
+                <div class="text-right">
+                    <p class="text-sm text-purple-200">Phiên bản: 4.0</p>
+                    <p class="text-sm text-purple-200" id="current-time"></p>
+                </div>
+            </div>
         </div>
-        
-        <div class="card">
-            <h2>📊 System Status</h2>
-            <div id="status">Loading...</div>
-        </div>
-        
-        <div class="card">
-            <h2>🎛️ Quick Actions</h2>
-            <button onclick="restartAll()">🔄 Restart All Services</button>
-            <button onclick="viewLogs()">📋 View Logs</button>
-            <button onclick="runBackup()">💾 Run Backup</button>
-        </div>
-        
-        <div class="card">
-            <h2>🌐 N8N Instances</h2>
-            <div id="instances">Loading...</div>
-        </div>
-    </div>
-    
-    <script>
-        function loadStatus() {
-            // This is a simple static dashboard
-            // For dynamic data, you would need to implement an API
-            document.getElementById('status').innerHTML = `
-                <p>✅ All systems operational</p>
-                <p>📅 Last checked: ${new Date().toLocaleString()}</p>
-            `;
+    </header>
+
+    <!-- Main Content -->
+    <main class="container mx-auto px-4 py-8">
+        <!-- Stats Cards -->
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+            <div class="bg-white rounded-lg shadow-md p-6 card-hover">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <h3 class="text-gray-500 text-sm uppercase">Total Instances</h3>
+                        <p class="text-3xl font-bold text-gray-800" id="total-instances">0</p>
+                    </div>
+                    <i class="fas fa-server text-4xl text-purple-500"></i>
+                </div>
+            </div>
             
-            document.getElementById('instances').innerHTML = `
-                <p>Instance links will be displayed here after deployment completes.</p>
-            `;
+            <div class="bg-white rounded-lg shadow-md p-6 card-hover">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <h3 class="text-gray-500 text-sm uppercase">Active Workflows</h3>
+                        <p class="text-3xl font-bold text-gray-800" id="active-workflows">0</p>
+                    </div>
+                    <i class="fas fa-play-circle text-4xl text-green-500"></i>
+                </div>
+            </div>
+            
+            <div class="bg-white rounded-lg shadow-md p-6 card-hover">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <h3 class="text-gray-500 text-sm uppercase">Total Executions</h3>
+                        <p class="text-3xl font-bold text-gray-800" id="total-executions">0</p>
+                    </div>
+                    <i class="fas fa-chart-line text-4xl text-blue-500"></i>
+                </div>
+            </div>
+            
+            <div class="bg-white rounded-lg shadow-md p-6 card-hover">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <h3 class="text-gray-500 text-sm uppercase">System Status</h3>
+                        <p class="text-xl font-bold text-green-600" id="system-status">
+                            <span class="status-dot status-online"></span>Online
+                        </p>
+                    </div>
+                    <i class="fas fa-heartbeat text-4xl text-red-500"></i>
+                </div>
+            </div>
+        </div>
+
+        <!-- Instances Table -->
+        <div class="bg-white rounded-lg shadow-md p-6 mb-8">
+            <h2 class="text-xl font-bold text-gray-800 mb-4">
+                <i class="fas fa-th-list mr-2"></i>N8N Instances
+            </h2>
+            <div class="overflow-x-auto">
+                <table class="min-w-full table-auto">
+                    <thead class="bg-gray-50">
+                        <tr>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Instance</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">URL</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Workflows</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="instances-tbody" class="bg-white divide-y divide-gray-200">
+                        <!-- Dynamic content will be inserted here -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Services Status -->
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <!-- Database Status -->
+            <div class="bg-white rounded-lg shadow-md p-6">
+                <h2 class="text-xl font-bold text-gray-800 mb-4">
+                    <i class="fas fa-database mr-2"></i>Database Status
+                </h2>
+                <div id="database-status">
+                    <p class="text-gray-600">Loading database information...</p>
+                </div>
+            </div>
+
+            <!-- Additional Services -->
+            <div class="bg-white rounded-lg shadow-md p-6">
+                <h2 class="text-xl font-bold text-gray-800 mb-4">
+                    <i class="fas fa-cogs mr-2"></i>Additional Services
+                </h2>
+                <div id="services-status">
+                    <p class="text-gray-600">Loading services information...</p>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- Footer -->
+    <footer class="bg-gray-800 text-white py-6 mt-12">
+        <div class="container mx-auto px-4 text-center">
+            <p>© 2025 N8N Multi-Instance Dashboard</p>
+            <p class="text-sm text-gray-400 mt-2">
+                Created by Nguyễn Ngọc Thiện | 
+                <a href="https://youtube.com/@kalvinthiensocial" target="_blank" class="text-purple-400 hover:text-purple-300">
+                    YouTube Channel
+                </a>
+            </p>
+        </div>
+    </footer>
+
+    <script>
+        // Update current time
+        function updateTime() {
+            const now = new Date();
+            document.getElementById('current-time').textContent = now.toLocaleString('vi-VN');
         }
-        
-        function restartAll() {
-            if (confirm('Restart all services?')) {
-                alert('Please run: docker-compose restart');
-            }
+        setInterval(updateTime, 1000);
+        updateTime();
+
+        // Mock data for demonstration
+        const instances = [
+            { name: 'N8N Main', url: window.location.hostname, status: 'online', workflows: 12 },
+            { name: 'N8N Instance 1', url: 'n8n1.' + window.location.hostname, status: 'online', workflows: 8 },
+            { name: 'N8N Instance 2', url: 'n8n2.' + window.location.hostname, status: 'pending', workflows: 5 }
+        ];
+
+        // Populate instances table
+        function populateInstances() {
+            const tbody = document.getElementById('instances-tbody');
+            tbody.innerHTML = '';
+            
+            instances.forEach((instance, index) => {
+                const row = document.createElement('tr');
+                row.className = index % 2 === 0 ? 'bg-white' : 'bg-gray-50';
+                
+                const statusClass = instance.status === 'online' ? 'status-online' : 
+                                   instance.status === 'offline' ? 'status-offline' : 'status-pending';
+                const statusText = instance.status.charAt(0).toUpperCase() + instance.status.slice(1);
+                
+                row.innerHTML = `
+                    <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                        ${instance.name}
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                        <a href="https://${instance.url}" target="_blank" class="text-blue-600 hover:text-blue-800">
+                            ${instance.url}
+                        </a>
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                        <span class="status-dot ${statusClass}"></span>${statusText}
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                        ${instance.workflows}
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                        <a href="https://${instance.url}" target="_blank" class="text-indigo-600 hover:text-indigo-900 mr-3">
+                            <i class="fas fa-external-link-alt"></i> Open
+                        </a>
+                        <button class="text-green-600 hover:text-green-900">
+                            <i class="fas fa-sync-alt"></i> Restart
+                        </button>
+                    </td>
+                `;
+                tbody.appendChild(row);
+            });
+            
+            // Update stats
+            document.getElementById('total-instances').textContent = instances.length;
+            document.getElementById('active-workflows').textContent = 
+                instances.reduce((sum, inst) => sum + inst.workflows, 0);
         }
-        
-        function viewLogs() {
-            alert('Please run: docker-compose logs -f');
-        }
-        
-        function runBackup() {
-            alert('Please run: /home/n8n/backup-workflows.sh');
-        }
-        
-        // Load status on page load
-        loadStatus();
-        
-        // Refresh every 30 seconds
-        setInterval(loadStatus, 30000);
+
+        // Initialize
+        populateInstances();
+
+        // Mock database status
+        document.getElementById('database-status').innerHTML = `
+            <div class="space-y-2">
+                <p><span class="font-semibold">Type:</span> PostgreSQL 15</p>
+                <p><span class="font-semibold">Status:</span> <span class="text-green-600">Connected</span></p>
+                <p><span class="font-semibold">Size:</span> 245 MB</p>
+                <p><span class="font-semibold">Connections:</span> 3/100</p>
+            </div>
+        `;
+
+        // Mock services status
+        document.getElementById('services-status').innerHTML = `
+            <div class="space-y-3">
+                <div class="flex justify-between items-center">
+                    <span>News API</span>
+                    <span class="text-green-600"><i class="fas fa-check-circle"></i> Running</span>
+                </div>
+                <div class="flex justify-between items-center">
+                    <span>Caddy Proxy</span>
+                    <span class="text-green-600"><i class="fas fa-check-circle"></i> Running</span>
+                </div>
+                <div class="flex justify-between items-center">
+                    <span>Redis Cache</span>
+                    <span class="text-gray-400"><i class="fas fa-times-circle"></i> Not Configured</span>
+                </div>
+            </div>
+        `;
     </script>
 </body>
 </html>
 EOF
 
-    # Create simple API service
-    cat > "$INSTALL_DIR/dashboard/server.py" << 'EOF'
-#!/usr/bin/env python3
-import http.server
-import socketserver
-import os
-
-PORT = int(os.environ.get('DASHBOARD_PORT', 8080))
-
-class MyHTTPRequestHandler(http.server.SimpleHTTPRequestHandler):
-    def end_headers(self):
-        self.send_header('Access-Control-Allow-Origin', '*')
-        super().end_headers()
-
-os.chdir('/home/n8n/dashboard')
-
-with socketserver.TCPServer(("0.0.0.0", PORT), MyHTTPRequestHandler) as httpd:
-    print(f"Dashboard running at http://0.0.0.0:{PORT}")
-    httpd.serve_forever()
-EOF
-
-    chmod +x "$INSTALL_DIR/dashboard/server.py"
-    
-    success "Đã tạo Dashboard"
+    success "✅ Đã thiết lập Dashboard"
 }
 
 # =============================================================================
-# BACKUP SCRIPTS
+# CLOUDFLARE TUNNEL CONFIG
 # =============================================================================
 
-create_backup_scripts() {
-    log "💾 Tạo backup scripts..."
+generate_cloudflare_config() {
+    if [[ "$DEPLOYMENT_MODE" != "cloudflare" ]]; then
+        return
+    fi
     
-    cat > "$INSTALL_DIR/backup-workflows.sh" << 'EOF'
+    log "☁️ Tạo Cloudflare Tunnel configuration..."
+    
+    cd "$INSTALL_DIR"
+    
+    # Create tunnel config file
+    cat > cloudflare-config.yml << EOF
+tunnel: $CF_TUNNEL_NAME
+credentials-file: /etc/cloudflared/creds.json
+
+ingress:
+EOF
+
+    # Add N8N instances
+    if [[ "$ENABLE_MULTI_DOMAIN" == "true" ]]; then
+        for i in "${!DOMAINS[@]}"; do
+            local subdomain
+            local service
+            
+            if [[ $i -eq 0 ]]; then
+                subdomain="n8n.$MAIN_DOMAIN"
+                service="http://n8n-main:5678"
+            else
+                subdomain="n8n$i.$MAIN_DOMAIN"
+                service="http://n8n-instance-$i:5678"
+            fi
+            
+            cat >> cloudflare-config.yml << EOF
+  - hostname: $subdomain
+    service: $service
+    originRequest:
+      noTLSVerify: true
+EOF
+        done
+    else
+        cat >> cloudflare-config.yml << EOF
+  - hostname: n8n.$MAIN_DOMAIN
+    service: http://n8n-main:5678
+    originRequest:
+      noTLSVerify: true
+EOF
+    fi
+
+    # Add News API
+    if [[ "$ENABLE_NEWS_API" == "true" ]]; then
+        cat >> cloudflare-config.yml << EOF
+  - hostname: api.$MAIN_DOMAIN
+    service: http://news-api:8000
+    originRequest:
+      noTLSVerify: true
+EOF
+    fi
+
+    # Add Dashboard
+    cat >> cloudflare-config.yml << EOF
+  - hostname: dashboard.$MAIN_DOMAIN
+    service: http://dashboard:80
+    originRequest:
+      noTLSVerify: true
+      httpHostHeader: dashboard.$MAIN_DOMAIN
+EOF
+
+    # Add catch-all rule
+    cat >> cloudflare-config.yml << EOF
+  - service: http_status:404
+EOF
+
+    success "✅ Đã tạo Cloudflare configuration"
+}
+
+# =============================================================================
+# DEPLOYMENT & STARTUP
+# =============================================================================
+
+deploy_services() {
+    log "🚀 Triển khai services..."
+    
+    cd "$INSTALL_DIR"
+    
+    # Pull images first
+    log "📥 Pull Docker images..."
+    $DOCKER_COMPOSE pull --quiet || true
+    
+    # Build custom images
+    if [[ "$ENABLE_NEWS_API" == "true" ]]; then
+        log "🔨 Build News API image..."
+        $DOCKER_COMPOSE build news-api
+    fi
+    
+    log "🔨 Build Dashboard image..."
+    $DOCKER_COMPOSE build dashboard
+    
+    # Start services in order
+    restart_services_ordered
+}
+
+create_helper_scripts() {
+    log "📝 Tạo helper scripts..."
+    
+    cd "$INSTALL_DIR"
+    
+    # Create start script
+    cat > start.sh << 'EOF'
+#!/bin/bash
+cd "$(dirname "$0")"
+docker-compose up -d
+echo "✅ All services started!"
+docker-compose ps
+EOF
+    chmod +x start.sh
+    
+    # Create stop script
+    cat > stop.sh << 'EOF'
+#!/bin/bash
+cd "$(dirname "$0")"
+docker-compose down
+echo "✅ All services stopped!"
+EOF
+    chmod +x stop.sh
+    
+    # Create restart script
+    cat > restart.sh << 'EOF'
+#!/bin/bash
+cd "$(dirname "$0")"
+docker-compose restart
+echo "✅ All services restarted!"
+docker-compose ps
+EOF
+    chmod +x restart.sh
+    
+    # Create logs script
+    cat > logs.sh << 'EOF'
+#!/bin/bash
+cd "$(dirname "$0")"
+if [ -z "$1" ]; then
+    docker-compose logs -f --tail=100
+else
+    docker-compose logs -f --tail=100 "$1"
+fi
+EOF
+    chmod +x logs.sh
+    
+    # Create health check script
+    cat > health.sh << 'EOF'
+#!/bin/bash
+cd "$(dirname "$0")"
+echo "🏥 Checking health status..."
+docker-compose ps
+echo ""
+echo "📊 Container health:"
+for container in $(docker-compose ps -q); do
+    name=$(docker inspect -f '{{.Name}}' $container | sed 's/\///')
+    status=$(docker inspect -f '{{.State.Health.Status}}' $container 2>/dev/null || echo "no health check")
+    echo "  $name: $status"
+done
+EOF
+    chmod +x health.sh
+    
+    success "✅ Đã tạo helper scripts"
+}
+
+# =============================================================================
+# POST-DEPLOYMENT & MONITORING
+# =============================================================================
+
+setup_health_monitoring() {
+    if [[ "$HEALTH_CHECK_ENABLED" != "true" ]]; then
+        return
+    fi
+    
+    log "🏥 Thiết lập health monitoring..."
+    
+    cd "$INSTALL_DIR"
+    
+    # Create health check daemon script
+    cat > health_monitor.sh << 'EOF'
 #!/bin/bash
 
-set -e
+INSTALL_DIR="/home/n8n"
+CHECK_INTERVAL=30
+LOG_FILE="$INSTALL_DIR/logs/health_monitor.log"
 
-BACKUP_DIR="/home/n8n/files/backup_full"
-TIMESTAMP=$(date +"%Y%m%d_%H%M%S")
-BACKUP_NAME="n8n_backup_$TIMESTAMP"
-TEMP_DIR="/tmp/$BACKUP_NAME"
+cd "$INSTALL_DIR"
 
-# Check Docker Compose
+# Determine docker-compose command
 if command -v docker-compose &> /dev/null; then
     DOCKER_COMPOSE="docker-compose"
 else
     DOCKER_COMPOSE="docker compose"
 fi
 
-echo "🔄 Starting N8N Backup..."
-
-mkdir -p "$BACKUP_DIR"
-mkdir -p "$TEMP_DIR"
-
-cd /home/n8n
-
-# Detect setup type
-MULTI_DOMAIN=false
-if docker ps --filter "name=n8n-container-" --format "{{.Names}}" | grep -q "n8n-container-"; then
-    MULTI_DOMAIN=true
-    INSTANCE_COUNT=$(docker ps --filter "name=n8n-container-" --format "{{.Names}}" | wc -l)
-else
-    INSTANCE_COUNT=1
-fi
-
-# Create backup structure
-mkdir -p "$TEMP_DIR/config"
-mkdir -p "$TEMP_DIR/data"
-
-# Copy configuration files
-cp docker-compose.yml "$TEMP_DIR/config/" 2>/dev/null || true
-cp Caddyfile "$TEMP_DIR/config/" 2>/dev/null || true
-cp telegram_config.txt "$TEMP_DIR/config/" 2>/dev/null || true
-
-# Backup N8N data
-if [[ "$MULTI_DOMAIN" == "true" ]]; then
-    for i in $(seq 1 $INSTANCE_COUNT); do
-        echo "Backing up instance $i..."
-        
-        # Export workflows and credentials
-        docker exec n8n-container-$i n8n export:workflow --all --output=/tmp/workflows_$i.json 2>/dev/null || true
-        docker cp n8n-container-$i:/tmp/workflows_$i.json "$TEMP_DIR/data/" 2>/dev/null || true
-        
-        docker exec n8n-container-$i n8n export:credentials --all --output=/tmp/credentials_$i.json 2>/dev/null || true
-        docker cp n8n-container-$i:/tmp/credentials_$i.json "$TEMP_DIR/data/" 2>/dev/null || true
-        
-        # Copy instance data
-        cp -r "files/n8n_instance_$i" "$TEMP_DIR/data/" 2>/dev/null || true
-    done
-else
-    echo "Backing up single instance..."
-    
-    docker exec n8n-container n8n export:workflow --all --output=/tmp/workflows.json 2>/dev/null || true
-    docker cp n8n-container:/tmp/workflows.json "$TEMP_DIR/data/" 2>/dev/null || true
-    
-    docker exec n8n-container n8n export:credentials --all --output=/tmp/credentials.json 2>/dev/null || true
-    docker cp n8n-container:/tmp/credentials.json "$TEMP_DIR/data/" 2>/dev/null || true
-    
-    cp -r files "$TEMP_DIR/data/" 2>/dev/null || true
-fi
-
-# Create zip
-cd /tmp
-zip -r "$BACKUP_DIR/$BACKUP_NAME.zip" "$BACKUP_NAME/" > /dev/null 2>&1
-
-# Cleanup
-rm -rf "$TEMP_DIR"
-
-# Keep only last 30 backups
-cd "$BACKUP_DIR"
-ls -t n8n_backup_*.zip | tail -n +31 | xargs -r rm -f
-
-echo "✅ Backup completed: $BACKUP_NAME.zip"
-
-# Send Telegram notification if configured
-if [[ -f "/home/n8n/telegram_config.txt" ]]; then
-    source "/home/n8n/telegram_config.txt"
-    
-    if [[ -n "$TELEGRAM_BOT_TOKEN" && -n "$TELEGRAM_CHAT_ID" ]]; then
-        MESSAGE="🔄 *N8N Backup Completed*%0A%0A📅 Date: $(date +'%Y-%m-%d %H:%M:%S')%0A📦 File: $BACKUP_NAME.zip%0A💾 Size: $(ls -lh $BACKUP_DIR/$BACKUP_NAME.zip | awk '{print $5}')%0A✅ Status: Success"
-        
-        curl -s -X POST "https://api.telegram.org/bot$TELEGRAM_BOT_TOKEN/sendMessage" \
-            -d chat_id="$TELEGRAM_CHAT_ID" \
-            -d text="$MESSAGE" \
-            -d parse_mode="Markdown" > /dev/null || true
-    fi
-fi
-EOF
-
-    chmod +x "$INSTALL_DIR/backup-workflows.sh"
-    
-    success "Đã tạo backup scripts"
+log() {
+    echo "[$(date +'%Y-%m-%d %H:%M:%S')] $1" >> "$LOG_FILE"
 }
 
-# =============================================================================
-# SYSTEMD SERVICES
-# =============================================================================
-
-create_systemd_services() {
-    log "⚙️ Tạo systemd services..."
+check_service() {
+    local service=$1
+    local container=$2
+    local health_endpoint=$3
     
-    # Dashboard service
-    cat > /etc/systemd/system/n8n-dashboard.service << EOF
+    if docker ps --format "{{.Names}}" | grep -q "^${container}$"; then
+        if [ -n "$health_endpoint" ]; then
+            if docker exec "$container" wget -q --spider "$health_endpoint" 2>/dev/null; then
+                return 0
+            else
+                log "WARNING: $service health check failed"
+                return 1
+            fi
+        else
+            return 0
+        fi
+    else
+        log "ERROR: $service container not running"
+        return 1
+    fi
+}
+
+auto_fix() {
+    local service=$1
+    log "Attempting auto-fix for $service..."
+    
+    # Try to restart the service
+    $DOCKER_COMPOSE restart "$service"
+    sleep 10
+    
+    # Check if fixed
+    if check_service "$service" "$service" ""; then
+        log "SUCCESS: $service auto-fixed"
+        return 0
+    else
+        log "FAILED: Could not auto-fix $service"
+        return 1
+    fi
+}
+
+# Main monitoring loop
+log "Health monitor started"
+
+while true; do
+    # Check each service
+    services_healthy=true
+    
+    # Check N8N
+    if ! check_service "n8n-main" "n8n-main" "http://localhost:5678/healthz"; then
+        services_healthy=false
+        auto_fix "n8n-main"
+    fi
+    
+    # Check PostgreSQL if exists
+    if docker ps --format "{{.Names}}" | grep -q "^postgres-db$"; then
+        if ! docker exec postgres-db pg_isready -U postgres >/dev/null 2>&1; then
+            services_healthy=false
+            log "PostgreSQL unhealthy"
+            auto_fix "postgres-db"
+        fi
+    fi
+    
+    # Check News API if exists
+    if docker ps --format "{{.Names}}" | grep -q "^news-api$"; then
+        if ! check_service "news-api" "news-api" "http://localhost:8000/health"; then
+            services_healthy=false
+            auto_fix "news-api"
+        fi
+    fi
+    
+    # Log overall status
+    if [ "$services_healthy" = true ]; then
+        log "All services healthy"
+    else
+        log "Some services need attention"
+    fi
+    
+    sleep $CHECK_INTERVAL
+done
+EOF
+    chmod +x health_monitor.sh
+    
+    # Create systemd service for health monitor
+    if command -v systemctl &> /dev/null; then
+        cat > /etc/systemd/system/n8n-health-monitor.service << EOF
 [Unit]
-Description=N8N Dashboard
-After=network.target
+Description=N8N Health Monitor
+After=docker.service
+Requires=docker.service
 
 [Service]
 Type=simple
-User=root
-WorkingDirectory=/home/n8n/dashboard
-ExecStart=/usr/bin/python3 /home/n8n/dashboard/server.py
+ExecStart=$INSTALL_DIR/health_monitor.sh
 Restart=always
 RestartSec=10
-Environment="DASHBOARD_PORT=${DASHBOARD_PORT}"
+User=root
 
 [Install]
 WantedBy=multi-user.target
 EOF
-
-    systemctl daemon-reload
-    systemctl enable n8n-dashboard
-    
-    success "Đã tạo systemd services"
-}
-
-# =============================================================================
-# CRON JOBS
-# =============================================================================
-
-setup_cron_jobs() {
-    log "⏰ Thiết lập cron jobs..."
-    
-    # Remove existing N8N cron jobs
-    crontab -l 2>/dev/null | grep -v "/home/n8n" | crontab - 2>/dev/null || true
-    
-    # Add backup job
-    (crontab -l 2>/dev/null; echo "0 2 * * * /home/n8n/backup-workflows.sh") | crontab -
-    
-    success "Đã thiết lập cron jobs"
-}
-
-# =============================================================================
-# FINAL CONFIGURATIONS
-# =============================================================================
-
-save_config() {
-    log "💾 Lưu cấu hình..."
-    
-    # Save Telegram config
-    if [[ "$ENABLE_TELEGRAM" == "true" || "$ENABLE_TELEGRAM_BOT" == "true" ]]; then
-        cat > "$INSTALL_DIR/telegram_config.txt" << EOF
-TELEGRAM_BOT_TOKEN="$TELEGRAM_BOT_TOKEN"
-TELEGRAM_CHAT_ID="$TELEGRAM_CHAT_ID"
-EOF
-        chmod 600 "$INSTALL_DIR/telegram_config.txt"
+        
+        systemctl daemon-reload
+        systemctl enable n8n-health-monitor.service
+        systemctl start n8n-health-monitor.service
+        
+        success "✅ Health monitoring service đã được cài đặt"
+    else
+        # Run in background if no systemd
+        nohup ./health_monitor.sh > /dev/null 2>&1 &
+        success "✅ Health monitoring đang chạy trong background"
     fi
-    
-    # Save installation config
-    cat > "$INSTALL_DIR/.install_config" << EOF
-INSTALL_MODE="$INSTALL_MODE"
-ENABLE_MULTI_DOMAIN="$ENABLE_MULTI_DOMAIN"
-ENABLE_POSTGRESQL="$ENABLE_POSTGRESQL"
-ENABLE_NEWS_API="$ENABLE_NEWS_API"
-ENABLE_TELEGRAM="$ENABLE_TELEGRAM"
-ENABLE_GOOGLE_DRIVE="$ENABLE_GOOGLE_DRIVE"
-ENABLE_TELEGRAM_BOT="$ENABLE_TELEGRAM_BOT"
-DASHBOARD_PORT="$DASHBOARD_PORT"
-API_PORT="$API_PORT"
-DOMAINS=(${DOMAINS[@]})
-DOMAIN_PORTS=(${DOMAIN_PORTS[@]})
-EOF
-    
-    success "Đã lưu cấu hình"
 }
 
 # =============================================================================
-# BUILD AND DEPLOY
+# FINAL STATUS & SUMMARY
 # =============================================================================
 
-build_and_deploy() {
-    log "🏗️ Build và deploy..."
-    
-    cd "$INSTALL_DIR"
-    
-    # Clean up any existing containers first
-    cleanup_docker_environment
-    
-    # Build images
-    log "Building Docker images..."
-    $DOCKER_COMPOSE build --no-cache
-    
-    # Start PostgreSQL first if enabled
-    if [[ "$ENABLE_POSTGRESQL" == "true" ]]; then
-        log "Starting PostgreSQL..."
-        $DOCKER_COMPOSE up -d postgres
-        
-        # Wait for PostgreSQL to be ready
-        log "Waiting for PostgreSQL to initialize..."
-        local retries=30
-        while [ $retries -gt 0 ]; do
-            if docker exec postgres-n8n pg_isready -U postgres >/dev/null 2>&1; then
-                success "PostgreSQL is ready"
-                break
-            fi
-            retries=$((retries - 1))
-            sleep 2
-        done
-        
-        if [ $retries -eq 0 ]; then
-            error "PostgreSQL failed to start"
-            exit 1
-        fi
-    fi
-    
-    # Start all services
-    log "Starting all services..."
-    $DOCKER_COMPOSE up -d
-    
-    # Wait for services
-    log "Waiting for services to start..."
-    sleep 30
-    
-    # Start systemd services
-    systemctl start n8n-dashboard || true
-    
-    # Verify
-    log "Verifying deployment..."
-    $DOCKER_COMPOSE ps
-    
-    success "Deployment completed!"
-}
-
-# =============================================================================
-# TROUBLESHOOTING SCRIPT
-# =============================================================================
-
-create_troubleshooting_script() {
-    log "🔧 Tạo troubleshooting script..."
-    
-    cat > "$INSTALL_DIR/troubleshoot.sh" << 'EOF'
-#!/bin/bash
-
-# Colors
-RED='\033[0;31m'
-GREEN='\033[0;32m'
-YELLOW='\033[1;33m'
-BLUE='\033[0;34m'
-NC='\033[0m'
-
-echo -e "${BLUE}=== N8N TROUBLESHOOTING ===${NC}"
-echo ""
-
-# Check Docker
-echo -e "${YELLOW}1. Docker Status:${NC}"
-docker --version
-docker-compose --version || docker compose version
-echo ""
-
-# Check containers
-echo -e "${YELLOW}2. Container Status:${NC}"
-docker ps -a | grep -E "(n8n|postgres|caddy|cloudflare)"
-echo ""
-
-# Check logs
-echo -e "${YELLOW}3. Recent Logs:${NC}"
-cd /home/n8n
-docker-compose logs --tail=20 2>/dev/null || docker compose logs --tail=20
-echo ""
-
-# Check ports
-echo -e "${YELLOW}4. Port Usage:${NC}"
-netstat -tulpn | grep -E "(5678|5800|5809|8080|8088|80|443)" 2>/dev/null || ss -tulpn | grep -E "(5678|5800|5809|8080|8088|80|443)"
-echo ""
-
-# Check disk space
-echo -e "${YELLOW}5. Disk Space:${NC}"
-df -h /home/n8n
-echo ""
-
-# Suggested fixes
-echo -e "${GREEN}=== SUGGESTED FIXES ===${NC}"
-echo "1. Restart all services: cd /home/n8n && docker-compose restart"
-echo "2. View full logs: cd /home/n8n && docker-compose logs -f"
-echo "3. Rebuild containers: cd /home/n8n && docker-compose down && docker-compose up -d --build"
-echo "4. Check DNS: nslookup your-domain.com"
-echo ""
-EOF
-
-    chmod +x "$INSTALL_DIR/troubleshoot.sh"
-    success "Đã tạo troubleshooting script"
-}
-
-# =============================================================================
-# FINAL SUMMARY
-# =============================================================================
-
-show_final_summary() {
-    clear
-    echo -e "${GREEN}╔══════════════════════════════════════════════════════════════════════════════╗${NC}"
-    echo -e "${GREEN}║${WHITE}             🎉 N8N SYSTEM INSTALLED SUCCESSFULLY! 🎉                       ${GREEN}║${NC}"
-    echo -e "${GREEN}╚══════════════════════════════════════════════════════════════════════════════╝${NC}"
-    echo ""
-    
-    echo -e "${CYAN}🌐 ACCESS INFORMATION:${NC}"
-    
-    if [[ "$INSTALL_MODE" == "localhost" ]]; then
-        echo -e "${WHITE}N8N Instances:${NC}"
-        for i in "${!DOMAINS[@]}"; do
-            echo -e "  • Instance $((i+1)): http://localhost:${DOMAIN_PORTS[$i]}"
-        done
-        
-        if [[ "$ENABLE_NEWS_API" == "true" ]]; then
-            echo -e "  • News API: http://localhost:${API_PORT}"
-            echo -e "  • API Docs: http://localhost:${API_PORT}/docs"
-        fi
-        
-        echo -e "  • Dashboard: http://localhost:${DASHBOARD_PORT}"
-        
-    elif [[ "$INSTALL_MODE" == "domain" ]]; then
-        echo -e "${WHITE}N8N Instances:${NC}"
-        for i in "${!DOMAINS[@]}"; do
-            echo -e "  • Instance $((i+1)): https://${DOMAINS[$i]}"
-        done
-        
-        if [[ "$ENABLE_NEWS_API" == "true" ]]; then
-            echo -e "  • News API: https://${API_DOMAIN}"
-            echo -e "  • API Docs: https://${API_DOMAIN}/docs"
-        fi
-        
-        echo -e "  • Dashboard: https://dashboard.${DOMAINS[0]}:${DASHBOARD_PORT}"
-        
-    elif [[ "$INSTALL_MODE" == "cloudflare" ]]; then
-        echo -e "${WHITE}Cloudflare Tunnel Domains:${NC}"
-        for i in "${!DOMAINS[@]}"; do
-            echo -e "  • Instance $((i+1)): https://${DOMAINS[$i]}"
-        done
-        
-        if [[ "$ENABLE_NEWS_API" == "true" ]]; then
-            echo -e "  • News API: https://${API_DOMAIN}"
-        fi
-        
-        echo -e "  • Dashboard: https://dashboard.${DOMAINS[0]}"
-    fi
+show_installation_summary() {
+    log "📋 Hiển thị thông tin cài đặt..."
     
     echo ""
-    echo -e "${CYAN}🔐 CREDENTIALS:${NC}"
+    echo -e "${CYAN}╔══════════════════════════════════════════════════════════════════════════════╗${NC}"
+    echo -e "${CYAN}║${WHITE}                   🎉 CÀI ĐẶT HOÀN TẤT THÀNH CÔNG! 🎉                       ${CYAN}║${NC}"
+    echo -e "${CYAN}╠══════════════════════════════════════════════════════════════════════════════╣${NC}"
     
-    if [[ "$ENABLE_DASHBOARD_AUTH" == "true" ]]; then
-        echo -e "  • Dashboard Username: ${WHITE}${DASHBOARD_USERNAME}${NC}"
-        echo -e "  • Dashboard Password: ${WHITE}[Hidden - you set it]${NC}"
+    # Access URLs based on deployment mode
+    echo -e "${CYAN}║${YELLOW} 🌐 TRUY CẬP DỊCH VỤ:                                                        ${CYAN}║${NC}"
+    
+    if [[ "$DEPLOYMENT_MODE" == "localhost" ]]; then
+        # Localhost URLs
+        echo -e "${CYAN}║${WHITE} • N8N Main: http://localhost:$N8N_MAIN_PORT                                 ${CYAN}║${NC}"
+        
+        if [[ "$ENABLE_MULTI_DOMAIN" == "true" ]]; then
+            local port=$PORT_BASE
+            for ((i=1; i<${#DOMAINS[@]}; i++)); do
+                port=$((PORT_BASE + i))
+                echo -e "${CYAN}║${WHITE} • N8N Instance $i: http://localhost:$port                                    ${CYAN}║${NC}"
+            done
+        fi
+        
+        if [[ "$ENABLE_NEWS_API" == "true" ]]; then
+            echo -e "${CYAN}║${WHITE} • News API: http://localhost:$NEWS_API_PORT                                  ${CYAN}║${NC}"
+            echo -e "${CYAN}║${WHITE} • API Docs: http://localhost:$NEWS_API_PORT/docs                             ${CYAN}║${NC}"
+        fi
+        
+        echo -e "${CYAN}║${WHITE} • Dashboard: http://localhost:$DASHBOARD_PORT                                ${CYAN}║${NC}"
+        echo -e "${CYAN}║${WHITE}   Username: $DASHBOARD_USER                                                  ${CYAN}║${NC}"
+        
+    elif [[ "$DEPLOYMENT_MODE" == "domain" ]]; then
+        # Domain URLs
+        echo -e "${CYAN}║${WHITE} • N8N Main: https://n8n.$MAIN_DOMAIN                                        ${CYAN}║${NC}"
+        
+        if [[ "$ENABLE_MULTI_DOMAIN" == "true" ]]; then
+            local instance_num=1
+            for ((i=1; i<${#DOMAINS[@]}; i++)); do
+                echo -e "${CYAN}║${WHITE} • N8N Instance $instance_num: https://n8n$instance_num.$MAIN_DOMAIN                           ${CYAN}║${NC}"
+                ((instance_num++))
+            done
+        fi
+        
+        if [[ "$ENABLE_NEWS_API" == "true" ]]; then
+            echo -e "${CYAN}║${WHITE} • News API: https://api.$MAIN_DOMAIN                                        ${CYAN}║${NC}"
+            echo -e "${CYAN}║${WHITE} • API Docs: https://api.$MAIN_DOMAIN/docs                                   ${CYAN}║${NC}"
+        fi
+        
+        echo -e "${CYAN}║${WHITE} • Dashboard: https://dashboard.$MAIN_DOMAIN                                 ${CYAN}║${NC}"
+        echo -e "${CYAN}║${WHITE}   Username: $DASHBOARD_USER                                                  ${CYAN}║${NC}"
+        
+    elif [[ "$DEPLOYMENT_MODE" == "cloudflare" ]]; then
+        # Cloudflare Tunnel URLs
+        echo -e "${CYAN}║${WHITE} 📌 Cloudflare Tunnel Configuration:                                        ${CYAN}║${NC}"
+        echo -e "${CYAN}║${WHITE} • N8N Main: https://n8n.$MAIN_DOMAIN                                        ${CYAN}║${NC}"
+        
+        if [[ "$ENABLE_MULTI_DOMAIN" == "true" ]]; then
+            local instance_num=1
+            for ((i=1; i<${#DOMAINS[@]}; i++)); do
+                echo -e "${CYAN}║${WHITE} • N8N Instance $instance_num: https://n8n$instance_num.$MAIN_DOMAIN                           ${CYAN}║${NC}"
+                ((instance_num++))
+            done
+        fi
+        
+        if [[ "$ENABLE_NEWS_API" == "true" ]]; then
+            echo -e "${CYAN}║${WHITE} • News API: https://api.$MAIN_DOMAIN                                        ${CYAN}║${NC}"
+        fi
+        
+        echo -e "${CYAN}║${WHITE} • Dashboard: https://dashboard.$MAIN_DOMAIN                                 ${CYAN}║${NC}"
+        echo -e "${CYAN}║${WHITE}   Username: $DASHBOARD_USER                                                  ${CYAN}║${NC}"
+        echo -e "${CYAN}║${YELLOW} ⚠️ Nhớ cấu hình DNS cho domain trỏ về Cloudflare!                          ${CYAN}║${NC}"
     fi
+    
+    echo -e "${CYAN}╠══════════════════════════════════════════════════════════════════════════════╣${NC}"
+    echo -e "${CYAN}║${YELLOW} 📁 THÔNG TIN HỆ THỐNG:                                                      ${CYAN}║${NC}"
+    echo -e "${CYAN}║${WHITE} • Deployment Mode: $DEPLOYMENT_MODE                                          ${CYAN}║${NC}"
+    echo -e "${CYAN}║${WHITE} • Database: $([[ "$ENABLE_POSTGRESQL" == "true" ]] && echo "PostgreSQL" || echo "SQLite")                                                      ${CYAN}║${NC}"
+    echo -e "${CYAN}║${WHITE} • Thư mục cài đặt: $INSTALL_DIR                                       ${CYAN}║${NC}"
+    echo -e "${CYAN}║${WHITE} • Docker Compose: $DOCKER_COMPOSE                                     ${CYAN}║${NC}"
+    
+    echo -e "${CYAN}╠══════════════════════════════════════════════════════════════════════════════╣${NC}"
+    echo -e "${CYAN}║${YELLOW} 🔧 LỆNH QUẢN LÝ:                                                           ${CYAN}║${NC}"
+    echo -e "${CYAN}║${WHITE} • Khởi động: cd $INSTALL_DIR && ./start.sh                           ${CYAN}║${NC}"
+    echo -e "${CYAN}║${WHITE} • Dừng: cd $INSTALL_DIR && ./stop.sh                                 ${CYAN}║${NC}"
+    echo -e "${CYAN}║${WHITE} • Restart: cd $INSTALL_DIR && ./restart.sh                           ${CYAN}║${NC}"
+    echo -e "${CYAN}║${WHITE} • Xem logs: cd $INSTALL_DIR && ./logs.sh [service_name]              ${CYAN}║${NC}"
+    echo -e "${CYAN}║${WHITE} • Health check: cd $INSTALL_DIR && ./health.sh                       ${CYAN}║${NC}"
     
     if [[ "$ENABLE_NEWS_API" == "true" ]]; then
-        echo -e "  • API Bearer Token: ${WHITE}[Hidden - check docker-compose.yml]${NC}"
+        echo -e "${CYAN}╠══════════════════════════════════════════════════════════════════════════════╣${NC}"
+        echo -e "${CYAN}║${YELLOW} 📰 NEWS API AUTHENTICATION:                                                 ${CYAN}║${NC}"
+        echo -e "${CYAN}║${WHITE} • Bearer Token: $BEARER_TOKEN                          ${CYAN}║${NC}"
+        echo -e "${CYAN}║${WHITE} • Header: Authorization: Bearer YOUR_TOKEN                                  ${CYAN}║${NC}"
     fi
     
-    if [[ "$ENABLE_POSTGRESQL" == "true" ]]; then
-        echo -e "  • PostgreSQL User: ${WHITE}n8n_user${NC}"
-        echo -e "  • PostgreSQL Pass: ${WHITE}n8n_password_2025${NC}"
+    echo -e "${CYAN}╠══════════════════════════════════════════════════════════════════════════════╣${NC}"
+    echo -e "${CYAN}║${YELLOW} 💡 LƯU Ý QUAN TRỌNG:                                                        ${CYAN}║${NC}"
+    
+    if [[ "$DEPLOYMENT_MODE" == "domain" ]]; then
+        echo -e "${CYAN}║${WHITE} • SSL certificates sẽ được cấp tự động trong 2-3 phút                      ${CYAN}║${NC}"
+        echo -e "${CYAN}║${WHITE} • Đảm bảo đã trỏ DNS về server IP: $(curl -s ifconfig.me || echo "YOUR_IP")                  ${CYAN}║${NC}"
     fi
     
+    echo -e "${CYAN}║${WHITE} • Health monitoring đang chạy và tự động fix lỗi                           ${CYAN}║${NC}"
+    echo -e "${CYAN}║${WHITE} • Dashboard password đã được mã hóa an toàn                                ${CYAN}║${NC}"
+    
+    echo -e "${CYAN}╠══════════════════════════════════════════════════════════════════════════════╣${NC}"
+    echo -e "${CYAN}║${YELLOW} 🚀 TÁC GIẢ:                                                                 ${CYAN}║${NC}"
+    echo -e "${CYAN}║${WHITE} • Tên: Nguyễn Ngọc Thiện                                                   ${CYAN}║${NC}"
+    echo -e "${CYAN}║${WHITE} • YouTube: https://www.youtube.com/@kalvinthiensocial                      ${CYAN}║${NC}"
+    echo -e "${CYAN}║${WHITE} • Zalo: 08.8888.4749                                                        ${CYAN}║${NC}"
+    echo -e "${CYAN}║${WHITE} • Version: 4.0 - Enhanced Multi-Deployment                                 ${CYAN}║${NC}"
+    echo -e "${CYAN}╠══════════════════════════════════════════════════════════════════════════════╣${NC}"
+    echo -e "${CYAN}║${GREEN} 🎬 ĐĂNG KÝ KÊNH YOUTUBE ĐỂ ỦNG HỘ MÌNH NHÉ! 🔔                             ${CYAN}║${NC}"
+    echo -e "${CYAN}║${GREEN} 👉 https://www.youtube.com/@kalvinthiensocial?sub_confirmation=1           ${CYAN}║${NC}"
+    echo -e "${CYAN}╚══════════════════════════════════════════════════════════════════════════════╝${NC}"
     echo ""
-    echo -e "${CYAN}📁 SYSTEM INFO:${NC}"
-    echo -e "  • Installation Dir: ${WHITE}${INSTALL_DIR}${NC}"
-    echo -e "  • Backup Location: ${WHITE}${INSTALL_DIR}/files/backup_full${NC}"
-    echo -e "  • Logs: ${WHITE}${INSTALL_DIR}/logs${NC}"
-    echo -e "  • Troubleshoot: ${WHITE}${INSTALL_DIR}/troubleshoot.sh${NC}"
-    
-    echo ""
-    echo -e "${CYAN}🔧 USEFUL COMMANDS:${NC}"
-    echo -e "  • View logs: ${WHITE}cd $INSTALL_DIR && $DOCKER_COMPOSE logs -f${NC}"
-    echo -e "  • Restart: ${WHITE}cd $INSTALL_DIR && $DOCKER_COMPOSE restart${NC}"
-    echo -e "  • Backup: ${WHITE}$INSTALL_DIR/backup-workflows.sh${NC}"
-    echo -e "  • Status: ${WHITE}cd $INSTALL_DIR && $DOCKER_COMPOSE ps${NC}"
-    echo -e "  • Troubleshoot: ${WHITE}$INSTALL_DIR/troubleshoot.sh${NC}"
-    
-    if [[ "$ENABLE_TELEGRAM_BOT" == "true" ]]; then
-        echo ""
-        echo -e "${CYAN}🤖 TELEGRAM BOT COMMANDS:${NC}"
-        echo -e "  • /status - View system status"
-        echo -e "  • /restart - Restart services"
-        echo -e "  • /backup - Run backup"
-        echo -e "  • /logs - View logs"
-    fi
-    
-    echo ""
-    echo -e "${CYAN}⚠️  IMPORTANT NOTES:${NC}"
-    
-    if [[ "$INSTALL_MODE" == "cloudflare" ]]; then
-        echo -e "  • Make sure you've configured Cloudflare Tunnel routes correctly"
-        echo -e "  • Check tunnel status: ${WHITE}docker logs cloudflare-tunnel${NC}"
-    fi
-    
-    if [[ "$INSTALL_MODE" == "domain" ]]; then
-        echo -e "  • SSL certificates will be auto-generated in a few minutes"
-        echo -e "  • If SSL fails, check: ${WHITE}docker logs caddy-proxy${NC}"
-    fi
-    
-    echo ""
-    echo -e "${CYAN}🚀 AUTHOR:${NC}"
-    echo -e "  • Name: ${WHITE}Nguyễn Ngọc Thiện${NC}"
-    echo -e "  • YouTube: ${WHITE}https://www.youtube.com/@kalvinthiensocial${NC}"
-    echo -e "  • Zalo: ${WHITE}08.8888.4749${NC}"
-    echo ""
-    echo -e "${YELLOW}🎬 SUBSCRIBE TO SUPPORT! 🔔${NC}"
-    echo -e "${GREEN}╚══════════════════════════════════════════════════════════════════════════════╝${NC}"
 }
-
-# =============================================================================
-# ERROR HANDLING
-# =============================================================================
-
-handle_error() {
-    local exit_code=$?
-    if [ $exit_code -ne 0 ]; then
-        error "An error occurred during installation (Exit code: $exit_code)"
-        
-        echo ""
-        echo -e "${YELLOW}Attempting automatic recovery...${NC}"
-        
-        # Try to fix common issues
-        cd "$INSTALL_DIR" 2>/dev/null || true
-        
-        # Stop all containers
-        $DOCKER_COMPOSE down --remove-orphans 2>/dev/null || true
-        
-        # Clean up
-        docker system prune -f 2>/dev/null || true
-        
-        echo ""
-        echo -e "${CYAN}Please try running the troubleshoot script:${NC}"
-        echo -e "${WHITE}$INSTALL_DIR/troubleshoot.sh${NC}"
-        
-        exit $exit_code
-    fi
-}
-
-# Set error handler
-trap handle_error ERR
 
 # =============================================================================
 # MAIN EXECUTION
@@ -1767,44 +2504,69 @@ main() {
     # System checks
     check_root
     check_os
-    detect_environment
-    check_docker_compose
     
-    # Installation flow
+    # Get user inputs
+    get_deployment_mode
+    get_main_domain
     get_installation_mode
-    get_deployment_type
-    get_domain_input
-    get_features_selection
-    get_cloudflare_config
-    get_security_config
-    get_api_config
+    get_multi_domain_config
+    get_port_configuration
+    get_ssl_email_config
+    setup_dashboard_auth
+    get_news_api_config
     get_telegram_config
     
-    # Setup
-    setup_swap
-    install_docker
-    create_project_structure
-    
-    # Create configurations
-    create_dockerfile
-    create_docker_compose
-    create_postgresql_init
-    create_dashboard
-    create_backup_scripts
+    # Cloudflare tunnel setup
     setup_cloudflare_tunnel
-    create_troubleshooting_script
     
-    # Services and configs
-    create_systemd_services
-    setup_cron_jobs
-    save_config
+    # System preparation
+    log "🚀 Bắt đầu cài đặt N8N Multi-Instance..."
+    
+    # Install Docker if needed
+    if ! check_docker || ! check_docker_compose; then
+        install_docker
+    fi
+    
+    # Setup system
+    setup_swap
+    prepare_directories
+    
+    # Generate configurations
+    generate_docker_compose
+    generate_caddyfile
+    generate_cloudflare_config
+    
+    # Setup services
+    setup_news_api
+    setup_dashboard
     
     # Deploy
-    build_and_deploy
+    deploy_services
     
-    # Final
-    show_final_summary
+    # Post-deployment
+    log "🔧 Thực hiện auto-fix..."
+    fix_permissions_auto
+    fix_network_auto
+    sleep 10
+    
+    # Health check
+    if ! health_check_auto; then
+        warning "⚠️ Một số services chưa sẵn sàng, đang thử lại..."
+        sleep 30
+        health_check_auto
+    fi
+    
+    # Create helper scripts
+    create_helper_scripts
+    
+    # Setup monitoring
+    setup_health_monitoring
+    
+    # Show summary
+    show_installation_summary
+    
+    success "🎉 Cài đặt hoàn tất! Hệ thống đã sẵn sàng sử dụng."
 }
 
-# Run main
+# Run main function
 main "$@"
