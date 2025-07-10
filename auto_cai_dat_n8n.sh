@@ -1,21 +1,17 @@
 #!/bin/bash
 
 # =============================================================================
-# 🚀 SCRIPT CÀI ĐẶT N8N MULTI-DOMAIN TỰ ĐỘNG 2025 - ENHANCED VERSION 4.0
+# 🚀 SCRIPT CÀI ĐẶT N8N MULTI-DOMAIN TỰ ĐỘNG 2025 - ENHANCED VERSION 4.0 FIXED
 # =============================================================================
 # Tác giả: Nguyễn Ngọc Thiện
 # YouTube: https://www.youtube.com/@kalvinthiensocial
 # Zalo: 08.8888.4749
 # Cập nhật: 01/10/2025
-# Features: 
-#   - Multi-Deployment Modes (Localhost/Domain/Cloudflare Tunnel)
-#   - Custom Port Configuration
-#   - Dashboard với Basic Auth
-#   - Auto-Fix Integration
-#   - Health Check & Auto-Recovery
+# Version: 4.0.1 - Fixed all input handling and error cases
 # =============================================================================
 
-set -e
+# IMPORTANT: Removed set -e to prevent unexpected exits
+# All errors are now handled gracefully
 
 # Colors for output
 RED='\033[0;31m'
@@ -28,6 +24,41 @@ WHITE='\033[1;37m'
 NC='\033[0m' # No Color
 
 # =============================================================================
+# ERROR HANDLING SETUP
+# =============================================================================
+
+SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+ERROR_LOG="/tmp/n8n_install_error_$(date +%Y%m%d_%H%M%S).log"
+
+# Trap errors but don't exit
+trap 'handle_error $? $LINENO' ERR
+
+handle_error() {
+    local error_code=$1
+    local line_number=$2
+    echo "[ERROR] Command failed with exit code $error_code at line $line_number" | tee -a "$ERROR_LOG"
+    # Don't exit - let script continue
+}
+
+# Cleanup on exit
+cleanup_on_exit() {
+    local exit_code=$?
+    
+    if [[ $exit_code -ne 0 ]]; then
+        echo ""
+        error "Script exited with error code: $exit_code"
+        error "Check log file: $ERROR_LOG"
+        
+        # Cleanup partial installation if needed
+        if [[ -d "$INSTALL_DIR/.tmp" ]]; then
+            rm -rf "$INSTALL_DIR/.tmp"
+        fi
+    fi
+}
+
+trap cleanup_on_exit EXIT
+
+# =============================================================================
 # GLOBAL VARIABLES
 # =============================================================================
 
@@ -35,7 +66,7 @@ NC='\033[0m' # No Color
 INSTALL_DIR="/home/n8n"
 DEPLOYMENT_MODE=""        # localhost/domain/cloudflare
 MAIN_DOMAIN=""           # Main domain (e.g., example.com)
-DOMAINS=()               # All domains array
+DOMAINS=()               # All domains array - ALWAYS initialize
 SSL_EMAIL=""             # SSL certificate email
 
 # Port configuration
@@ -83,7 +114,7 @@ HEALTH_CHECK_RETRIES=3
 show_banner() {
     clear
     echo -e "${CYAN}╔══════════════════════════════════════════════════════════════════════════════╗${NC}"
-    echo -e "${CYAN}║${WHITE}              🚀 N8N MULTI-DOMAIN INSTALLER 2025 - VERSION 4.0 🚀             ${CYAN}║${NC}"
+    echo -e "${CYAN}║${WHITE}              🚀 N8N MULTI-DOMAIN INSTALLER 2025 - VERSION 4.0.1 🚀           ${CYAN}║${NC}"
     echo -e "${CYAN}╠══════════════════════════════════════════════════════════════════════════════╣${NC}"
     echo -e "${CYAN}║${WHITE} ✨ Multi-Deployment: Localhost | Domain SSL | Cloudflare Tunnel          ${CYAN}║${NC}"
     echo -e "${CYAN}║${WHITE} 🔧 Custom Port Configuration + Auto Port Assignment                      ${CYAN}║${NC}"
@@ -97,29 +128,150 @@ show_banner() {
     echo -e "${CYAN}║${YELLOW} 📺 YouTube: https://www.youtube.com/@kalvinthiensocial                  ${CYAN}║${NC}"
     echo -e "${CYAN}║${YELLOW} 📱 Zalo: 08.8888.4749                                                   ${CYAN}║${NC}"
     echo -e "${CYAN}║${YELLOW} 🎬 ĐĂNG KÝ KÊNH ĐỂ ỦNG HỘ MÌNH NHÉ! 🔔                                 ${CYAN}║${NC}"
-    echo -e "${CYAN}║${YELLOW} 📅 Cập nhật: 01/10/2025 - Version 4.0 Enhanced                         ${CYAN}║${NC}"
+    echo -e "${CYAN}║${YELLOW} 📅 Cập nhật: 01/10/2025 - Version 4.0.1 Fixed                          ${CYAN}║${NC}"
     echo -e "${CYAN}╚══════════════════════════════════════════════════════════════════════════════╝${NC}"
     echo ""
 }
 
 log() {
-    echo -e "${GREEN}[$(date +'%Y-%m-%d %H:%M:%S')] $1${NC}"
+    echo -e "${GREEN}[$(date +'%Y-%m-%d %H:%M:%S')] $1${NC}" | tee -a "$ERROR_LOG"
 }
 
 error() {
-    echo -e "${RED}[ERROR] $1${NC}" >&2
+    echo -e "${RED}[ERROR] $1${NC}" | tee -a "$ERROR_LOG" >&2
 }
 
 warning() {
-    echo -e "${YELLOW}[WARNING] $1${NC}"
+    echo -e "${YELLOW}[WARNING] $1${NC}" | tee -a "$ERROR_LOG"
 }
 
 info() {
-    echo -e "${BLUE}[INFO] $1${NC}"
+    echo -e "${BLUE}[INFO] $1${NC}" | tee -a "$ERROR_LOG"
 }
 
 success() {
-    echo -e "${GREEN}[SUCCESS] $1${NC}"
+    echo -e "${GREEN}[SUCCESS] $1${NC}" | tee -a "$ERROR_LOG"
+}
+
+# =============================================================================
+# SAFE INPUT FUNCTIONS
+# =============================================================================
+
+# Safe read function that handles all edge cases
+safe_read() {
+    local prompt="$1"
+    local var_name="$2"
+    local default_value="${3:-}"
+    
+    local input_value
+    # Use -r to prevent backslash escaping, handle read failure gracefully
+    if ! IFS= read -r -p "$prompt" input_value 2>/dev/null; then
+        # Read failed (Ctrl+D or other issue), use default
+        eval "$var_name='$default_value'"
+        echo "" # New line after Ctrl+D
+        return 0
+    fi
+    
+    # Trim whitespace
+    input_value=$(echo "$input_value" | xargs)
+    
+    # If empty and has default
+    if [[ -z "$input_value" && -n "$default_value" ]]; then
+        eval "$var_name='$default_value'"
+    else
+        eval "$var_name='$input_value'"
+    fi
+    return 0
+}
+
+# =============================================================================
+# VALIDATION FUNCTIONS
+# =============================================================================
+
+validate_number_range() {
+    local input="$1"
+    local min="$2"
+    local max="$3"
+    
+    # Check if input is empty
+    if [[ -z "$input" ]]; then
+        return 1
+    fi
+    
+    # Check if input is a number
+    if ! [[ "$input" =~ ^[0-9]+$ ]]; then
+        return 1
+    fi
+    
+    # Check range
+    if [[ $input -lt $min || $input -gt $max ]]; then
+        return 1
+    fi
+    
+    return 0
+}
+
+validate_domain_format() {
+    local domain="$1"
+    
+    # Empty check
+    if [[ -z "$domain" ]]; then
+        return 1
+    fi
+    
+    # Basic domain regex - simplified for better compatibility
+    if ! [[ "$domain" =~ ^[a-zA-Z0-9]([a-zA-Z0-9\-]{0,61}[a-zA-Z0-9])?(\.[a-zA-Z0-9]([a-zA-Z0-9\-]{0,61}[a-zA-Z0-9])?)*$ ]]; then
+        return 1
+    fi
+    
+    # Check minimum length and structure
+    if [[ ${#domain} -lt 3 ]] || [[ "$domain" != *.* ]]; then
+        return 1
+    fi
+    
+    return 0
+}
+
+validate_email_format() {
+    local email="$1"
+    
+    # Empty check
+    if [[ -z "$email" ]]; then
+        return 1
+    fi
+    
+    # Basic email validation
+    if ! [[ "$email" =~ ^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$ ]]; then
+        return 1
+    fi
+    
+    # Block example domains
+    if [[ "$email" =~ @example\.(com|org|net)$ ]] || [[ "$email" =~ @test\.(com|org|net)$ ]]; then
+        return 1
+    fi
+    
+    return 0
+}
+
+validate_port_number() {
+    local port="$1"
+    
+    # Empty check
+    if [[ -z "$port" ]]; then
+        return 1
+    fi
+    
+    # Number check
+    if ! [[ "$port" =~ ^[0-9]+$ ]]; then
+        return 1
+    fi
+    
+    # Range check
+    if [[ $port -lt 1 || $port -gt 65535 ]]; then
+        return 1
+    fi
+    
+    return 0
 }
 
 # =============================================================================
@@ -128,36 +280,30 @@ success() {
 
 check_root() {
     if [[ $EUID -ne 0 ]]; then
-        error "Script này cần chạy với quyền root. Sử dụng: sudo $0"
-        exit 1
+        return 1
     fi
+    return 0
 }
 
 check_os() {
     if [[ ! -f /etc/os-release ]]; then
-        error "Không thể xác định hệ điều hành"
-        exit 1
+        return 1
     fi
     
     . /etc/os-release
     if [[ "$ID" != "ubuntu" && "$ID" != "debian" ]]; then
         warning "Script được thiết kế cho Ubuntu/Debian. Hệ điều hành hiện tại: $ID"
-        read -p "Bạn có muốn tiếp tục? (y/N): " -n 1 -r
-        echo
-        if [[ ! $REPLY =~ ^[Yy]$ ]]; then
-            exit 1
-        fi
+        return 1
     fi
+    return 0
 }
 
 check_docker() {
     if ! command -v docker &> /dev/null; then
-        error "Docker chưa được cài đặt"
         return 1
     fi
     
     if ! docker ps &> /dev/null; then
-        error "Docker daemon không chạy hoặc user không có quyền"
         return 1
     fi
     
@@ -185,7 +331,6 @@ check_docker_compose() {
 check_port_availability() {
     local port=$1
     if lsof -Pi :$port -sTCP:LISTEN -t >/dev/null 2>&1; then
-        error "Port $port đã được sử dụng!"
         return 1
     fi
     return 0
@@ -203,7 +348,7 @@ get_next_available_port() {
 }
 
 # =============================================================================
-# USER INPUT FUNCTIONS - DEPLOYMENT MODE
+# USER INPUT FUNCTIONS - FIXED VERSION
 # =============================================================================
 
 get_deployment_mode() {
@@ -217,29 +362,46 @@ get_deployment_mode() {
     echo -e "  ${GREEN}3.${NC} Cloudflare Tunnel (bảo mật cao, không cần mở port)"
     echo ""
     
-    while true; do
-        read -p "🎯 Chọn chế độ (1-3): " mode
-        case $mode in
-            1)
-                DEPLOYMENT_MODE="localhost"
-                info "Đã chọn: Localhost Mode"
-                break
-                ;;
-            2)
-                DEPLOYMENT_MODE="domain"
-                info "Đã chọn: Domain với SSL Mode"
-                break
-                ;;
-            3)
-                DEPLOYMENT_MODE="cloudflare"
-                info "Đã chọn: Cloudflare Tunnel Mode"
-                break
-                ;;
-            *)
-                error "Lựa chọn không hợp lệ. Vui lòng chọn 1-3."
-                ;;
-        esac
+    local mode=""
+    local max_attempts=5
+    local attempt=0
+    
+    while [[ $attempt -lt $max_attempts ]]; do
+        ((attempt++))
+        
+        safe_read "🎯 Chọn chế độ (1-3) [default: 1]: " mode "1"
+        
+        # Validate input
+        if validate_number_range "$mode" 1 3; then
+            case $mode in
+                1)
+                    DEPLOYMENT_MODE="localhost"
+                    info "Đã chọn: Localhost Mode"
+                    return 0
+                    ;;
+                2)
+                    DEPLOYMENT_MODE="domain"
+                    info "Đã chọn: Domain với SSL Mode"
+                    return 0
+                    ;;
+                3)
+                    DEPLOYMENT_MODE="cloudflare"
+                    info "Đã chọn: Cloudflare Tunnel Mode"
+                    return 0
+                    ;;
+            esac
+        fi
+        
+        # Show error and remaining attempts
+        if [[ $attempt -lt $max_attempts ]]; then
+            error "Lựa chọn không hợp lệ. Vui lòng chọn 1-3. (Còn $((max_attempts - attempt)) lần thử)"
+        fi
     done
+    
+    # Default after max attempts
+    warning "Đã vượt quá số lần thử. Sử dụng mặc định: Localhost Mode"
+    DEPLOYMENT_MODE="localhost"
+    return 0
 }
 
 get_main_domain() {
@@ -252,7 +414,7 @@ get_main_domain() {
     if [[ "$DEPLOYMENT_MODE" == "localhost" ]]; then
         MAIN_DOMAIN="localhost"
         info "Sử dụng localhost cho triển khai local"
-        return
+        return 0
     fi
     
     echo -e "${WHITE}Domain chính sẽ được sử dụng để tạo các subdomain:${NC}"
@@ -262,20 +424,38 @@ get_main_domain() {
     echo -e "  • n8n1.${GREEN}yourdomain.com${NC}, n8n2.${GREEN}yourdomain.com${NC}... - Multi instances"
     echo ""
     
-    while true; do
-        read -p "🌐 Nhập domain chính (ví dụ: example.com): " MAIN_DOMAIN
-        if [[ -n "$MAIN_DOMAIN" && "$MAIN_DOMAIN" =~ ^[a-zA-Z0-9][a-zA-Z0-9.-]*\.[a-zA-Z]{2,}$ ]]; then
-            # Remove any protocol if included
-            MAIN_DOMAIN=${MAIN_DOMAIN#http://}
-            MAIN_DOMAIN=${MAIN_DOMAIN#https://}
-            MAIN_DOMAIN=${MAIN_DOMAIN%/}
-            
+    local domain=""
+    local max_attempts=5
+    local attempt=0
+    
+    while [[ $attempt -lt $max_attempts ]]; do
+        ((attempt++))
+        
+        safe_read "🌐 Nhập domain chính (ví dụ: example.com): " domain ""
+        
+        # Clean domain input
+        domain=$(echo "$domain" | tr '[:upper:]' '[:lower:]' | sed 's/^[[:space:]]*//;s/[[:space:]]*$//')
+        domain=${domain#http://}
+        domain=${domain#https://}
+        domain=${domain%/}
+        
+        if validate_domain_format "$domain"; then
+            MAIN_DOMAIN="$domain"
             success "Domain chính: $MAIN_DOMAIN"
-            break
-        else
-            error "Domain không hợp lệ. Vui lòng nhập domain đúng định dạng (ví dụ: example.com)"
+            return 0
+        fi
+        
+        if [[ $attempt -lt $max_attempts ]]; then
+            error "Domain không hợp lệ. Vui lòng nhập domain đúng định dạng. (Còn $((max_attempts - attempt)) lần thử)"
         fi
     done
+    
+    # Cannot proceed without valid domain for non-localhost mode
+    error "Không thể tiếp tục mà không có domain hợp lệ cho chế độ $DEPLOYMENT_MODE"
+    warning "Chuyển sang chế độ Localhost"
+    DEPLOYMENT_MODE="localhost"
+    MAIN_DOMAIN="localhost"
+    return 0
 }
 
 get_installation_mode() {
@@ -291,50 +471,75 @@ get_installation_mode() {
     echo -e "  ${GREEN}4.${NC} Full Features (Multi + PostgreSQL + Google Drive + Telegram Bot)"
     echo ""
     
-    while true; do
-        read -p "🎯 Chọn chế độ (1-4): " mode
-        case $mode in
-            1)
-                ENABLE_MULTI_DOMAIN=false
-                ENABLE_POSTGRESQL=false
-                ENABLE_GOOGLE_DRIVE=false
-                ENABLE_TELEGRAM_BOT=false
-                break
-                ;;
-            2)
-                ENABLE_MULTI_DOMAIN=true
-                ENABLE_POSTGRESQL=false
-                ENABLE_GOOGLE_DRIVE=false
-                ENABLE_TELEGRAM_BOT=false
-                break
-                ;;
-            3)
-                ENABLE_MULTI_DOMAIN=true
-                ENABLE_POSTGRESQL=true
-                ENABLE_GOOGLE_DRIVE=false
-                ENABLE_TELEGRAM_BOT=false
-                break
-                ;;
-            4)
-                ENABLE_MULTI_DOMAIN=true
-                ENABLE_POSTGRESQL=true
-                ENABLE_GOOGLE_DRIVE=true
-                ENABLE_TELEGRAM_BOT=true
-                break
-                ;;
-            *)
-                error "Lựa chọn không hợp lệ. Vui lòng chọn 1-4."
-                ;;
-        esac
+    local mode=""
+    local max_attempts=5
+    local attempt=0
+    
+    while [[ $attempt -lt $max_attempts ]]; do
+        ((attempt++))
+        
+        safe_read "🎯 Chọn chế độ (1-4) [default: 1]: " mode "1"
+        
+        if validate_number_range "$mode" 1 4; then
+            case $mode in
+                1)
+                    ENABLE_MULTI_DOMAIN=false
+                    ENABLE_POSTGRESQL=false
+                    ENABLE_GOOGLE_DRIVE=false
+                    ENABLE_TELEGRAM_BOT=false
+                    ;;
+                2)
+                    ENABLE_MULTI_DOMAIN=true
+                    ENABLE_POSTGRESQL=false
+                    ENABLE_GOOGLE_DRIVE=false
+                    ENABLE_TELEGRAM_BOT=false
+                    ;;
+                3)
+                    ENABLE_MULTI_DOMAIN=true
+                    ENABLE_POSTGRESQL=true
+                    ENABLE_GOOGLE_DRIVE=false
+                    ENABLE_TELEGRAM_BOT=false
+                    ;;
+                4)
+                    ENABLE_MULTI_DOMAIN=true
+                    ENABLE_POSTGRESQL=true
+                    ENABLE_GOOGLE_DRIVE=true
+                    ENABLE_TELEGRAM_BOT=true
+                    ;;
+            esac
+            
+            # Log configuration
+            info "Chế độ đã chọn: $([[ "$ENABLE_MULTI_DOMAIN" == "true" ]] && echo "Multi-Instance" || echo "Single Instance")"
+            [[ "$ENABLE_POSTGRESQL" == "true" ]] && info "Database: PostgreSQL" || info "Database: SQLite"
+            [[ "$ENABLE_GOOGLE_DRIVE" == "true" ]] && info "Google Drive Backup: Enabled"
+            [[ "$ENABLE_TELEGRAM_BOT" == "true" ]] && info "Telegram Bot: Enabled"
+            
+            return 0
+        fi
+        
+        if [[ $attempt -lt $max_attempts ]]; then
+            error "Lựa chọn không hợp lệ. Vui lòng chọn 1-4. (Còn $((max_attempts - attempt)) lần thử)"
+        fi
     done
     
-    info "Chế độ đã chọn: $([[ "$ENABLE_MULTI_DOMAIN" == "true" ]] && echo "Multi-Instance" || echo "Single Instance")"
-    [[ "$ENABLE_POSTGRESQL" == "true" ]] && info "Database: PostgreSQL"
-    [[ "$ENABLE_GOOGLE_DRIVE" == "true" ]] && info "Google Drive Backup: Enabled"
-    [[ "$ENABLE_TELEGRAM_BOT" == "true" ]] && info "Telegram Bot: Enabled"
+    # Default after max attempts
+    warning "Đã vượt quá số lần thử. Sử dụng mặc định: Single Instance"
+    ENABLE_MULTI_DOMAIN=false
+    ENABLE_POSTGRESQL=false
+    ENABLE_GOOGLE_DRIVE=false
+    ENABLE_TELEGRAM_BOT=false
+    return 0
 }
 
 get_multi_domain_config() {
+    # ALWAYS initialize DOMAINS array
+    DOMAINS=()
+    
+    log "📋 Entering get_multi_domain_config function..."
+    log "ENABLE_MULTI_DOMAIN = $ENABLE_MULTI_DOMAIN"
+    log "DEPLOYMENT_MODE = $DEPLOYMENT_MODE"
+    log "MAIN_DOMAIN = $MAIN_DOMAIN"
+    
     if [[ "$ENABLE_MULTI_DOMAIN" != "true" ]]; then
         # Single instance - chỉ cần n8n subdomain
         if [[ "$DEPLOYMENT_MODE" == "localhost" ]]; then
@@ -342,7 +547,9 @@ get_multi_domain_config() {
         else
             DOMAINS=("n8n.$MAIN_DOMAIN")
         fi
-        return
+        info "Configured single instance: ${DOMAINS[0]}"
+        log "DOMAINS array size: ${#DOMAINS[@]}"
+        return 0
     fi
     
     echo ""
@@ -359,21 +566,39 @@ get_multi_domain_config() {
         echo -e "  • ..."
         echo ""
         
-        while true; do
-            read -p "🔢 Số lượng N8N instances (2-10): " instance_count
-            if [[ "$instance_count" =~ ^[0-9]+$ ]] && [[ $instance_count -ge 2 ]] && [[ $instance_count -le 10 ]]; then
+        local instance_count=""
+        local max_attempts=3
+        local attempt=0
+        
+        while [[ $attempt -lt $max_attempts ]]; do
+            ((attempt++))
+            
+            safe_read "🔢 Số lượng N8N instances (2-10) [default: 2]: " instance_count "2"
+            
+            if validate_number_range "$instance_count" 2 10; then
                 # Add main instance
                 DOMAINS=("localhost")
                 # Add sub instances
                 for ((i=1; i<$instance_count; i++)); do
                     DOMAINS+=("localhost:$((PORT_BASE + i))")
                 done
-                break
-            else
-                error "Vui lòng nhập số từ 2 đến 10"
+                success "Đã cấu hình $instance_count instances trên localhost"
+                log "DOMAINS array: ${DOMAINS[@]}"
+                return 0
+            fi
+            
+            if [[ $attempt -lt $max_attempts ]]; then
+                error "Vui lòng nhập số từ 2 đến 10. (Còn $((max_attempts - attempt)) lần thử)"
             fi
         done
+        
+        # Default
+        warning "Sử dụng mặc định: 2 instances"
+        DOMAINS=("localhost" "localhost:5801")
+        return 0
+        
     else
+        # Domain mode
         echo -e "${WHITE}Multi-Instance với Domain:${NC}"
         echo -e "  • Mỗi instance sẽ có subdomain riêng"
         echo -e "  • Ví dụ: n8n1.$MAIN_DOMAIN, n8n2.$MAIN_DOMAIN..."
@@ -383,10 +608,15 @@ get_multi_domain_config() {
         DOMAINS=("n8n.$MAIN_DOMAIN")
         
         local instance_num=1
-        while true; do
-            read -p "➕ Thêm N8N instance $instance_num? (y/N): " -n 1 -r
-            echo
-            if [[ $REPLY =~ ^[Yy]$ ]]; then
+        local add_more=""
+        
+        while [[ $instance_num -le 10 ]]; do
+            safe_read "➕ Thêm N8N instance $instance_num? (y/N) [default: N]: " add_more "N"
+            
+            # Normalize input
+            add_more=$(echo "$add_more" | tr '[:upper:]' '[:lower:]')
+            
+            if [[ "$add_more" == "y" || "$add_more" == "yes" ]]; then
                 DOMAINS+=("n8n$instance_num.$MAIN_DOMAIN")
                 info "Đã thêm: n8n$instance_num.$MAIN_DOMAIN"
                 ((instance_num++))
@@ -394,9 +624,17 @@ get_multi_domain_config() {
                 break
             fi
         done
+        
+        if [[ ${#DOMAINS[@]} -eq 1 ]]; then
+            # Nếu không thêm instance nào, tự động thêm 1
+            DOMAINS+=("n8n1.$MAIN_DOMAIN")
+            info "Tự động thêm: n8n1.$MAIN_DOMAIN"
+        fi
     fi
     
     success "Đã cấu hình ${#DOMAINS[@]} N8N instances"
+    log "Final DOMAINS array: ${DOMAINS[@]}"
+    return 0
 }
 
 get_port_configuration() {
@@ -409,50 +647,114 @@ get_port_configuration() {
     # News API Port
     if [[ "$ENABLE_NEWS_API" == "true" ]]; then
         echo -e "${WHITE}News API Port Configuration:${NC}"
-        while true; do
-            read -p "📰 Port cho News API [8000]: " port
-            NEWS_API_PORT=${port:-8000}
-            if check_port_availability $NEWS_API_PORT; then
-                success "News API sẽ chạy trên port: $NEWS_API_PORT"
-                break
+        local port=""
+        local attempts=0
+        
+        while [[ $attempts -lt 3 ]]; do
+            ((attempts++))
+            safe_read "📰 Port cho News API [default: 8000]: " port "8000"
+            
+            if validate_port_number "$port"; then
+                if check_port_availability "$port"; then
+                    NEWS_API_PORT=$port
+                    success "News API sẽ chạy trên port: $NEWS_API_PORT"
+                    break
+                else
+                    local new_port=$(get_next_available_port $port)
+                    warning "Port $port đã được sử dụng."
+                    local use_new=""
+                    safe_read "Sử dụng port $new_port? (Y/n) [default: Y]: " use_new "Y"
+                    if [[ ! "$use_new" =~ ^[Nn]$ ]]; then
+                        NEWS_API_PORT=$new_port
+                        success "News API sẽ chạy trên port: $NEWS_API_PORT"
+                        break
+                    fi
+                fi
             else
-                NEWS_API_PORT=$(get_next_available_port $NEWS_API_PORT)
-                warning "Port đã được sử dụng. Đề xuất port: $NEWS_API_PORT"
+                error "Port không hợp lệ. Vui lòng nhập số từ 1-65535"
             fi
         done
+        
+        # Default if all attempts fail
+        if [[ -z "$NEWS_API_PORT" ]] || ! validate_port_number "$NEWS_API_PORT"; then
+            NEWS_API_PORT=$(get_next_available_port 8000)
+            warning "Sử dụng port mặc định: $NEWS_API_PORT"
+        fi
         echo ""
     fi
     
     # N8N Main Port (chỉ cho localhost mode)
     if [[ "$DEPLOYMENT_MODE" == "localhost" ]]; then
         echo -e "${WHITE}N8N Main Port Configuration:${NC}"
-        while true; do
-            read -p "🚀 Port cho N8N chính [5678]: " port
-            N8N_MAIN_PORT=${port:-5678}
-            if check_port_availability $N8N_MAIN_PORT; then
-                success "N8N chính sẽ chạy trên port: $N8N_MAIN_PORT"
-                break
+        local port=""
+        local attempts=0
+        
+        while [[ $attempts -lt 3 ]]; do
+            ((attempts++))
+            safe_read "🚀 Port cho N8N chính [default: 5678]: " port "5678"
+            
+            if validate_port_number "$port"; then
+                if check_port_availability "$port"; then
+                    N8N_MAIN_PORT=$port
+                    success "N8N chính sẽ chạy trên port: $N8N_MAIN_PORT"
+                    break
+                else
+                    local new_port=$(get_next_available_port $port)
+                    warning "Port $port đã được sử dụng."
+                    local use_new=""
+                    safe_read "Sử dụng port $new_port? (Y/n) [default: Y]: " use_new "Y"
+                    if [[ ! "$use_new" =~ ^[Nn]$ ]]; then
+                        N8N_MAIN_PORT=$new_port
+                        success "N8N chính sẽ chạy trên port: $N8N_MAIN_PORT"
+                        break
+                    fi
+                fi
             else
-                N8N_MAIN_PORT=$(get_next_available_port $N8N_MAIN_PORT)
-                warning "Port đã được sử dụng. Đề xuất port: $N8N_MAIN_PORT"
+                error "Port không hợp lệ"
             fi
         done
+        
+        if [[ -z "$N8N_MAIN_PORT" ]] || ! validate_port_number "$N8N_MAIN_PORT"; then
+            N8N_MAIN_PORT=$(get_next_available_port 5678)
+            warning "Sử dụng port mặc định: $N8N_MAIN_PORT"
+        fi
         echo ""
     fi
     
     # Dashboard Port
     echo -e "${WHITE}Dashboard Port Configuration:${NC}"
-    while true; do
-        read -p "📊 Port cho Dashboard [8080]: " port
-        DASHBOARD_PORT=${port:-8080}
-        if check_port_availability $DASHBOARD_PORT; then
-            success "Dashboard sẽ chạy trên port: $DASHBOARD_PORT"
-            break
+    local port=""
+    local attempts=0
+    
+    while [[ $attempts -lt 3 ]]; do
+        ((attempts++))
+        safe_read "📊 Port cho Dashboard [default: 8080]: " port "8080"
+        
+        if validate_port_number "$port"; then
+            if check_port_availability "$port"; then
+                DASHBOARD_PORT=$port
+                success "Dashboard sẽ chạy trên port: $DASHBOARD_PORT"
+                break
+            else
+                local new_port=$(get_next_available_port $port)
+                warning "Port $port đã được sử dụng."
+                local use_new=""
+                safe_read "Sử dụng port $new_port? (Y/n) [default: Y]: " use_new "Y"
+                if [[ ! "$use_new" =~ ^[Nn]$ ]]; then
+                    DASHBOARD_PORT=$new_port
+                    success "Dashboard sẽ chạy trên port: $DASHBOARD_PORT"
+                    break
+                fi
+            fi
         else
-            DASHBOARD_PORT=$(get_next_available_port $DASHBOARD_PORT)
-            warning "Port đã được sử dụng. Đề xuất port: $DASHBOARD_PORT"
+            error "Port không hợp lệ"
         fi
     done
+    
+    if [[ -z "$DASHBOARD_PORT" ]] || ! validate_port_number "$DASHBOARD_PORT"; then
+        DASHBOARD_PORT=$(get_next_available_port 8080)
+        warning "Sử dụng port mặc định: $DASHBOARD_PORT"
+    fi
     
     # Auto-assign ports for multi-instance
     if [[ "$ENABLE_MULTI_DOMAIN" == "true" ]] && [[ "$DEPLOYMENT_MODE" == "localhost" ]]; then
@@ -464,11 +766,13 @@ get_port_configuration() {
             info "  Instance $i: Port $port"
         done
     fi
+    
+    return 0
 }
 
 get_ssl_email_config() {
     if [[ "$DEPLOYMENT_MODE" == "localhost" ]]; then
-        return
+        return 0
     fi
     
     echo ""
@@ -477,19 +781,37 @@ get_ssl_email_config() {
     echo -e "${CYAN}╚══════════════════════════════════════════════════════════════════════════════╝${NC}"
     echo ""
     
-    while true; do
-        read -p "📧 Email cho SSL certificates: " SSL_EMAIL
-        if [[ -n "$SSL_EMAIL" && "$SSL_EMAIL" =~ ^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$ ]]; then
-            if [[ "$SSL_EMAIL" == *"@example.com" ]]; then
-                error "Vui lòng sử dụng email thật, không dùng @example.com"
-                continue
-            fi
+    local email=""
+    local max_attempts=5
+    local attempt=0
+    
+    while [[ $attempt -lt $max_attempts ]]; do
+        ((attempt++))
+        
+        safe_read "📧 Email cho SSL certificates: " email ""
+        
+        # Trim whitespace
+        email=$(echo "$email" | xargs)
+        
+        if validate_email_format "$email"; then
+            SSL_EMAIL="$email"
             success "SSL Email: $SSL_EMAIL"
-            break
-        else
-            error "Email không hợp lệ"
+            return 0
+        fi
+        
+        if [[ $attempt -lt $max_attempts ]]; then
+            if [[ "$email" == *"@example.com" ]]; then
+                error "Vui lòng sử dụng email thật, không dùng @example.com"
+            else
+                error "Email không hợp lệ. (Còn $((max_attempts - attempt)) lần thử)"
+            fi
         fi
     done
+    
+    # Default after max attempts
+    warning "Sử dụng email mặc định cho SSL"
+    SSL_EMAIL="admin@$MAIN_DOMAIN"
+    return 0
 }
 
 # =============================================================================
@@ -508,22 +830,45 @@ setup_dashboard_auth() {
     echo ""
     
     # Get username
-    while true; do
-        read -p "👤 Username cho dashboard: " DASHBOARD_USER
-        if [[ -n "$DASHBOARD_USER" && "$DASHBOARD_USER" =~ ^[a-zA-Z0-9_-]+$ ]]; then
+    local username=""
+    local max_attempts=3
+    local attempt=0
+    
+    while [[ $attempt -lt $max_attempts ]]; do
+        ((attempt++))
+        safe_read "👤 Username cho dashboard [default: admin]: " username "admin"
+        
+        # Validate username
+        if [[ -n "$username" && "$username" =~ ^[a-zA-Z0-9_-]+$ ]]; then
+            DASHBOARD_USER="$username"
             break
         else
-            error "Username chỉ chứa chữ cái, số, _ và -"
+            if [[ $attempt -lt $max_attempts ]]; then
+                error "Username chỉ chứa chữ cái, số, _ và -"
+            fi
         fi
     done
     
+    if [[ -z "$DASHBOARD_USER" ]]; then
+        DASHBOARD_USER="admin"
+        warning "Sử dụng username mặc định: admin"
+    fi
+    
     # Get password
-    while true; do
-        read -s -p "🔑 Password cho dashboard: " DASHBOARD_PASS
+    attempt=0
+    while [[ $attempt -lt $max_attempts ]]; do
+        ((attempt++))
+        
+        # Use regular read for password to hide input
+        echo -n "🔑 Password cho dashboard (ít nhất 8 ký tự): "
+        read -s DASHBOARD_PASS
         echo
+        
         if [[ ${#DASHBOARD_PASS} -ge 8 ]]; then
-            read -s -p "🔑 Xác nhận password: " pass_confirm
+            echo -n "🔑 Xác nhận password: "
+            read -s pass_confirm
             echo
+            
             if [[ "$DASHBOARD_PASS" == "$pass_confirm" ]]; then
                 break
             else
@@ -533,6 +878,13 @@ setup_dashboard_auth() {
             error "Password phải có ít nhất 8 ký tự"
         fi
     done
+    
+    if [[ -z "$DASHBOARD_PASS" ]] || [[ ${#DASHBOARD_PASS} -lt 8 ]]; then
+        # Generate random password
+        DASHBOARD_PASS=$(openssl rand -base64 12)
+        warning "Đã tạo password ngẫu nhiên: $DASHBOARD_PASS"
+        warning "Vui lòng ghi nhớ password này!"
+    fi
     
     # Generate password hash for Caddy
     if command -v htpasswd &> /dev/null; then
@@ -545,6 +897,7 @@ setup_dashboard_auth() {
     fi
     
     success "Đã thiết lập Dashboard authentication"
+    return 0
 }
 
 get_news_api_config() {
@@ -554,30 +907,52 @@ get_news_api_config() {
     echo -e "${CYAN}╚══════════════════════════════════════════════════════════════════════════════╝${NC}"
     echo ""
     
-    read -p "📰 Bạn có muốn cài đặt News Content API? (Y/n): " -n 1 -r
-    echo
-    if [[ $REPLY =~ ^[Nn]$ ]]; then
+    local enable_api=""
+    safe_read "📰 Bạn có muốn cài đặt News Content API? (Y/n) [default: Y]: " enable_api "Y"
+    
+    if [[ "$enable_api" =~ ^[Nn]$ ]]; then
         ENABLE_NEWS_API=false
-        return
+        return 0
     fi
     
     ENABLE_NEWS_API=true
     
     echo ""
-    while true; do
-        read -p "🔑 Nhập Bearer Token cho News API (ít nhất 20 ký tự): " BEARER_TOKEN
-        if [[ ${#BEARER_TOKEN} -ge 20 && "$BEARER_TOKEN" =~ ^[a-zA-Z0-9]+$ ]]; then
+    local token=""
+    local max_attempts=3
+    local attempt=0
+    
+    while [[ $attempt -lt $max_attempts ]]; do
+        ((attempt++))
+        safe_read "🔑 Nhập Bearer Token cho News API (ít nhất 20 ký tự) [auto-generate]: " token ""
+        
+        if [[ -z "$token" ]]; then
+            # Auto-generate token
+            BEARER_TOKEN=$(openssl rand -hex 20)
+            info "Đã tạo Bearer Token tự động"
+            break
+        elif [[ ${#token} -ge 20 && "$token" =~ ^[a-zA-Z0-9]+$ ]]; then
+            BEARER_TOKEN="$token"
             success "Đã thiết lập Bearer Token"
             break
         else
-            error "Token phải có ít nhất 20 ký tự và chỉ chứa chữ cái, số"
+            if [[ $attempt -lt $max_attempts ]]; then
+                error "Token phải có ít nhất 20 ký tự và chỉ chứa chữ cái, số"
+            fi
         fi
     done
+    
+    if [[ -z "$BEARER_TOKEN" ]]; then
+        BEARER_TOKEN=$(openssl rand -hex 20)
+        warning "Đã tạo Bearer Token tự động"
+    fi
+    
+    return 0
 }
 
 get_telegram_config() {
     if [[ "$ENABLE_TELEGRAM_BOT" != "true" ]]; then
-        return
+        return 0
     fi
     
     echo ""
@@ -586,10 +961,17 @@ get_telegram_config() {
     echo -e "${CYAN}╚══════════════════════════════════════════════════════════════════════════════╝${NC}"
     echo ""
     
-    read -p "📱 Telegram Bot Token: " TELEGRAM_BOT_TOKEN
-    read -p "💬 Telegram Chat ID: " TELEGRAM_CHAT_ID
+    safe_read "📱 Telegram Bot Token [optional]: " TELEGRAM_BOT_TOKEN ""
+    safe_read "💬 Telegram Chat ID [optional]: " TELEGRAM_CHAT_ID ""
     
-    success "Đã cấu hình Telegram Bot"
+    if [[ -n "$TELEGRAM_BOT_TOKEN" ]] && [[ -n "$TELEGRAM_CHAT_ID" ]]; then
+        success "Đã cấu hình Telegram Bot"
+    else
+        warning "Telegram Bot configuration incomplete - feature will be disabled"
+        ENABLE_TELEGRAM_BOT=false
+    fi
+    
+    return 0
 }
 
 # =============================================================================
@@ -598,7 +980,7 @@ get_telegram_config() {
 
 setup_cloudflare_tunnel() {
     if [[ "$DEPLOYMENT_MODE" != "cloudflare" ]]; then
-        return
+        return 0
     fi
     
     echo ""
@@ -614,12 +996,19 @@ setup_cloudflare_tunnel() {
     echo -e "  5. Copy token từ phần 'Install and run a connector'"
     echo ""
     
-    read -p "🔐 Nhập Cloudflare Tunnel Token: " CF_TUNNEL_TOKEN
-    read -p "🏷️  Tên tunnel (ví dụ: n8n-tunnel): " CF_TUNNEL_NAME
+    safe_read "🔐 Nhập Cloudflare Tunnel Token: " CF_TUNNEL_TOKEN ""
     
-    CF_TUNNEL_NAME=${CF_TUNNEL_NAME:-"n8n-tunnel"}
+    if [[ -z "$CF_TUNNEL_TOKEN" ]]; then
+        error "Cloudflare Tunnel requires a token"
+        warning "Chuyển sang Domain mode"
+        DEPLOYMENT_MODE="domain"
+        return 0
+    fi
+    
+    safe_read "🏷️  Tên tunnel [default: n8n-tunnel]: " CF_TUNNEL_NAME "n8n-tunnel"
     
     success "Đã cấu hình Cloudflare Tunnel"
+    return 0
 }
 
 # =============================================================================
@@ -673,7 +1062,7 @@ setup_swap() {
     
     if swapon --show | grep -q "/swapfile"; then
         info "Swap file đã tồn tại"
-        return
+        return 0
     fi
     
     log "Tạo swap file ${swap_size}..."
@@ -739,26 +1128,26 @@ fix_permissions_auto() {
     if [[ "$ENABLE_MULTI_DOMAIN" == "true" ]]; then
         for dir in files/n8n_*; do
             if [[ -d "$dir" ]]; then
-                chown -R 1000:1000 "$dir"
-                chmod -R 755 "$dir"
+                chown -R 1000:1000 "$dir" || true
+                chmod -R 755 "$dir" || true
                 mkdir -p "$dir"/.n8n
-                chown -R 1000:1000 "$dir"/.n8n
+                chown -R 1000:1000 "$dir"/.n8n || true
             fi
         done
     else
-        chown -R 1000:1000 files/n8n_main
-        chmod -R 755 files/n8n_main
+        chown -R 1000:1000 files/n8n_main || true
+        chmod -R 755 files/n8n_main || true
         mkdir -p files/n8n_main/.n8n
-        chown -R 1000:1000 files/n8n_main/.n8n
+        chown -R 1000:1000 files/n8n_main/.n8n || true
     fi
     
     # Fix PostgreSQL permissions
     if [[ "$ENABLE_POSTGRESQL" == "true" ]] && [[ -d postgres_data ]]; then
-        chown -R 999:999 postgres_data
+        chown -R 999:999 postgres_data || true
     fi
     
     # Fix logs permissions
-    chown -R 1000:1000 logs
+    chown -R 1000:1000 logs || true
     
     success "✅ Đã fix quyền truy cập"
 }
@@ -1250,7 +1639,7 @@ EOF
 
 generate_caddyfile() {
     if [[ "$DEPLOYMENT_MODE" == "localhost" ]]; then
-        return
+        return 0
     fi
     
     log "📝 Tạo Caddyfile..."
@@ -1421,7 +1810,7 @@ EOF
 
 setup_news_api() {
     if [[ "$ENABLE_NEWS_API" != "true" ]]; then
-        return
+        return 0
     fi
     
     log "📰 Thiết lập News Content API..."
@@ -2061,7 +2450,7 @@ EOF
 
 generate_cloudflare_config() {
     if [[ "$DEPLOYMENT_MODE" != "cloudflare" ]]; then
-        return
+        return 0
     fi
     
     log "☁️ Tạo Cloudflare Tunnel configuration..."
@@ -2144,7 +2533,7 @@ deploy_services() {
     
     # Pull images first
     log "📥 Pull Docker images..."
-    $DOCKER_COMPOSE pull --quiet || true
+    $DOCKER_COMPOSE pull --quiet 2>/dev/null || true
     
     # Build custom images
     if [[ "$ENABLE_NEWS_API" == "true" ]]; then
@@ -2230,7 +2619,7 @@ EOF
 
 setup_health_monitoring() {
     if [[ "$HEALTH_CHECK_ENABLED" != "true" ]]; then
-        return
+        return 0
     fi
     
     log "🏥 Thiết lập health monitoring..."
@@ -2340,8 +2729,8 @@ done
 EOF
     chmod +x health_monitor.sh
     
-    # Create systemd service for health monitor
-    if command -v systemctl &> /dev/null; then
+    # Create systemd service for health monitor if systemd is available
+    if command -v systemctl &> /dev/null && [[ -d /etc/systemd/system ]]; then
         cat > /etc/systemd/system/n8n-health-monitor.service << EOF
 [Unit]
 Description=N8N Health Monitor
@@ -2475,23 +2864,37 @@ show_installation_summary() {
     
     if [[ "$DEPLOYMENT_MODE" == "domain" ]]; then
         echo -e "${CYAN}║${WHITE} • SSL certificates sẽ được cấp tự động trong 2-3 phút                      ${CYAN}║${NC}"
-        echo -e "${CYAN}║${WHITE} • Đảm bảo đã trỏ DNS về server IP: $(curl -s ifconfig.me || echo "YOUR_IP")                  ${CYAN}║${NC}"
+        echo -e "${CYAN}║${WHITE} • Đảm bảo đã trỏ DNS về server IP: $(curl -s ifconfig.me 2>/dev/null || echo "YOUR_IP")                  ${CYAN}║${NC}"
     fi
     
     echo -e "${CYAN}║${WHITE} • Health monitoring đang chạy và tự động fix lỗi                           ${CYAN}║${NC}"
-    echo -e "${CYAN}║${WHITE} • Dashboard password đã được mã hóa an toàn                                ${CYAN}║${NC}"
+    echo -e "${CYAN}║${WHITE} • Dashboard password: $DASHBOARD_PASS                                      ${CYAN}║${NC}"
     
     echo -e "${CYAN}╠══════════════════════════════════════════════════════════════════════════════╣${NC}"
     echo -e "${CYAN}║${YELLOW} 🚀 TÁC GIẢ:                                                                 ${CYAN}║${NC}"
     echo -e "${CYAN}║${WHITE} • Tên: Nguyễn Ngọc Thiện                                                   ${CYAN}║${NC}"
     echo -e "${CYAN}║${WHITE} • YouTube: https://www.youtube.com/@kalvinthiensocial                      ${CYAN}║${NC}"
     echo -e "${CYAN}║${WHITE} • Zalo: 08.8888.4749                                                        ${CYAN}║${NC}"
-    echo -e "${CYAN}║${WHITE} • Version: 4.0 - Enhanced Multi-Deployment                                 ${CYAN}║${NC}"
+    echo -e "${CYAN}║${WHITE} • Version: 4.0.1 - Fixed Input Handling                                    ${CYAN}║${NC}"
     echo -e "${CYAN}╠══════════════════════════════════════════════════════════════════════════════╣${NC}"
     echo -e "${CYAN}║${GREEN} 🎬 ĐĂNG KÝ KÊNH YOUTUBE ĐỂ ỦNG HỘ MÌNH NHÉ! 🔔                             ${CYAN}║${NC}"
     echo -e "${CYAN}║${GREEN} 👉 https://www.youtube.com/@kalvinthiensocial?sub_confirmation=1           ${CYAN}║${NC}"
     echo -e "${CYAN}╚══════════════════════════════════════════════════════════════════════════════╝${NC}"
     echo ""
+    
+    # Save summary to file
+    {
+        echo "=== N8N Installation Summary ==="
+        echo "Date: $(date)"
+        echo "Deployment Mode: $DEPLOYMENT_MODE"
+        echo "Main Domain: $MAIN_DOMAIN"
+        echo "Dashboard Username: $DASHBOARD_USER"
+        echo "Dashboard Password: $DASHBOARD_PASS"
+        [[ "$ENABLE_NEWS_API" == "true" ]] && echo "News API Token: $BEARER_TOKEN"
+        echo "Installation Directory: $INSTALL_DIR"
+    } > "$INSTALL_DIR/installation_summary.txt"
+    
+    info "📄 Thông tin cài đặt đã được lưu tại: $INSTALL_DIR/installation_summary.txt"
 }
 
 # =============================================================================
@@ -2499,28 +2902,89 @@ show_installation_summary() {
 # =============================================================================
 
 main() {
+    # Show banner
     show_banner
     
-    # System checks
-    check_root
-    check_os
+    # Initialize log
+    echo "=== N8N Installation Started at $(date) ===" > "$ERROR_LOG"
     
-    # Get user inputs
+    # System checks with graceful handling
+    log "🔍 Kiểm tra hệ thống..."
+    
+    if ! check_root; then
+        error "Script cần chạy với quyền root"
+        error "Sử dụng: sudo $0"
+        exit 1
+    fi
+    
+    if ! check_os; then
+        warning "Hệ điều hành không được hỗ trợ đầy đủ"
+        local continue_anyway=""
+        safe_read "Bạn có muốn tiếp tục? (y/N) [default: N]: " continue_anyway "N"
+        if [[ ! "$continue_anyway" =~ ^[Yy]$ ]]; then
+            info "Hủy cài đặt"
+            exit 0
+        fi
+    fi
+    
+    # Get user inputs - each function handles its own errors
+    log "📝 Thu thập thông tin cấu hình..."
+    
+    # Step 1: Deployment mode
     get_deployment_mode
+    
+    # Step 2: Main domain
     get_main_domain
+    
+    # Step 3: Installation mode
     get_installation_mode
+    
+    # Step 4: Multi-domain config
+    log "🌐 Cấu hình multi-domain..."
     get_multi_domain_config
+    
+    # Step 5: Port configuration
     get_port_configuration
-    get_ssl_email_config
+    
+    # Step 6: SSL Email (skip for localhost)
+    if [[ "$DEPLOYMENT_MODE" != "localhost" ]]; then
+        get_ssl_email_config
+    fi
+    
+    # Step 7: Dashboard auth
     setup_dashboard_auth
+    
+    # Step 8: News API config
     get_news_api_config
-    get_telegram_config
     
-    # Cloudflare tunnel setup
-    setup_cloudflare_tunnel
+    # Step 9: Telegram config (if enabled)
+    if [[ "$ENABLE_TELEGRAM_BOT" == "true" ]]; then
+        get_telegram_config
+    fi
     
-    # System preparation
-    log "🚀 Bắt đầu cài đặt N8N Multi-Instance..."
+    # Step 10: Cloudflare tunnel (if needed)
+    if [[ "$DEPLOYMENT_MODE" == "cloudflare" ]]; then
+        setup_cloudflare_tunnel
+    fi
+    
+    # Confirm before proceeding
+    echo ""
+    echo -e "${YELLOW}📋 Xác nhận cấu hình:${NC}"
+    echo -e "  • Deployment: $DEPLOYMENT_MODE"
+    echo -e "  • Domain: $MAIN_DOMAIN"
+    echo -e "  • Instances: ${#DOMAINS[@]}"
+    echo -e "  • Database: $([[ "$ENABLE_POSTGRESQL" == "true" ]] && echo "PostgreSQL" || echo "SQLite")"
+    echo ""
+    
+    local confirm=""
+    safe_read "✅ Tiếp tục cài đặt? (Y/n) [default: Y]: " confirm "Y"
+    if [[ "$confirm" =~ ^[Nn]$ ]]; then
+        info "Hủy cài đặt"
+        exit 0
+    fi
+    
+    # Continue with installation...
+    log "🚀 Bắt đầu cài đặt..."
     
     # Install Docker if needed
     if ! check_docker || ! check_docker_compose; then
@@ -2553,7 +3017,7 @@ main() {
     if ! health_check_auto; then
         warning "⚠️ Một số services chưa sẵn sàng, đang thử lại..."
         sleep 30
-        health_check_auto
+        health_check_auto || true
     fi
     
     # Create helper scripts
