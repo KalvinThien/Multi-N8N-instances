@@ -55,7 +55,7 @@ Script tự động cài đặt N8N với đầy đủ tính năng mở rộng v
 - 📱 **Zalo/Phone**: 08.8888.4749
 - 🎬 **N8N Playlist**: [N8N Tutorials](https://www.youtube.com/@kalvinthiensocial/playlists)
 - 🚀 **Ngày cập nhật**: 28/06/2025
-- 🆕 **Phiên bản**: 3.0 Enhanced - Telegram Bot + Google Drive + Web Dashboard
+- 🆕 **Phiên bản**: 4.0 Enhanced - Telegram Bot + Google Drive + Web Dashboard
 
 ## 🖥️ Hỗ Trợ Môi Trường
 
@@ -525,4 +525,4 @@ Nếu script này hữu ích, hãy cho một ⭐ star để ủng hộ!
 ---
 
 **🚀 Made with ❤️ by Nguyễn Ngọc Thiện - 28/06/2025**  
-**🆕 Enhanced Version 3.0 - Telegram Bot + Google Drive + Web Dashboard + Advanced Security**
+**🆕 Enhanced Version 4.0 - Telegram Bot + Google Drive + Web Dashboard + Advanced Security**
